@@ -1,0 +1,82 @@
+# PostgreSQL. Versions 9.5 and up are supported.
+#
+# Install the pg driver:
+#   gem install pg
+# On macOS with Homebrew:
+#   gem install pg -- --with-pg-config=/opt/homebrew/bin/pg_config
+# On Windows:
+#   gem install pg
+#       Choose the win32 build.
+#       Install PostgreSQL and put its /bin directory on your path.
+#
+# Configure Using Gemfile
+# gem "pg"
+#
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # For details on connection pooling, see Rails configuration guide
+  # https://guides.rubyonrails.org/configuring.html#database-pooling
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # Local dev/test only — the "postgres" superuser role created during the local PostgreSQL install
+  # (winget) is used here for simplicity; production always goes through DATABASE_URL instead (see below).
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+
+development:
+  <<: *default
+  database: pilotage_nrr_development
+
+test:
+  <<: *default
+  database: pilotage_nrr_test
+
+# As with config/credentials.yml, you never want to store sensitive information,
+# like your database password, in your source code. If your source code is
+# ever seen by anyone, they now have access to your database.
+#
+# Instead, provide the password or a full connection URL as an environment
+# variable when you boot the app. For example:
+#
+#   DATABASE_URL="postgres://myuser:mypass@localhost/somedatabase"
+#
+# If the connection URL is provided in the special DATABASE_URL environment
+# variable, Rails will automatically merge its configuration values on top of
+# the values provided in this file. Alternatively, you can specify a connection
+# URL environment variable explicitly:
+#
+#   production:
+#     url: <%= ENV["MY_APP_DATABASE_URL"] %>
+#
+# Connection URLs for non-primary databases can also be configured using
+# environment variables. The variable name is formed by concatenating the
+# connection name with `_DATABASE_URL`. For example:
+#
+#   CACHE_DATABASE_URL="postgres://cacheuser:cachepass@localhost/cachedatabase"
+#
+# Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
+# for a full overview on how database connection configuration can be specified.
+#
+# Scalingo's managed PostgreSQL addon provisions a single database reachable via one DATABASE_URL — rather than
+# provisioning 3 extra physical databases (which may not be possible on a shared/managed instance), Solid
+# Cache/Queue/Cable share the SAME physical database as the primary app data. This is safe: their tables
+# (solid_cache_entries, solid_queue_*, solid_cable_messages) never collide with the app's own tables, and none
+# of them are performance-critical shared infra for this app's scale (internal tool, modest data volume, no
+# background jobs or ActionCable usage planned for the MVP).
+production:
+  # Scalingo's PostgreSQL addon injects DATABASE_URL automatically — no manual username/password/host setup
+  # needed. (Scalingo also sets SCALINGO_POSTGRESQL_URL as an alias; DATABASE_URL is the one Rails reads natively.)
+  primary: &primary_production
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_production
+    migrations_paths: db/cable_migrate

@@ -1,0 +1,3 @@
+<h1>Pilotage NRR</h1>
+<p>Connecté en tant que <%= current_user.name %> (<%= current_user.admin? ? "admin" : "AM" %>).</p>
+<p><%= link_to "Se déconnecter", destroy_user_session_path, data: { turbo_method: :delete } %></p>

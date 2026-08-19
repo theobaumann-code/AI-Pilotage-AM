@@ -1,0 +1,3 @@
+{
+  "predeploy": "bin/rails db:prepare"
+}

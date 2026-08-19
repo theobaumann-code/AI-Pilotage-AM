@@ -10,9 +10,78 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_171828) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_19_084623) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "app_settings", force: :cascade do |t|
+    t.integer "annee_en_cours", default: 2026, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "archive_entries", force: :cascade do |t|
+    t.string "am_name", null: false
+    t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "assureur"
+    t.string "college"
+    t.string "company_name", null: false
+    t.datetime "created_at", null: false
+    t.string "deal_type", null: false
+    t.string "identifiant"
+    t.integer "nombre_salaries", default: 0, null: false
+    t.integer "probabilite_signature", default: 0, null: false
+    t.string "produit", null: false
+    t.string "statut_renouvellement"
+    t.string "statut_signature"
+    t.decimal "taux", precision: 6, scale: 2, default: "0.0", null: false
+    t.bigint "trash_batch_id"
+    t.datetime "updated_at", null: false
+    t.decimal "upsell_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.bigint "user_id"
+    t.integer "year", null: false
+    t.index ["trash_batch_id"], name: "index_archive_entries_on_trash_batch_id"
+    t.index ["user_id"], name: "index_archive_entries_on_user_id"
+    t.index ["year"], name: "index_archive_entries_on_year"
+  end
+
+  create_table "companies", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index "lower((name)::text)", name: "index_companies_on_lower_name", unique: true
+    t.index ["user_id"], name: "index_companies_on_user_id"
+  end
+
+  create_table "deals", force: :cascade do |t|
+    t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "assureur"
+    t.string "college"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.string "identifiant"
+    t.integer "nombre_salaries", default: 0, null: false
+    t.integer "probabilite_signature", default: 0, null: false
+    t.string "produit", null: false
+    t.string "statut_renouvellement"
+    t.string "statut_signature"
+    t.decimal "taux", precision: 6, scale: 2, default: "0.0", null: false
+    t.string "type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "produit", "college"], name: "index_deals_on_company_produit_college", unique: true, where: "((type)::text = 'ProduitDeal'::text)"
+    t.index ["company_id"], name: "index_deals_on_company_id"
+    t.index ["produit", "identifiant"], name: "index_deals_on_produit_and_identifiant_active", unique: true, where: "(((type)::text = 'ProduitDeal'::text) AND (identifiant IS NOT NULL))"
+  end
+
+  create_table "trash_batches", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "deleted_at", null: false
+    t.bigint "deleted_by_id"
+    t.datetime "updated_at", null: false
+    t.integer "year", null: false
+    t.index ["deleted_by_id"], name: "index_trash_batches_on_deleted_by_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.boolean "active", default: true, null: false
@@ -28,4 +97,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_171828) do
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
+
+  add_foreign_key "archive_entries", "trash_batches"
+  add_foreign_key "archive_entries", "users"
+  add_foreign_key "companies", "users"
+  add_foreign_key "deals", "companies"
+  add_foreign_key "trash_batches", "users", column: "deleted_by_id"
 end

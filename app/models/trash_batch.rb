@@ -10,4 +10,13 @@ class TrashBatch < ApplicationRecord
       destroy
     end
   end
+
+  # Permanent delete — no confirmation nuance beyond the controller's, since trashing was already the
+  # first, reversible step.
+  def purge!
+    transaction do
+      archive_entries.delete_all
+      destroy
+    end
+  end
 end

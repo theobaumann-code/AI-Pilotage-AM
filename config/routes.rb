@@ -10,7 +10,23 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  resource :portfolio, only: [:show]
+  resource :portfolio, only: [:show], controller: "portfolio"
+  resource :pilotage, only: [:show], controller: "pilotage"
+  resources :companies, only: [:create, :destroy] do
+    member { patch :reassign_am }
+  end
+  resources :deals, only: [:create, :update, :destroy]
+  resources :users, only: [:create, :destroy]
+  resource :historique, only: [:show], controller: "historique"
+  resources :archive_entries, only: [:update]
+  resources :trash_batches, only: [:create, :destroy] do
+    member { patch :restore }
+  end
+  resource :year_closure, only: [:create], controller: "year_closures"
+  resource :app_setting, only: [:update], controller: "app_settings"
+  get "import" => "imports#new", as: :new_import
+  post "import/preview" => "imports#preview", as: :preview_import
+  post "import" => "imports#create", as: :import
 
   # Defines the root path route ("/")
   root "portfolio#show"

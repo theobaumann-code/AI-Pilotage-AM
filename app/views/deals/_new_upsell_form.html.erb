@@ -1,0 +1,50 @@
+<div class="modal-box" style="margin:12px 0 0;">
+  <%= form_with url: deals_path(type: "upsell", redirect_user_id: viewed_user.id), method: :post do %>
+    <div class="modal-body">
+      <div class="modal-row">
+        <label>Client
+          <select name="company_id">
+            <option value="">— Nouveau client —</option>
+            <% companies.each do |c| %>
+              <option value="<%= c.id %>"><%= c.name %></option>
+            <% end %>
+          </select>
+        </label>
+        <label>Nom du nouveau client
+          <input type="text" name="new_company_name" placeholder="Si nouveau client">
+        </label>
+        <% if ams %>
+          <label>AM (si nouveau client)
+            <select name="new_company_user_id">
+              <% ams.each do |am| %>
+                <option value="<%= am.id %>" <%= "selected" if am == current_user %>><%= am.name %></option>
+              <% end %>
+            </select>
+          </label>
+        <% end %>
+      </div>
+      <div class="modal-row">
+        <label>Produit
+          <select name="deal[produit]">
+            <% UpsellDeal::PRODUITS.each { |p| %><option value="<%= p %>"><%= p %></option><% } %>
+          </select>
+        </label>
+        <label>Nombre de salariés
+          <input type="number" min="0" name="deal[nombre_salaries]" value="0">
+        </label>
+        <label>Probabilité de signature (%)
+          <input type="number" min="0" max="100" name="deal[probabilite_signature]" value="0">
+        </label>
+        <label>Statut de signature
+          <select name="deal[statut_signature]">
+            <% UpsellDeal::STATUTS_SIGNATURE.each { |s| %><option value="<%= s %>"><%= s %></option><% } %>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span></span>
+      <button type="submit" class="primary">Ajouter l'upsell</button>
+    </div>
+  <% end %>
+</div>

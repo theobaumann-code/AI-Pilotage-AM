@@ -1,0 +1,67 @@
+<%# Each editable cell owns its own tiny <form> (a <form> spanning multiple <td>s is invalid HTML and
+    browsers silently break the table layout) — auto-submitted on change for an inline-edit feel. %>
+<tr class="<%= "churn-yes" if deal.churned? %>">
+  <td><strong><%= deal.company.name %></strong></td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+        <%= f.select :produit, ProduitDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.produit %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+        <%= f.select :college, ProduitDeal::COLLEGES, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.college %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+        <%= f.select :assureur, ProduitDeal::ASSUREURS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.assureur %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+        <%= f.text_field :identifiant, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.identifiant %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+        <%= f.number_field :arr, step: "0.01", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %>
+    <% end %>
+  </td>
+  <td>
+    <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+      <%= f.number_field :taux, step: "0.01", disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
+    <% end %>
+  </td>
+  <td>
+    <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+      <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, {}, onchange: "this.form.requestSubmit()" %>
+    <% end %>
+  </td>
+  <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="rowaction">
+    <% if current_user.admin? %>
+      <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
+            form: { data: { turbo_confirm: "Supprimer ce produit ?" } } %>
+    <% end %>
+  </td>
+</tr>

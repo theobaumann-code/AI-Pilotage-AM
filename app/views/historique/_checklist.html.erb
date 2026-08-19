@@ -1,0 +1,16 @@
+<details class="checklist-filter">
+  <summary class="checklist-filter-toggle <%= "active" if selected.any? %>">
+    <span class="checklist-filter-label"><%= selected.any? ? "#{legend} (#{selected.size})" : legend %></span>
+    <span class="checklist-filter-caret">▾</span>
+  </summary>
+  <div class="checklist-filter-panel">
+    <div class="checklist-filter-options">
+      <% options.each do |opt| %>
+        <label class="checklist-filter-option">
+          <%= check_box_tag "#{param_name}[]", opt, selected.include?(opt), id: nil %>
+          <%= opt %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+</details>

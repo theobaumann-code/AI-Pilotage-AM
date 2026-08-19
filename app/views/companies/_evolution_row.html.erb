@@ -1,0 +1,21 @@
+<tr>
+  <td><strong><%= company.name %></strong></td>
+  <td><%= number_to_currency(company.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td><%= number_to_currency(company.churned_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td><%= company.avg_increase_pct.nil? ? "—" : "#{number_with_precision(company.avg_increase_pct, precision: 1)}%" %></td>
+  <td><%= number_to_currency(company.upsold_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="computed"><%= number_to_currency(company.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td>
+    <% if company.evolution_pct.nil? %>
+      —
+    <% else %>
+      <span class="badge <%= company.evolution_pct >= 0 ? "ok" : "ko" %>"><%= number_with_precision(company.evolution_pct, precision: 1) %>%</span>
+    <% end %>
+  </td>
+  <td class="rowaction">
+    <% if current_user.admin? %>
+      <%= button_to "🗑", company_path(company), method: :delete, class: "icon-btn",
+            form: { data: { turbo_confirm: "Supprimer #{company.name} et tous ses produits/upsells ?" } } %>
+    <% end %>
+  </td>
+</tr>

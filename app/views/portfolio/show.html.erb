@@ -1,3 +1,121 @@
-<h1>Pilotage NRR</h1>
-<p>Connecté en tant que <%= current_user.name %> (<%= current_user.admin? ? "admin" : "AM" %>).</p>
-<p><%= link_to "Se déconnecter", destroy_user_session_path, data: { turbo_method: :delete } %></p>
+<% content_for :title, "Mon portefeuille — Pilotage NRR" %>
+
+<p class="section-title">Mon portefeuille</p>
+<p class="section-sub">Vue consolidée par client, puis le détail par produit : renouvellement/churn d'un côté, upsells de l'autre.</p>
+
+<div class="toolbar">
+  <% if @viewable_ams %>
+    <label>AM :
+      <%= form_with url: portfolio_path, method: :get, data: { turbo_frame: "_top" } do %>
+        <%= select_tag :user_id, options_from_collection_for_select(@viewable_ams, :id, :name, viewed_user.id),
+              onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    </label>
+  <% end %>
+  <div class="spacer"></div>
+  <% if current_user.admin? %>
+    <%= link_to "Import en masse (CSV)", new_import_path, class: "button" %>
+  <% end %>
+  <details>
+    <summary class="button primary">+ Nouveau produit</summary>
+    <%= render "deals/new_produit_form", companies: @selectable_companies, ams: @viewable_ams %>
+  </details>
+  <details>
+    <summary class="button primary">+ Nouvel upsell</summary>
+    <%= render "deals/new_upsell_form", companies: @selectable_companies, ams: @viewable_ams %>
+  </details>
+</div>
+
+<div class="summary-cards">
+  <%= render "shared/summary_cards", summary: @summary %>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Évolution de l'ARR par client</h3>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">Vue consolidée par client (tous produits confondus) : churn et taux de renouvellement de chaque produit + upsells signés.</p>
+  <div class="table-scroll">
+    <table class="deals-table client-evo-table">
+      <thead>
+        <tr>
+          <th>Nom du client</th>
+          <th>ARR initial</th>
+          <th>ARR churné</th>
+          <th>Augmentation moyenne</th>
+          <th>ARR upsellé</th>
+          <th>ARR final</th>
+          <th>Évolution ARR</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @companies.empty? %>
+          <tr><td colspan="8" class="empty-state">Aucun client pour le moment.</td></tr>
+        <% else %>
+          <%= render partial: "companies/evolution_row", collection: @companies, as: :company %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Taux de renouvellement et churn</h3>
+  </div>
+  <div class="table-scroll">
+    <table class="deals-table renewal-table">
+      <thead>
+        <tr>
+          <th>Nom du client</th>
+          <th>Produit</th>
+          <th>Collège</th>
+          <th>Assureur</th>
+          <th>ID externe</th>
+          <th>ARR (€)</th>
+          <th>Taux négocié (%)</th>
+          <th>Statut de renouvellement</th>
+          <th>ARR final</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @produit_deals.empty? %>
+          <tr><td colspan="10" class="empty-state">Aucun produit pour le moment.</td></tr>
+        <% else %>
+          <%= render partial: "deals/produit_row", collection: @produit_deals, as: :deal %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Upsells</h3>
+  </div>
+  <div class="table-scroll">
+    <table class="deals-table upsell-table">
+      <thead>
+        <tr>
+          <th>Nom du client</th>
+          <th>Produit</th>
+          <th>Nb salariés</th>
+          <th>Probabilité (%)</th>
+          <th>Statut de signature</th>
+          <th>Montant upsell</th>
+          <th>Projection</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @upsell_deals.empty? %>
+          <tr><td colspan="8" class="empty-state">Aucun upsell pour le moment.</td></tr>
+        <% else %>
+          <%= render partial: "deals/upsell_row", collection: @upsell_deals, as: :deal %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

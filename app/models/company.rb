@@ -13,4 +13,35 @@ class Company < ApplicationRecord
   def reassign_am!(new_user)
     update!(user: new_user)
   end
+
+  # ---------- "Évolution de l'ARR par client" row math (computeClientEvolution in the original) ----------
+  # Ported 1:1: produit deals drive arr_initial/churned/renewal math, upsold comes only from SIGNED upsell
+  # deals, and avg_increase_pct is ARR-weighted across produit deals only (upsells never contribute a taux).
+
+  def arr_initial
+    produit_deals.sum(:arr).to_f
+  end
+
+  def churned_arr
+    produit_deals.select(&:churned?).sum { |d| d.arr.to_f }
+  end
+
+  def upsold_arr
+    upsell_deals.select(&:signed?).sum(&:upsell_amount)
+  end
+
+  def final_arr
+    produit_deals.sum(&:final_arr) + upsold_arr
+  end
+
+  def evolution_pct
+    arr_initial > 0 ? (final_arr - arr_initial) / arr_initial * 100 : nil
+  end
+
+  def avg_increase_pct
+    return nil if arr_initial <= 0
+
+    weighted = produit_deals.sum { |d| d.taux.to_f * d.arr.to_f }
+    weighted / arr_initial
+  end
 end

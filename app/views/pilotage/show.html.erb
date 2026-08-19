@@ -1,0 +1,174 @@
+<% content_for :title, "Vue globale — Pilotage NRR" %>
+
+<p class="section-title">Vue globale</p>
+<p class="section-sub">Vue consolidée pour suivre l'atteinte de l'objectif NRR (<%= PortfolioSummary::NRR_TARGET %>%) sur chaque portefeuille.</p>
+
+<% if current_user.admin? %>
+  <div class="toolbar">
+    <div class="spacer"></div>
+    <details>
+      <summary class="button">+ Nouvel AM</summary>
+      <div class="modal-box" style="margin:12px 0 0;">
+        <%= form_with model: User.new, url: users_path do |f| %>
+          <div class="modal-body">
+            <div class="modal-row">
+              <label>Nom
+                <%= f.text_field :name, required: true %>
+              </label>
+              <label>Email
+                <%= f.email_field :email, required: true %>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <span></span>
+            <%= f.submit "Ajouter l'AM", class: "button primary" %>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </div>
+<% end %>
+
+<div class="summary-cards">
+  <%= render "shared/summary_cards", summary: @global_summary %>
+</div>
+
+<div class="table-scroll">
+  <table class="am-table">
+    <thead>
+      <tr>
+        <th>AM</th>
+        <th>Nb deals</th>
+        <th>ARR initial</th>
+        <th>ARR churné</th>
+        <th>ARR upsellé</th>
+        <th>ARR renouvelé</th>
+        <th>ARR final</th>
+        <th>NRR %</th>
+        <th>Statut</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @am_rows.empty? %>
+        <tr><td colspan="10" class="empty-state">Aucun AM configuré.</td></tr>
+      <% else %>
+        <% @am_rows.each do |row| %>
+          <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+          <tr class="<%= ok ? "ok" : "below" %>">
+            <td><strong><%= am.name %></strong></td>
+            <td><%= s.count %></td>
+            <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+            <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
+            <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
+            <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+            <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
+            <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
+            <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
+            <td class="rowaction">
+              <% if current_user.admin? %>
+                <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
+                      form: { data: { turbo_confirm: "Désactiver #{am.name} ?" } } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="chart-wrap">
+  <h3>NRR par AM vs objectif (<%= PortfolioSummary::NRR_TARGET %>%)</h3>
+  <% max_scale = [PortfolioSummary::NRR_TARGET + 10, *@am_rows.map { |r| r[:summary].nrr }, 10].max %>
+  <% target_pct = PortfolioSummary::NRR_TARGET.to_f / max_scale * 100 %>
+  <% if @am_rows.empty? %>
+    <div class="empty-state">Aucune donnée à afficher.</div>
+  <% else %>
+    <% @am_rows.each do |row| %>
+      <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+      <% w = [[s.nrr / max_scale * 100, 0].max, 100].min %>
+      <div class="bar-row">
+        <div class="bar-label"><%= am.name %></div>
+        <div class="bar-track">
+          <div class="bar-fill <%= ok ? "ok" : "ko" %>" style="width:<%= w %>%"></div>
+          <div class="bar-target-line" style="left:<%= target_pct %>%"></div>
+        </div>
+        <div class="bar-value"><%= number_with_precision(s.nrr, precision: 1) %>%</div>
+      </div>
+    <% end %>
+  <% end %>
+  <div class="chart-legend">La ligne noire verticale représente l'objectif de <%= PortfolioSummary::NRR_TARGET %>%.</div>
+</div>
+
+<div class="chart-wrap">
+  <h3>Renouvellements : nouveau contrat vs augmentation</h3>
+  <div class="toolbar" style="margin-bottom:14px;">
+    <%= form_with url: pilotage_path, method: :get do %>
+      <label>AM :
+        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.active.order(:name), :id, :name, @renewal_am_id),
+              include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
+      </label>
+      <label>Produit :
+        <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
+              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+  <%= donut_chart(@renewal_donut) %>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Upsells en cours (tous AM)</h3>
+  </div>
+  <div class="toolbar" style="margin-bottom:14px;">
+    <%= form_with url: pilotage_path, method: :get do %>
+      <label>Produit :
+        <%= select_tag :upsell_produit, options_for_select(UpsellDeal::PRODUITS, @upsell_produit),
+              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+  <div class="summary-cards">
+    <div class="card"><div class="label">Nb upsells</div><div class="value"><%= @global_upsells.size %></div></div>
+    <div class="card"><div class="label">Montant ARR upsellé total</div><div class="value"><%= number_to_currency(@upsell_montant_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+    <div class="card"><div class="label">ARR projeté (selon % de chance)</div><div class="value"><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+    <div class="card"><div class="label">ARR upsellé à date (Signé)</div><div class="value" style="color:var(--green)"><%= number_to_currency(@upsell_signed_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+  </div>
+  <div class="table-scroll">
+    <table class="deals-table upsell-table">
+      <thead>
+        <tr>
+          <th>Nom du client</th>
+          <th>AM</th>
+          <th>Produit</th>
+          <th>Nb salariés</th>
+          <th>Montant ARR upsellé (€)</th>
+          <th>% de chance</th>
+          <th>Projection upsell (€)</th>
+          <th>Statut de signature</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @global_upsells.empty? %>
+          <tr><td colspan="8" class="empty-state">Aucun upsell pour ce filtre.</td></tr>
+        <% else %>
+          <% @global_upsells.each do |deal| %>
+            <tr>
+              <td><%= deal.company.name %></td>
+              <td><%= deal.company.user.name %></td>
+              <td><%= deal.produit %></td>
+              <td><%= deal.nombre_salaries %></td>
+              <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td><%= deal.probabilite_signature %>%</td>
+              <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td><%= deal.statut_signature %></td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

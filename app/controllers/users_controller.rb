@@ -5,9 +5,8 @@ class UsersController < ApplicationController
   # dependent: :restrict_with_error) — deactivating is the safe equivalent of the original's "delete AM".
   def create
     user = User.new(user_params)
-    user.password = user.password_confirmation = SecureRandom.hex(12)
     if user.save
-      redirect_to pilotage_path, notice: "#{user.name} ajouté. Il doit utiliser \"Mot de passe oublié\" à la connexion pour définir son mot de passe."
+      redirect_to pilotage_path, notice: "#{user.name} ajouté. Communiquez-lui son email et son mot de passe pour se connecter."
     else
       redirect_to pilotage_path, alert: user.errors.full_messages.to_sentence
     end
@@ -24,6 +23,6 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:name, :email)
+    params.require(:user).permit(:name, :email, :password, :password_confirmation)
   end
 end

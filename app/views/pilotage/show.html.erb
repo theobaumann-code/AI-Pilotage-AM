@@ -19,6 +19,14 @@
                 <%= f.email_field :email, required: true %>
               </label>
             </div>
+            <div class="modal-row">
+              <label>Mot de passe
+                <%= f.password_field :password, required: true, minlength: 6 %>
+              </label>
+              <label>Confirmation
+                <%= f.password_field :password_confirmation, required: true, minlength: 6 %>
+              </label>
+            </div>
           </div>
           <div class="modal-footer">
             <span></span>

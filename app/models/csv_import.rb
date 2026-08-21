@@ -16,6 +16,7 @@ class CsvImport
     "arr" => :arr,
     "tauxderenouvellementnegocie" => :taux, "tauxrenouvellementnegocie" => :taux, "tauxrenouvellement" => :taux, "taux" => :taux,
     "statutderenouvellement" => :statut_renouvellement, "statutrenouvellement" => :statut_renouvellement,
+    "college" => :college,
     "assureur" => :assureur,
     "churn" => :churn
   }.freeze
@@ -223,6 +224,16 @@ class CsvImport
           attrs[:assureur] = assureur_val
         else
           @warnings << "Ligne #{idx + 2} (#{row_label}) : assureur \"#{raw_assureur}\" non reconnu (attendu : #{ProduitDeal::ASSUREURS.join(" / ")}) — valeur ignorée pour cette ligne."
+        end
+      end
+
+      raw_college = obj[:college].to_s.strip
+      if raw_college.present?
+        college_val = ProduitDeal::COLLEGES.find { |c| normalize_loose(c) == normalize_loose(raw_college) }
+        if college_val
+          attrs[:college] = college_val
+        else
+          @warnings << "Ligne #{idx + 2} (#{row_label}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) — valeur ignorée pour cette ligne."
         end
       end
 

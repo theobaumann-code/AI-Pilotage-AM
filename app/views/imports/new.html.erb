@@ -18,6 +18,10 @@
         <input type="file" name="csv_file" accept=".csv,text/csv">
       </label>
     </div>
+    <div class="modal-row">
+      <%= link_to "⬇ Télécharger le modèle (Produits)", import_template_path(type: "produit"), class: "button" %>
+      <%= link_to "⬇ Télécharger le modèle (Upsells)", import_template_path(type: "upsell"), class: "button" %>
+    </div>
     <div class="modal-row" style="width:100%;">
       <label style="width:100%;">Ou collez le contenu CSV
         <textarea name="csv_text" rows="8" style="width:100%;font-family:monospace;"><%= @csv_text if @csv_text.present? %></textarea>
@@ -34,6 +38,7 @@
       <li><strong>Identifiant / SIREN</strong> — clé de correspondance, obligatoire</li>
       <li><strong>ARR</strong>, <strong>Taux de renouvellement négocié</strong></li>
       <li><strong>Statut de renouvellement</strong> — En cours / Nouveau contrat / Augmenté / Augmentation particulière / Churné</li>
+      <li><strong>Collège</strong> — <%= ProduitDeal::COLLEGES.join(" / ") %> ; facultatif, "<%= ProduitDeal::COLLEGES.first %>" par défaut si absent</li>
       <li><strong>Assureur</strong> — facultatif</li>
       <li><strong>AM</strong> — obligatoire, doit correspondre à un AM existant</li>
     </ul>

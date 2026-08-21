@@ -27,6 +27,12 @@
                 <%= f.password_field :password_confirmation, required: true, minlength: 6 %>
               </label>
             </div>
+            <div class="modal-row">
+              <label style="flex-direction:row;align-items:center;gap:8px;">
+                <%= f.check_box :admin %>
+                Administrateur (accès complet : import CSV, clôture d'année, gestion des AM...)
+              </label>
+            </div>
           </div>
           <div class="modal-footer">
             <span></span>
@@ -47,6 +53,7 @@
     <thead>
       <tr>
         <th>AM</th>
+        <th>Rôle</th>
         <th>Nb deals</th>
         <th>ARR initial</th>
         <th>ARR churné</th>
@@ -60,12 +67,20 @@
     </thead>
     <tbody>
       <% if @am_rows.empty? %>
-        <tr><td colspan="10" class="empty-state">Aucun AM configuré.</td></tr>
+        <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
       <% else %>
         <% @am_rows.each do |row| %>
           <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
           <tr class="<%= ok ? "ok" : "below" %>">
             <td><strong><%= am.name %></strong></td>
+            <td>
+              <span class="badge <%= am.admin? ? "ok" : "warn" %>"><%= am.admin? ? "Admin" : "AM" %></span>
+              <% if current_user.admin? %>
+                <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
+                      params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                      form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
+              <% end %>
+            </td>
             <td><%= s.count %></td>
             <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
             <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>

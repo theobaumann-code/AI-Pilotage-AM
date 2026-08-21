@@ -12,8 +12,28 @@ class UsersController < ApplicationController
     end
   end
 
+  # Toggles a user's admin flag. Guarded against removing the last active admin, so the app can never end
+  # up with nobody able to reach admin-only actions (including this one).
+  def update
+    user = User.find(params[:id])
+    new_admin = ActiveModel::Type::Boolean.new.cast(params[:admin])
+
+    if user.admin? && !new_admin && User.where(admin: true, active: true).count <= 1
+      return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
+    end
+
+    user.update!(admin: new_admin)
+    redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.admin? ? "administrateur" : "AM classique"}."
+  rescue ActiveRecord::RecordNotFound
+    redirect_to pilotage_path, alert: "AM introuvable."
+  end
+
   def destroy
     user = User.find(params[:id])
+    if user.admin? && User.where(admin: true, active: true).count <= 1
+      return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
+    end
+
     user.update!(active: false)
     redirect_to pilotage_path, notice: "#{user.name} désactivé."
   rescue ActiveRecord::RecordNotFound
@@ -23,6 +43,6 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :password_confirmation)
+    params.require(:user).permit(:name, :email, :password, :password_confirmation, :admin)
   end
 end

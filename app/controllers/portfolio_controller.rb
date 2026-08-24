@@ -20,11 +20,11 @@ class PortfolioController < ApplicationController
       }, default_sort: :nom)
 
     @ren_q = params[:ren_q].to_s.strip
-    @ren_produit = params[:ren_produit]
-    @ren_statut = params[:ren_statut]
+    @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
+    @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
     ren_rows = filter_by_name(@produit_deals, @ren_q) { |d| d.company.name }
-    ren_rows = ren_rows.select { |d| d.produit == @ren_produit } if @ren_produit.present?
-    ren_rows = ren_rows.select { |d| d.statut_renouvellement == @ren_statut } if @ren_statut.present?
+    ren_rows = ren_rows.select { |d| @ren_produits.include?(d.produit) } if @ren_produits.present?
+    ren_rows = ren_rows.select { |d| @ren_statuts.include?(d.statut_renouvellement) } if @ren_statuts.present?
     @ren_pager = TablePager.new(ren_rows, params: params, prefix: "ren",
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },
@@ -39,11 +39,11 @@ class PortfolioController < ApplicationController
       }, default_sort: :nom)
 
     @ups_q = params[:ups_q].to_s.strip
-    @ups_produit = params[:ups_produit]
-    @ups_statut = params[:ups_statut]
+    @ups_produits = Array(params[:ups_produits]).reject(&:blank?)
+    @ups_statuts = Array(params[:ups_statuts]).reject(&:blank?)
     ups_rows = filter_by_name(@upsell_deals, @ups_q) { |d| d.company.name }
-    ups_rows = ups_rows.select { |d| d.produit == @ups_produit } if @ups_produit.present?
-    ups_rows = ups_rows.select { |d| d.statut_signature == @ups_statut } if @ups_statut.present?
+    ups_rows = ups_rows.select { |d| @ups_produits.include?(d.produit) } if @ups_produits.present?
+    ups_rows = ups_rows.select { |d| @ups_statuts.include?(d.statut_signature) } if @ups_statuts.present?
     @ups_pager = TablePager.new(ups_rows, params: params, prefix: "ups",
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },

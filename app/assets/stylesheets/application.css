@@ -195,6 +195,16 @@ select.statut-select.statut-notstarted{background:var(--track-bg);color:var(--te
   background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237c6b63' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 10px center;
 }
 .table-toolbar-controls select{padding:8px 10px;}
+.table-toolbar-controls form{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filter-chip-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.filter-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;
+  color:var(--text-muted);cursor:pointer;user-select:none;white-space:nowrap;
+}
+.filter-chip:hover{background:var(--hover-tint);}
+.filter-chip input{margin:0;cursor:pointer;}
+.filter-chip:has(input:checked){background:var(--primary);border-color:var(--primary);color:#fff;}
 .page-size-label{font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:6px;white-space:nowrap;}
 .pagination-bar{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 2px;}
 .pagination-bar .page-info{font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap;}

@@ -64,6 +64,25 @@ module ApplicationHelper
     end
   end
 
+  # Auto-submits the enclosing form shortly after the user stops typing, so a table's search box filters
+  # live (inside its turbo-frame) without waiting for Enter or a button click.
+  def live_search_field(name, value)
+    search_field_tag(name, value, placeholder: "Rechercher une entreprise…", class: "table-search",
+      oninput: "clearTimeout(this._debounce); this._debounce = setTimeout(() => this.form.requestSubmit(), 350);")
+  end
+
+  # One pill-checkbox per option, wrapped in its own <label> so clicking anywhere on the pill toggles it;
+  # each checkbox submits its enclosing form immediately on change for a live filter feel.
+  def filter_chip_group(name, options, selected)
+    content_tag(:div, class: "filter-chip-group") do
+      safe_join(options.map { |opt|
+        content_tag(:label, class: "filter-chip") do
+          check_box_tag("#{name}[]", opt, selected.include?(opt), id: nil, onchange: "this.form.requestSubmit()") + opt
+        end
+      })
+    end
+  end
+
   def page_size_select(pager)
     form_with url: request.path, method: :get do
       safe_join([

@@ -29,121 +29,125 @@
 <%= render "shared/summary_cards", summary: @summary, dom_id: "portfolio-summary-cards" %>
 
 <div class="section-card">
-  <div class="table-toolbar">
-    <h3>Évolution de l'ARR par client</h3>
-    <div class="table-toolbar-controls">
-      <%= form_with url: request.path, method: :get do %>
-        <%= preserved_query_fields("evo_q", "evo_page") %>
-        <%= search_field_tag :evo_q, @evo_q, placeholder: "Rechercher une entreprise…", class: "table-search" %>
-      <% end %>
-    </div>
-  </div>
-  <p class="section-sub" style="margin-top:-8px;">Vue consolidée par client (tous produits confondus) : churn et taux de renouvellement de chaque produit + upsells signés.</p>
-  <div class="table-scroll">
-    <table class="deals-table client-evo-table">
-      <thead>
-        <tr>
-          <%= sortable_th(@evo_pager, :nom, "Nom du client", col_class: "col-nom") %>
-          <%= sortable_th(@evo_pager, :arr_initial, "ARR initial", col_class: "col-arr") %>
-          <%= sortable_th(@evo_pager, :churned, "ARR churné", col_class: "col-arr") %>
-          <%= sortable_th(@evo_pager, :avg_increase_pct, "Augmentation moyenne", col_class: "col-taux") %>
-          <%= sortable_th(@evo_pager, :upsold, "ARR upsellé", col_class: "col-arr") %>
-          <%= sortable_th(@evo_pager, :final_arr, "ARR final", col_class: "col-final") %>
-          <%= sortable_th(@evo_pager, :evolution_pct, "Évolution ARR", col_class: "col-evolution") %>
-          <th class="col-action"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @evo_pager.records.empty? %>
-          <tr><td colspan="8" class="empty-state">Aucun client pour le moment.</td></tr>
-        <% else %>
-          <%= render partial: "companies/evolution_row", collection: @evo_pager.records, as: :company %>
+  <%= turbo_frame_tag "evo-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>Évolution de l'ARR par client</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("evo_q", "evo_page") %>
+          <%= live_search_field :evo_q, @evo_q %>
         <% end %>
-      </tbody>
-    </table>
-  </div>
-  <%= pagination_controls(@evo_pager) %>
-  <%= page_size_select(@evo_pager) %>
+      </div>
+    </div>
+    <p class="section-sub" style="margin-top:-8px;">Vue consolidée par client (tous produits confondus) : churn et taux de renouvellement de chaque produit + upsells signés.</p>
+    <div class="table-scroll">
+      <table class="deals-table client-evo-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@evo_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@evo_pager, :arr_initial, "ARR initial", col_class: "col-arr") %>
+            <%= sortable_th(@evo_pager, :churned, "ARR churné", col_class: "col-arr") %>
+            <%= sortable_th(@evo_pager, :avg_increase_pct, "Augmentation moyenne", col_class: "col-taux") %>
+            <%= sortable_th(@evo_pager, :upsold, "ARR upsellé", col_class: "col-arr") %>
+            <%= sortable_th(@evo_pager, :final_arr, "ARR final", col_class: "col-final") %>
+            <%= sortable_th(@evo_pager, :evolution_pct, "Évolution ARR", col_class: "col-evolution") %>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @evo_pager.records.empty? %>
+            <tr><td colspan="8" class="empty-state">Aucun client pour le moment.</td></tr>
+          <% else %>
+            <%= render partial: "companies/evolution_row", collection: @evo_pager.records, as: :company %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@evo_pager) %>
+    <%= page_size_select(@evo_pager) %>
+  <% end %>
 </div>
 
 <div class="section-card">
-  <div class="table-toolbar">
-    <h3>Taux de renouvellement et churn</h3>
-    <div class="table-toolbar-controls">
-      <%= form_with url: request.path, method: :get do %>
-        <%= preserved_query_fields("ren_q", "ren_produit", "ren_statut", "ren_page") %>
-        <%= search_field_tag :ren_q, @ren_q, placeholder: "Rechercher une entreprise…", class: "table-search" %>
-        <%= select_tag :ren_produit, options_for_select([["Tous les produits", ""]] + ProduitDeal::PRODUITS, @ren_produit), onchange: "this.form.requestSubmit()" %>
-        <%= select_tag :ren_statut, options_for_select([["Tous les statuts", ""]] + ProduitDeal::STATUTS_RENOUVELLEMENT, @ren_statut), onchange: "this.form.requestSubmit()" %>
-        <%= submit_tag "Rechercher", class: "button" %>
-      <% end %>
-    </div>
-  </div>
-  <div class="table-scroll">
-    <table class="deals-table renewal-table">
-      <thead>
-        <tr>
-          <%= sortable_th(@ren_pager, :nom, "Nom du client", col_class: "col-nom") %>
-          <%= sortable_th(@ren_pager, :produit, "Produit", col_class: "col-produit") %>
-          <%= sortable_th(@ren_pager, :college, "Collège", col_class: "col-college") %>
-          <%= sortable_th(@ren_pager, :assureur, "Assureur", col_class: "col-assureur") %>
-          <%= sortable_th(@ren_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
-          <%= sortable_th(@ren_pager, :arr, "ARR (€)", col_class: "col-arr") %>
-          <%= sortable_th(@ren_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
-          <%= sortable_th(@ren_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
-          <%= sortable_th(@ren_pager, :final_arr, "ARR final", col_class: "col-final") %>
-          <th class="col-action"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @ren_pager.records.empty? %>
-          <tr><td colspan="10" class="empty-state">Aucun produit pour le moment.</td></tr>
-        <% else %>
-          <%= render partial: "deals/produit_row", collection: @ren_pager.records, as: :deal %>
+  <%= turbo_frame_tag "ren-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>Taux de renouvellement et churn</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("ren_q", "ren_produits", "ren_statuts", "ren_page") %>
+          <%= live_search_field :ren_q, @ren_q %>
+          <%= filter_chip_group(:ren_produits, ProduitDeal::PRODUITS, @ren_produits) %>
+          <%= filter_chip_group(:ren_statuts, ProduitDeal::STATUTS_RENOUVELLEMENT, @ren_statuts) %>
         <% end %>
-      </tbody>
-    </table>
-  </div>
-  <%= pagination_controls(@ren_pager) %>
-  <%= page_size_select(@ren_pager) %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table renewal-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ren_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@ren_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@ren_pager, :college, "Collège", col_class: "col-college") %>
+            <%= sortable_th(@ren_pager, :assureur, "Assureur", col_class: "col-assureur") %>
+            <%= sortable_th(@ren_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <%= sortable_th(@ren_pager, :arr, "ARR (€)", col_class: "col-arr") %>
+            <%= sortable_th(@ren_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
+            <%= sortable_th(@ren_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
+            <%= sortable_th(@ren_pager, :final_arr, "ARR final", col_class: "col-final") %>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ren_pager.records.empty? %>
+            <tr><td colspan="10" class="empty-state">Aucun produit pour le moment.</td></tr>
+          <% else %>
+            <%= render partial: "deals/produit_row", collection: @ren_pager.records, as: :deal %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@ren_pager) %>
+    <%= page_size_select(@ren_pager) %>
+  <% end %>
 </div>
 
 <div class="section-card">
-  <div class="table-toolbar">
-    <h3>Upsells</h3>
-    <div class="table-toolbar-controls">
-      <%= form_with url: request.path, method: :get do %>
-        <%= preserved_query_fields("ups_q", "ups_produit", "ups_statut", "ups_page") %>
-        <%= search_field_tag :ups_q, @ups_q, placeholder: "Rechercher une entreprise…", class: "table-search" %>
-        <%= select_tag :ups_produit, options_for_select([["Tous les produits", ""]] + UpsellDeal::PRODUITS, @ups_produit), onchange: "this.form.requestSubmit()" %>
-        <%= select_tag :ups_statut, options_for_select([["Tous les statuts", ""]] + UpsellDeal::STATUTS_SIGNATURE, @ups_statut), onchange: "this.form.requestSubmit()" %>
-        <%= submit_tag "Rechercher", class: "button" %>
-      <% end %>
-    </div>
-  </div>
-  <div class="table-scroll">
-    <table class="deals-table upsell-table">
-      <thead>
-        <tr>
-          <%= sortable_th(@ups_pager, :nom, "Nom du client", col_class: "col-nom") %>
-          <%= sortable_th(@ups_pager, :produit, "Produit", col_class: "col-produit") %>
-          <%= sortable_th(@ups_pager, :nombre_salaries, "Nb salariés", col_class: "col-salaries") %>
-          <%= sortable_th(@ups_pager, :upsell_amount, "Montant ARR upsellé (€)", col_class: "col-upsell-amount") %>
-          <%= sortable_th(@ups_pager, :probabilite_signature, "% de chance", col_class: "col-proba") %>
-          <%= sortable_th(@ups_pager, :projection, "Projection upsell (€)", col_class: "col-projection") %>
-          <%= sortable_th(@ups_pager, :statut_signature, "Statut de signature", col_class: "col-signed") %>
-          <th class="col-action"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @ups_pager.records.empty? %>
-          <tr><td colspan="8" class="empty-state">Aucun upsell pour le moment.</td></tr>
-        <% else %>
-          <%= render partial: "deals/upsell_row", collection: @ups_pager.records, as: :deal %>
+  <%= turbo_frame_tag "ups-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>Upsells</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("ups_q", "ups_produits", "ups_statuts", "ups_page") %>
+          <%= live_search_field :ups_q, @ups_q %>
+          <%= filter_chip_group(:ups_produits, UpsellDeal::PRODUITS, @ups_produits) %>
+          <%= filter_chip_group(:ups_statuts, UpsellDeal::STATUTS_SIGNATURE, @ups_statuts) %>
         <% end %>
-      </tbody>
-    </table>
-  </div>
-  <%= pagination_controls(@ups_pager) %>
-  <%= page_size_select(@ups_pager) %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table upsell-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ups_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@ups_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@ups_pager, :nombre_salaries, "Nb salariés", col_class: "col-salaries") %>
+            <%= sortable_th(@ups_pager, :upsell_amount, "Montant ARR upsellé (€)", col_class: "col-upsell-amount") %>
+            <%= sortable_th(@ups_pager, :probabilite_signature, "% de chance", col_class: "col-proba") %>
+            <%= sortable_th(@ups_pager, :projection, "Projection upsell (€)", col_class: "col-projection") %>
+            <%= sortable_th(@ups_pager, :statut_signature, "Statut de signature", col_class: "col-signed") %>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ups_pager.records.empty? %>
+            <tr><td colspan="8" class="empty-state">Aucun upsell pour le moment.</td></tr>
+          <% else %>
+            <%= render partial: "deals/upsell_row", collection: @ups_pager.records, as: :deal %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@ups_pager) %>
+    <%= page_size_select(@ups_pager) %>
+  <% end %>
 </div>

@@ -15,8 +15,10 @@ class ProduitDeal < Deal
   # ArchiveEntry is a completely separate table/model, never a Deal — this can never see archived years,
   # exactly matching the original's "identifiant reuse after churn" allowance.
   validates :identifiant, uniqueness: { scope: :produit, case_sensitive: false }, allow_blank: true
-  # Rule 2: at most one produit+collège combo per company.
-  validates :college, uniqueness: { scope: [:company_id, :produit] }, if: :college?
+  # Rule 2: at most one produit+collège+assureur combo per company — a company MAY have several
+  # contracts for the same produit+collège as long as each is with a different insurer (e.g. Mutuelle/
+  # Cadre with AXA and Mutuelle/Cadre with Allianz side by side). Only an exact duplicate is rejected.
+  validates :college, uniqueness: { scope: [:company_id, :produit, :assureur] }, if: :college?
 
   before_validation :apply_business_rules
 

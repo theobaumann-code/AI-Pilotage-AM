@@ -172,7 +172,7 @@
 <div class="chart-wrap">
   <h3>Historique du taux de renouvellement</h3>
   <%= line_chart(@years.sort, @taux_chart, 0) %>
-  <div class="chart-legend">Respecte les filtres ci-dessus. Avec une entreprise sélectionnée : la courbe de cette entreprise. Sans entreprise sélectionnée : une courbe par produit, moyenne pondérée par l'ARR sur toutes les entreprises.</div>
+  <div class="chart-legend">Respecte les filtres ci-dessus. Une courbe par produit, moyenne pondérée par l'ARR (sur tous les contrats concernés — utile si une entreprise a plusieurs contrats du même produit avec des assureurs différents).</div>
 </div>
 
 <div class="chart-wrap">

@@ -37,27 +37,25 @@ class HistoriqueQuery
     @rows ||= (archived_rows + live_rows).sort_by { |r| [r.nom, r.produit, r.annee] }
   end
 
-  # Original bug fixed here: with exactly one entreprise selected, plot that entreprise's own taux per
-  # year directly instead of an ARR-weighted average (which is meaningless over a single company).
+  # ARR-weighted average per produit+year, always — including with a single entreprise selected. A
+  # company can hold several contracts for the same produit (different collèges and/or, since the
+  # collège+assureur rule change, different assureurs too), so picking just one row's taux by
+  # overwriting the others (the original app's behavior, ported and then "fixed" here once already) was
+  # never correct even before that rule change; weighting degenerates cleanly to a single row's own taux
+  # when there's only one.
   def taux_series(years)
-    if @noms.size == 1
-      by_produit = Hash.new { |h, k| h[k] = {} }
-      rows.each { |r| by_produit[r.produit][r.annee] = r.taux.to_f }
-      ProduitDeal::PRODUITS.map { |p| { label: p, points: years.map { |y| by_produit[p][y] } } }
-    else
-      agg = Hash.new { |h, k| h[k] = {} }
-      rows.each do |r|
-        a = (agg[r.produit][r.annee] ||= { sum_taux_arr: 0.0, sum_arr: 0.0 })
-        a[:sum_taux_arr] += r.taux.to_f * r.arr.to_f
-        a[:sum_arr] += r.arr.to_f
+    agg = Hash.new { |h, k| h[k] = {} }
+    rows.each do |r|
+      a = (agg[r.produit][r.annee] ||= { sum_taux_arr: 0.0, sum_arr: 0.0 })
+      a[:sum_taux_arr] += r.taux.to_f * r.arr.to_f
+      a[:sum_arr] += r.arr.to_f
+    end
+    ProduitDeal::PRODUITS.map do |p|
+      points = years.map do |y|
+        a = agg[p][y]
+        a && a[:sum_arr] > 0 ? a[:sum_taux_arr] / a[:sum_arr] : nil
       end
-      ProduitDeal::PRODUITS.map do |p|
-        points = years.map do |y|
-          a = agg[p][y]
-          a && a[:sum_arr] > 0 ? a[:sum_taux_arr] / a[:sum_arr] : nil
-        end
-        { label: p, points: points }
-      end
+      { label: p, points: points }
     end
   end
 

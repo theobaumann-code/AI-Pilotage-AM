@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_19_084623) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_140327) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -69,7 +69,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_19_084623) do
     t.decimal "taux", precision: 6, scale: 2, default: "0.0", null: false
     t.string "type", null: false
     t.datetime "updated_at", null: false
-    t.index ["company_id", "produit", "college"], name: "index_deals_on_company_produit_college", unique: true, where: "((type)::text = 'ProduitDeal'::text)"
+    t.index ["company_id", "produit", "college", "assureur"], name: "index_deals_on_company_produit_college_assureur", unique: true, where: "((type)::text = 'ProduitDeal'::text)"
     t.index ["company_id"], name: "index_deals_on_company_id"
     t.index ["produit", "identifiant"], name: "index_deals_on_produit_and_identifiant_active", unique: true, where: "(((type)::text = 'ProduitDeal'::text) AND (identifiant IS NOT NULL))"
   end

@@ -50,9 +50,9 @@ class ProduitDealTest < ActiveSupport::TestCase
     assert fresh.valid?, "identifiant reuse should be allowed once the prior deal is archived (not active)"
   end
 
-  test "rejects a second produit+collège combo for the same company" do
-    build_deal(college: "Cadre").save!
-    dup = build_deal(identifiant: "different-id", college: "Cadre")
+  test "rejects a second produit+collège+assureur combo for the same company" do
+    build_deal(college: "Cadre", assureur: "AXA").save!
+    dup = build_deal(identifiant: "different-id", college: "Cadre", assureur: "AXA")
     assert_not dup.valid?
     assert_includes dup.errors[:college], "has already been taken"
   end
@@ -61,6 +61,14 @@ class ProduitDealTest < ActiveSupport::TestCase
     build_deal(college: "Cadre", identifiant: "id-1").save!
     other_college = build_deal(college: "Non cadre", identifiant: "id-2")
     assert other_college.valid?
+  end
+
+  # Rule change: a company may hold several contracts for the same produit+collège as long as each is
+  # with a different insurer (e.g. split across two insurers for the same population segment).
+  test "allows the same produit+collège for the same company when the assureur differs" do
+    build_deal(college: "Cadre", assureur: "AXA", identifiant: "id-1").save!
+    other_assureur = build_deal(college: "Cadre", assureur: "Allianz", identifiant: "id-2")
+    assert other_assureur.valid?
   end
 
   test "churn always forces taux to 0" do

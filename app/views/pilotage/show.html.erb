@@ -35,7 +35,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <span></span>
+            <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
             <%= f.submit "Ajouter l'AM", class: "button primary" %>
           </div>
         <% end %>

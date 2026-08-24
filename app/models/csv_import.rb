@@ -59,6 +59,11 @@ class CsvImport
     !@conflict && (to_create.any? || to_update.any?)
   end
 
+  # Raised (and caught) inside apply! only — carries a row-level message back out of the transaction
+  # instead of letting a bare ActiveRecord::RecordInvalid bubble all the way up to a blank 422 page with
+  # no indication of which row, or why, the whole import got rolled back.
+  ApplyError = Class.new(StandardError)
+
   def apply!(admin_user:)
     return false unless valid_for_apply?
 
@@ -68,6 +73,8 @@ class CsvImport
         company = deal.company
         deal.update!(u.attrs)
         reassign_company(company, u.am_name) if u.am_name && company.user.name != u.am_name
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+        raise ApplyError, "#{u.company_name} : #{e.message}"
       end
       to_create.each do |c|
         am = User.active.find_by(name: c.am_name)
@@ -75,9 +82,14 @@ class CsvImport
         reassign_company(company, c.am_name) if company.user.name != c.am_name
         klass = deal_type == "upsell" ? UpsellDeal : ProduitDeal
         klass.create!(c.attrs.merge(company: company))
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+        raise ApplyError, "#{c.company_name} : #{e.message}"
       end
     end
     true
+  rescue ApplyError => e
+    @errors << "Import interrompu, rien n'a été enregistré : #{e.message}"
+    false
   end
 
   private

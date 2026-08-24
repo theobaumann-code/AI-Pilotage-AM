@@ -56,7 +56,8 @@
   </td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
-      <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, {}, onchange: "this.form.requestSubmit()" %>
+      <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, {},
+            class: "statut-select #{renewal_statut_class(deal.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>

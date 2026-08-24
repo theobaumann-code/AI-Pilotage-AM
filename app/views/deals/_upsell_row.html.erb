@@ -10,18 +10,19 @@
       <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
+  <td class="computed"><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
       <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.signed?, onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
+  <td class="computed"><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
-      <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {}, onchange: "this.form.requestSubmit()" %>
+      <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {},
+            class: "statut-select #{signature_statut_class(deal.statut_signature)}", onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
-  <td class="computed"><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
-  <td class="computed"><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction">
     <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
           form: { data: { turbo_confirm: "Supprimer cet upsell ?" } } %>

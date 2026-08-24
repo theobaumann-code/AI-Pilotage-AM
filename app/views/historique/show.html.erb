@@ -122,47 +122,7 @@
         <% if @rows.empty? %>
           <tr><td colspan="8" class="empty-state"><%= @years.empty? ? "Sélectionnez au moins une année." : "Aucune donnée pour l'instant." %></td></tr>
         <% else %>
-          <% @rows.each do |r| %>
-            <% editable = !r.is_live && current_user.admin? %>
-            <tr class="<%= "churn-yes" if r.churned? %>">
-              <td><%= r.nom %></td>
-              <td><%= r.am || "—" %></td>
-              <td><%= r.produit %></td>
-              <td><%= r.annee %></td>
-              <td>
-                <% if editable %>
-                  <%= form_with scope: :archive_entry, url: archive_entry_path(r.id), method: :patch do |f| %>
-                    <%= f.number_field :arr, value: r.arr, min: 0, step: 100, style: "width:110px;", onchange: "this.form.requestSubmit()" %>
-                  <% end %>
-                <% else %>
-                  <%= number_to_currency(r.arr, unit: "€", format: "%n %u", precision: 0) %>
-                <% end %>
-              </td>
-              <td>
-                <% if editable %>
-                  <%= form_with scope: :archive_entry, url: archive_entry_path(r.id), method: :patch do |f| %>
-                    <%= f.number_field :taux, value: r.taux, step: 0.5, style: "width:80px;", disabled: r.churned?, onchange: "this.form.requestSubmit()" %>
-                  <% end %>
-                <% else %>
-                  <% if r.churned? %>
-                    —
-                  <% else %>
-                    <span style="color:<%= r.taux.to_f >= 0 ? "var(--green)" : "var(--red)" %>"><%= r.taux.to_f >= 0 ? "+" : "" %><%= r.taux.to_f %>%</span>
-                  <% end %>
-                <% end %>
-              </td>
-              <td>
-                <% if editable %>
-                  <%= form_with scope: :archive_entry, url: archive_entry_path(r.id), method: :patch do |f| %>
-                    <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, { selected: r.statut_renouvellement }, onchange: "this.form.requestSubmit()" %>
-                  <% end %>
-                <% else %>
-                  <%= r.statut_renouvellement %>
-                <% end %>
-              </td>
-              <td><%= r.arr_renouvele.nil? ? "—" : number_to_currency(r.arr_renouvele, unit: "€", format: "%n %u", precision: 0) %></td>
-            </tr>
-          <% end %>
+          <%= render partial: "row", collection: @rows, as: :r %>
         <% end %>
       </tbody>
     </table>

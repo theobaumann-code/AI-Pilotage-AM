@@ -17,11 +17,32 @@ class DealsController < ApplicationController
     end
   end
 
+  # Inline edits respond with turbo_streams that replace this row, its company's "Évolution ARR" row, and
+  # the summary cards, all in place — so changing a field never scrolls the page back to the top, loses
+  # whatever the admin had scrolled/filtered to, or leaves the totals momentarily inconsistent with the
+  # row that just changed. A plain redirect (still used for non-Turbo requests) reloads the whole page.
   def update
+    row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
+
     if @deal.update(update_params)
-      redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: "Modifié."
+      respond_to do |format|
+        format.turbo_stream do
+          owner = portfolio_owner
+          streams = [
+            turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
+            turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
+            turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
+              locals: { summary: PortfolioSummary.new(owner.companies.includes(:deals)), dom_id: "portfolio-summary-cards" })
+          ]
+          render turbo_stream: streams
+        end
+        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: "Modifié." }
+      end
     else
-      redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: @deal.errors.full_messages.to_sentence
+      respond_to do |format|
+        format.turbo_stream { head :unprocessable_entity }
+        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: @deal.errors.full_messages.to_sentence }
+      end
     end
   end
 
@@ -46,6 +67,18 @@ class DealsController < ApplicationController
     scoped_company(@deal.company_id)
   rescue ActiveRecord::RecordNotFound
     redirect_to portfolio_path, alert: "Élément introuvable."
+  end
+
+  # Same "which AM's portfolio is this" resolution as ApplicationController#viewed_user, but keyed off
+  # redirect_user_id (what this controller's forms actually carry) instead of user_id.
+  def portfolio_owner
+    if current_user.admin? && params[:redirect_user_id].present?
+      User.active.find(params[:redirect_user_id])
+    else
+      current_user
+    end
+  rescue ActiveRecord::RecordNotFound
+    current_user
   end
 
   def deal_class

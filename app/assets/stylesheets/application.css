@@ -166,6 +166,8 @@ tbody input:hover, tbody select:hover{border-color:var(--border);}
 tbody input:focus, tbody select:focus{border-color:var(--primary);outline:none;background:#fff;}
 tbody input[type=number]{text-align:right;}
 tbody input:disabled, tbody select:disabled{opacity:.5;background:#f3f4f7;cursor:not-allowed;}
+tbody input.field-locked{background:#f3f4f7;color:var(--text-muted);cursor:pointer;}
+tbody input.field-locked:hover{background:#e9ebef;border-color:var(--border);}
 td.computed{font-weight:700;white-space:nowrap;}
 td.rowaction{width:36px;text-align:center;}
 .icon-btn{border:none;background:none;color:var(--text-muted);font-size:15px;padding:4px 6px;border-radius:6px;}

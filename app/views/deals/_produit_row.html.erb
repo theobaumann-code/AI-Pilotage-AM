@@ -1,6 +1,8 @@
 <%# Each editable cell owns its own tiny <form> (a <form> spanning multiple <td>s is invalid HTML and
-    browsers silently break the table layout) — auto-submitted on change for an inline-edit feel. %>
-<tr class="<%= "churn-yes" if deal.churned? %>">
+    browsers silently break the table layout) — submitted on change for an inline-edit feel, and answered
+    with a turbo_stream that swaps just this <tr> back in, so editing never scrolls the page or loses
+    whatever filters/scroll position the admin was at. %>
+<tr id="<%= dom_id(deal) %>" class="<%= "churn-yes" if deal.churned? %>">
   <td><strong><%= deal.company.name %></strong></td>
   <td>
     <% if current_user.admin? %>
@@ -32,7 +34,7 @@
   <td>
     <% if current_user.admin? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
-        <%= f.text_field :identifiant, onchange: "this.form.requestSubmit()" %>
+        <%= f.text_field :identifiant, **locked_field_attrs("Confirmer la modification de l'ID externe ?") %>
       <% end %>
     <% else %>
       <%= deal.identifiant %>
@@ -41,7 +43,7 @@
   <td>
     <% if current_user.admin? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
-        <%= f.number_field :arr, step: "0.01", onchange: "this.form.requestSubmit()" %>
+        <%= f.number_field :arr, step: "0.01", **locked_field_attrs("Confirmer la modification de l'ARR ?") %>
       <% end %>
     <% else %>
       <%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %>

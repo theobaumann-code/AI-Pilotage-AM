@@ -1,25 +1,27 @@
 <% status_ok = summary.nrr >= PortfolioSummary::NRR_TARGET %>
-<div class="card">
-  <div class="label">ARR initial</div>
-  <div class="value"><%= number_to_currency(summary.arr_initial, unit: "€", format: "%n %u", precision: 0) %></div>
-</div>
-<div class="card">
-  <div class="label">ARR churné</div>
-  <div class="value" style="color:var(--red)"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %></div>
-</div>
-<div class="card">
-  <div class="label">ARR upsellé</div>
-  <div class="value" style="color:var(--green)"><%= number_to_currency(summary.upsold, unit: "€", format: "%n %u", precision: 0) %></div>
-</div>
-<div class="card">
-  <div class="label">ARR final</div>
-  <div class="value"><%= number_to_currency(summary.arr_final, unit: "€", format: "%n %u", precision: 0) %></div>
-</div>
-<div class="card nrr">
-  <div class="label">NRR</div>
-  <div class="value"><%= number_with_precision(summary.nrr, precision: 1) %>%</div>
-  <span class="badge <%= status_ok ? "ok" : "ko" %>"><%= status_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
-  <div class="progress-track">
-    <div class="progress-fill" style="width:<%= [summary.nrr, 100].min %>%; background:<%= status_ok ? "var(--green)" : "var(--red)" %>"></div>
+<div class="summary-cards" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
+  <div class="card">
+    <div class="label">ARR initial</div>
+    <div class="value"><%= number_to_currency(summary.arr_initial, unit: "€", format: "%n %u", precision: 0) %></div>
+  </div>
+  <div class="card">
+    <div class="label">ARR churné</div>
+    <div class="value" style="color:var(--red)"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %></div>
+  </div>
+  <div class="card">
+    <div class="label">ARR upsellé</div>
+    <div class="value" style="color:var(--green)"><%= number_to_currency(summary.upsold, unit: "€", format: "%n %u", precision: 0) %></div>
+  </div>
+  <div class="card">
+    <div class="label">ARR final</div>
+    <div class="value"><%= number_to_currency(summary.arr_final, unit: "€", format: "%n %u", precision: 0) %></div>
+  </div>
+  <div class="card nrr">
+    <div class="label">NRR</div>
+    <div class="value"><%= number_with_precision(summary.nrr, precision: 1) %>%</div>
+    <span class="badge <%= status_ok ? "ok" : "ko" %>"><%= status_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:<%= [summary.nrr, 100].min %>%; background:<%= status_ok ? "var(--green)" : "var(--red)" %>"></div>
+    </div>
   </div>
 </div>

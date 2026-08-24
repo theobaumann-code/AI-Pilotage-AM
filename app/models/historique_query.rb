@@ -13,6 +13,16 @@ class HistoriqueQuery
     def arr_renouvele
       churned? ? nil : arr.to_f * (1 + taux.to_f / 100)
     end
+
+    def dom_id
+      "historique_row_#{is_live ? "live" : "archive"}_#{id}"
+    end
+
+    def self.from_archive_entry(a)
+      new(id: a.id, nom: a.company_name, am: a.am_name, produit: a.produit, identifiant: a.identifiant,
+        assureur: a.assureur, annee: a.year, arr: a.arr, taux: a.taux,
+        statut_renouvellement: a.statut_renouvellement, is_live: false)
+    end
   end
 
   STATUT_COLORS = {
@@ -105,11 +115,7 @@ class HistoriqueQuery
     scope = scope.where(statut_renouvellement: @statuts) if @statuts.any?
     scope = scope.where(am_name: @ams) if @ams.any?
     scope = scope.where(assureur: @assureurs) if @assureurs.any?
-    scope.map do |a|
-      Row.new(id: a.id, nom: a.company_name, am: a.am_name, produit: a.produit, identifiant: a.identifiant,
-        assureur: a.assureur, annee: a.year, arr: a.arr, taux: a.taux,
-        statut_renouvellement: a.statut_renouvellement, is_live: false)
-    end
+    scope.map { |a| Row.from_archive_entry(a) }
   end
 
   def live_rows

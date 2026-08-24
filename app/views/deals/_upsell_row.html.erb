@@ -1,4 +1,4 @@
-<tr>
+<tr id="<%= dom_id(deal) %>">
   <td><strong><%= deal.company.name %></strong></td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>

@@ -126,16 +126,34 @@ class CsvImport
     h.to_s.unicode_normalize(:nfd).gsub(/[̀-ͯ]/, "").downcase.gsub(/[^a-z0-9]/, "")
   end
 
+  # Trailing "s" stripped so a plural typed by hand ("Cadres", "Non Cadres") still matches the
+  # singular catalog value ("Cadre", "Non cadre") — applied on both sides of every comparison, so it
+  # never lets through a value that wouldn't otherwise match.
   def normalize_loose(s)
-    s.to_s.unicode_normalize(:nfd).gsub(/[̀-ͯ]/, "").downcase.gsub(/\s/, "")
+    s.to_s.unicode_normalize(:nfd).gsub(/[̀-ͯ]/, "").downcase.gsub(/\s/, "").sub(/s\z/, "")
   end
 
+  # Accepts plain numbers, French decimal commas, and thousands separators in either French (space,
+  # non-breaking space, or dot) or Anglo-Saxon (comma) style — Excel exports commonly use a non-breaking
+  # space (U+00A0/U+202F) for the latter, which a plain \s regex silently fails to strip.
   def normalize_number(v)
     return nil if v.nil?
     t = v.to_s.strip
     return nil if t.empty?
-    cleaned = t.gsub(/\s/, "").gsub("€", "").sub(",", ".")
-    Float(cleaned, exception: false)
+    t = t.gsub(/[€\s  ]/, "")
+    return nil if t.empty?
+
+    last_comma = t.rindex(",")
+    last_dot = t.rindex(".")
+    if last_comma && last_dot
+      t = last_comma > last_dot ? t.delete(".").sub(",", ".") : t.delete(",")
+    elsif last_comma
+      t = t.count(",") > 1 || t =~ /,\d{3}\z/ ? t.delete(",") : t.sub(",", ".")
+    elsif last_dot
+      t = t.delete(".") if t.count(".") > 1 || t =~ /\.\d{3}\z/
+    end
+
+    Float(t, exception: false)
   end
 
   def normalize_bool(v)

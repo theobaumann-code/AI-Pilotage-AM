@@ -36,13 +36,14 @@
       <li><strong>Nom</strong></li>
       <li><strong>Produit</strong> — Mutuelle ou Prévoyance uniquement</li>
       <li><strong>Identifiant / SIREN</strong> — clé de correspondance, obligatoire</li>
-      <li><strong>ARR</strong>, <strong>Taux de renouvellement négocié</strong></li>
+      <li><strong>ARR</strong>, <strong>Taux de renouvellement négocié</strong> — nombres acceptés sous presque n'importe quelle forme : "10000", "10000,50", "10 000", "10.000,50", "10,000.50"… (séparateur de milliers espace/point/virgule, décimales avec virgule ou point, "€" ignoré)</li>
       <li><strong>Statut de renouvellement</strong> — En cours / Nouveau contrat / Augmenté / Augmentation particulière / Churné</li>
       <li><strong>Collège</strong> — <%= ProduitDeal::COLLEGES.join(" / ") %> ; facultatif, "<%= ProduitDeal::COLLEGES.first %>" par défaut si absent</li>
       <li><strong>Assureur</strong> — facultatif</li>
       <li><strong>AM</strong> — obligatoire, doit correspondre à un AM existant</li>
     </ul>
     <p style="margin:0 0 6px;">Pour un import <strong>Upsell</strong> : Nom, Produit, Nb salariés, % de chance, Statut, AM (aucun identifiant nécessaire).</p>
+    <p style="margin:0 0 6px;">Les valeurs de Produit / Collège / Assureur / Statut tolèrent aussi le pluriel ("Cadres", "Non Cadres"…).</p>
     <p style="margin:0;">La colonne AM détermine l'AM de chaque ligne — un même fichier peut mélanger plusieurs portefeuilles. Si une entreprise apparaît avec des AM différents, tout le fichier est rejeté. Une ligne dont la clé existe déjà met à jour le deal existant (et réaffecte l'entreprise si l'AM diffère) ; sinon un nouveau deal est créé.</p>
   </div>
 </div>

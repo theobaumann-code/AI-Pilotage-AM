@@ -100,7 +100,7 @@ class DealsController < ApplicationController
       else
         current_user
       end
-      Company.find_or_create_by!(name: params[:new_company_name].strip) { |c| c.user = owner }
+      Company.find_or_create_by_name!(params[:new_company_name], user: owner)
     end
   rescue ActiveRecord::RecordNotFound
     nil

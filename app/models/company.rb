@@ -7,6 +7,16 @@ class Company < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 
+  # A plain find_or_create_by!(name: ...) looks up by an exact, case-sensitive match — given the model's
+  # own uniqueness rule (and its "lower(name)" DB index) is case-insensitive, that mismatch meant a name
+  # differing only by case from an existing company (e.g. a CSV row spelling it "CARON SERVICES" against
+  # an existing "Caron Services") would miss the lookup, then fail to insert a "duplicate" instead of
+  # attaching to the company that was actually already there.
+  def self.find_or_create_by_name!(name, user:)
+    name = name.to_s.strip
+    find_by("lower(name) = ?", name.downcase) || create!(name: name, user: user)
+  end
+
   # The only way a company's AM ever changes — Deal never carries its own AM field, so this single
   # assignment is what "one company = one AM" means structurally (see original's reassignClientAM,
   # which had to manually walk every deal; here there's nothing else to update).

@@ -78,7 +78,7 @@ class CsvImport
       end
       to_create.each do |c|
         am = User.active.find_by(name: c.am_name)
-        company = Company.find_or_create_by!(name: c.company_name) { |co| co.user = am }
+        company = Company.find_or_create_by_name!(c.company_name, user: am)
         reassign_company(company, c.am_name) if company.user.name != c.am_name
         klass = deal_type == "upsell" ? UpsellDeal : ProduitDeal
         klass.create!(c.attrs.merge(company: company))
@@ -100,23 +100,27 @@ class CsvImport
   end
 
   # A CSV row that assigns a different AM to a company already targeted earlier in the same file makes the
-  # whole import ambiguous — rejected outright rather than silently picking one AM over the other.
+  # whole import ambiguous — rejected outright rather than silently picking one AM over the other. Keyed
+  # case-insensitively so "Caron Services" and "CARON SERVICES" are recognized as the same company here
+  # too, matching Company.find_or_create_by_name! at apply time.
   def check_company_am_conflict
     seen = {}
     conflict = false
     to_update.each do |u|
       next if u.company_name.blank?
-      if seen.key?(u.company_name) && seen[u.company_name] != u.am_name
+      key = u.company_name.downcase
+      if seen.key?(key) && seen[key] != u.am_name
         conflict = true
       end
-      seen[u.company_name] = u.am_name
+      seen[key] = u.am_name
     end
     to_create.each do |c|
       next if c.company_name.blank?
-      if seen.key?(c.company_name) && seen[c.company_name] != c.am_name
+      key = c.company_name.downcase
+      if seen.key?(key) && seen[key] != c.am_name
         conflict = true
       end
-      seen[c.company_name] = c.am_name
+      seen[key] = c.am_name
     end
     if conflict
       @conflict = true
@@ -147,12 +151,13 @@ class CsvImport
 
   # Accepts plain numbers, French decimal commas, and thousands separators in either French (space,
   # non-breaking space, or dot) or Anglo-Saxon (comma) style — Excel exports commonly use a non-breaking
-  # space (U+00A0/U+202F) for the latter, which a plain \s regex silently fails to strip.
+  # space (U+00A0/U+202F) for the latter, which a plain \s regex silently fails to strip. A trailing "%"
+  # (e.g. on % de chance) is stripped too, since that column is just a plain number underneath.
   def normalize_number(v)
     return nil if v.nil?
     t = v.to_s.strip
     return nil if t.empty?
-    t = t.gsub(/[€\s  ]/, "")
+    t = t.gsub(/[€%\s  ]/, "")
     return nil if t.empty?
 
     last_comma = t.rindex(",")

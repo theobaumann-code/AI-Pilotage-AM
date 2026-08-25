@@ -7,7 +7,7 @@
     <div class="checklist-filter-options">
       <% options.each do |opt| %>
         <label class="checklist-filter-option">
-          <%= check_box_tag "#{param_name}[]", opt, selected.include?(opt), id: nil %>
+          <%= check_box_tag "#{param_name}[]", opt, selected.include?(opt), id: nil, onchange: "this.form.requestSubmit()" %>
           <%= opt %>
         </label>
       <% end %>

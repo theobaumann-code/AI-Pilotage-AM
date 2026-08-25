@@ -46,58 +46,73 @@
 
 <%= render "shared/summary_cards", summary: @global_summary %>
 
-<div class="table-scroll">
-  <table class="am-table">
-    <thead>
-      <tr>
-        <th>AM</th>
-        <th>Rôle</th>
-        <th>Nb deals</th>
-        <th>ARR initial</th>
-        <th>ARR churné</th>
-        <th>ARR upsellé</th>
-        <th>ARR renouvelé</th>
-        <th>ARR final</th>
-        <th>NRR %</th>
-        <th>Statut</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if @am_rows.empty? %>
-        <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
-      <% else %>
-        <% @am_rows.each do |row| %>
-          <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
-          <tr class="<%= ok ? "ok" : "below" %>">
-            <td><strong><%= am.name %></strong></td>
-            <td>
-              <span class="badge <%= am.admin? ? "ok" : "warn" %>"><%= am.admin? ? "Admin" : "AM" %></span>
-              <% if current_user.admin? %>
-                <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
-                      params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
-                      form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
-              <% end %>
-            </td>
-            <td><%= s.count %></td>
-            <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
-            <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
-            <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
-            <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
-            <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
-            <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
-            <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
-            <td class="rowaction">
-              <% if current_user.admin? %>
-                <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
-                      form: { data: { turbo_confirm: "Désactiver #{am.name} ?" } } %>
-              <% end %>
-            </td>
-          </tr>
+<div class="section-card">
+  <%= turbo_frame_tag "am-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>AM</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("am_q", "am_page") %>
+          <%= live_search_field :am_q, @am_q, placeholder: "Rechercher un AM…" %>
         <% end %>
-      <% end %>
-    </tbody>
-  </table>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="am-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@am_pager, :nom, "AM") %>
+            <%= sortable_th(@am_pager, :role, "Rôle") %>
+            <%= sortable_th(@am_pager, :count, "Nb deals") %>
+            <%= sortable_th(@am_pager, :arr_initial, "ARR initial") %>
+            <%= sortable_th(@am_pager, :churned, "ARR churné") %>
+            <%= sortable_th(@am_pager, :upsold, "ARR upsellé") %>
+            <%= sortable_th(@am_pager, :renewed_arr, "ARR renouvelé") %>
+            <%= sortable_th(@am_pager, :arr_final, "ARR final") %>
+            <%= sortable_th(@am_pager, :nrr, "NRR %") %>
+            <%= sortable_th(@am_pager, :statut, "Statut") %>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @am_pager.records.empty? %>
+            <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
+          <% else %>
+            <% @am_pager.records.each do |row| %>
+              <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+              <tr class="<%= ok ? "ok" : "below" %>">
+                <td><strong><%= am.name %></strong></td>
+                <td>
+                  <span class="badge <%= am.admin? ? "ok" : "warn" %>"><%= am.admin? ? "Admin" : "AM" %></span>
+                  <% if current_user.admin? %>
+                    <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
+                          params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                          form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
+                  <% end %>
+                </td>
+                <td><%= s.count %></td>
+                <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
+                <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
+                <td class="rowaction">
+                  <% if current_user.admin? %>
+                    <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
+                          form: { data: { turbo_confirm: "Désactiver #{am.name} ?" } } %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@am_pager) %>
+    <%= page_size_select(@am_pager) %>
+  <% end %>
 </div>
 
 <div class="chart-wrap">
@@ -144,52 +159,67 @@
   <div class="table-toolbar">
     <h3>Upsells en cours (tous AM)</h3>
   </div>
-  <div class="toolbar" style="margin-bottom:14px;">
-    <%= form_with url: pilotage_path, method: :get do %>
-      <label>Produit :
-        <%= select_tag :upsell_produit, options_for_select(UpsellDeal::PRODUITS, @upsell_produit),
-              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
-      </label>
-    <% end %>
-  </div>
   <div class="summary-cards">
     <div class="card"><div class="label">Nb upsells</div><div class="value"><%= @global_upsells.size %></div></div>
     <div class="card"><div class="label">Montant ARR upsellé total</div><div class="value"><%= number_to_currency(@upsell_montant_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
     <div class="card"><div class="label">ARR projeté (selon % de chance)</div><div class="value"><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
     <div class="card"><div class="label">ARR upsellé à date (Signé)</div><div class="value" style="color:var(--green)"><%= number_to_currency(@upsell_signed_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
   </div>
-  <div class="table-scroll">
-    <table class="deals-table upsell-table">
-      <thead>
-        <tr>
-          <th>Nom du client</th>
-          <th>AM</th>
-          <th>Produit</th>
-          <th>Nb salariés</th>
-          <th>Montant ARR upsellé (€)</th>
-          <th>% de chance</th>
-          <th>Projection upsell (€)</th>
-          <th>Statut de signature</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @global_upsells.empty? %>
-          <tr><td colspan="8" class="empty-state">Aucun upsell pour ce filtre.</td></tr>
-        <% else %>
-          <% @global_upsells.each do |deal| %>
-            <tr>
-              <td><%= deal.company.name %></td>
-              <td><%= deal.company.user.name %></td>
-              <td><%= deal.produit %></td>
-              <td><%= deal.nombre_salaries %></td>
-              <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
-              <td><%= deal.probabilite_signature %>%</td>
-              <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
-              <td><%= deal.statut_signature %></td>
-            </tr>
-          <% end %>
+  <%= turbo_frame_tag "gups-table-frame" do %>
+    <div class="table-toolbar">
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("upsell_q", "upsell_produits", "upsell_statuts", "gups_page") %>
+          <%= live_search_field :upsell_q, @upsell_q %>
+          <%= filter_chip_group(:upsell_produits, UpsellDeal::PRODUITS, @upsell_produits) %>
+          <%= filter_chip_group(:upsell_statuts, UpsellDeal::STATUTS_SIGNATURE, @upsell_statuts) %>
         <% end %>
-      </tbody>
-    </table>
-  </div>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table upsell-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ups_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@ups_pager, :am, "AM") %>
+            <%= sortable_th(@ups_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@ups_pager, :nombre_salaries, "Nb salariés", col_class: "col-salaries") %>
+            <%= sortable_th(@ups_pager, :upsell_amount, "Montant ARR upsellé (€)", col_class: "col-upsell-amount") %>
+            <%= sortable_th(@ups_pager, :probabilite_signature, "% de chance", col_class: "col-proba") %>
+            <%= sortable_th(@ups_pager, :projection, "Projection upsell (€)", col_class: "col-projection") %>
+            <%= sortable_th(@ups_pager, :statut_signature, "Statut de signature", col_class: "col-signed") %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ups_pager.records.empty? %>
+            <tr><td colspan="8" class="empty-state">Aucun upsell pour ce filtre.</td></tr>
+          <% else %>
+            <% @ups_pager.records.each do |deal| %>
+              <tr>
+                <td><%= deal.company.name %></td>
+                <td><%= deal.company.user.name %></td>
+                <td><%= deal.produit %></td>
+                <td><%= deal.nombre_salaries %></td>
+                <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= deal.probabilite_signature %>%</td>
+                <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><span class="statut-select <%= signature_statut_class(deal.statut_signature) %>" style="display:inline-block;padding:4px 10px;"><%= deal.statut_signature %></span></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+        <% if @ups_pager.records.any? %>
+          <tfoot>
+            <tr class="table-footer-row">
+              <td colspan="6">Total ARR projeté (résultats filtrés)</td>
+              <td><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        <% end %>
+      </table>
+    </div>
+    <%= pagination_controls(@ups_pager) %>
+    <%= page_size_select(@ups_pager) %>
+  <% end %>
 </div>

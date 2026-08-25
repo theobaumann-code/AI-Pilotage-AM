@@ -11,6 +11,17 @@ class HistoriqueController < ApplicationController
     @query = HistoriqueQuery.new(current_year: @current_year, produit: @produit, noms: @noms,
       statuts: @statuts, ams: @ams, assureurs: @assureurs, years: @years)
     @rows = @query.rows.sort_by { |r| [r.nom, r.produit, r.annee] }
+    @hist_pager = TablePager.new(@rows, params: params, prefix: "hist",
+      sort_procs: {
+        nom: ->(r) { TablePager.key(r.nom) },
+        am: ->(r) { TablePager.key(r.am) },
+        produit: ->(r) { TablePager.key(r.produit) },
+        annee: ->(r) { TablePager.key(r.annee) },
+        arr: ->(r) { TablePager.key(r.arr.to_f) },
+        taux: ->(r) { TablePager.key(r.taux.to_f) },
+        statut_renouvellement: ->(r) { TablePager.key(r.statut_renouvellement) },
+        arr_renouvele: ->(r) { TablePager.key(r.arr_renouvele) }
+      }, default_sort: :nom)
 
     archived_years = ArchiveEntry.where(deal_type: "ProduitDeal").distinct.pluck(:year)
     @available_years = (archived_years + [@current_year]).uniq.sort.reverse

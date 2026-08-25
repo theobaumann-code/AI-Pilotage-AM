@@ -104,6 +104,15 @@
             <%= render partial: "deals/produit_row", collection: @ren_pager.records, as: :deal %>
           <% end %>
         </tbody>
+        <% if @ren_pager.records.any? %>
+          <tfoot>
+            <tr class="table-footer-row">
+              <td colspan="6">Taux moyen pondéré par l'ARR (résultats filtrés)</td>
+              <td><%= @ren_taux_avg.nil? ? "—" : "#{@ren_taux_avg >= 0 ? "+" : ""}#{number_with_precision(@ren_taux_avg, precision: 1)}%" %></td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        <% end %>
       </table>
     </div>
     <%= pagination_controls(@ren_pager) %>
@@ -145,6 +154,15 @@
             <%= render partial: "deals/upsell_row", collection: @ups_pager.records, as: :deal %>
           <% end %>
         </tbody>
+        <% if @ups_pager.records.any? %>
+          <tfoot>
+            <tr class="table-footer-row">
+              <td colspan="5">Total ARR projeté (résultats filtrés)</td>
+              <td><%= number_to_currency(@ups_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        <% end %>
       </table>
     </div>
     <%= pagination_controls(@ups_pager) %>

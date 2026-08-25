@@ -29,10 +29,11 @@
   <td>
     <% if editable %>
       <%= form_with scope: :archive_entry, url: archive_entry_path(r.id), method: :patch do |f| %>
-        <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, { selected: r.statut_renouvellement }, onchange: "this.form.requestSubmit()" %>
+        <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, { selected: r.statut_renouvellement },
+              class: "statut-select #{renewal_statut_class(r.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
-      <%= r.statut_renouvellement %>
+      <span class="statut-select <%= renewal_statut_class(r.statut_renouvellement) %>" style="display:inline-block;padding:4px 10px;"><%= r.statut_renouvellement %></span>
     <% end %>
   </td>
   <td><%= r.arr_renouvele.nil? ? "—" : number_to_currency(r.arr_renouvele, unit: "€", format: "%n %u", precision: 0) %></td>

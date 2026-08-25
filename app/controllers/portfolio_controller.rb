@@ -25,6 +25,9 @@ class PortfolioController < ApplicationController
     ren_rows = filter_by_name(@produit_deals, @ren_q) { |d| d.company.name }
     ren_rows = ren_rows.select { |d| @ren_produits.include?(d.produit) } if @ren_produits.present?
     ren_rows = ren_rows.select { |d| @ren_statuts.include?(d.statut_renouvellement) } if @ren_statuts.present?
+    # ARR-weighted like Company#avg_increase_pct, over every filtered row (not just the current page) so
+    # the footer always reflects the full filtered set the admin is looking at.
+    @ren_taux_avg = weighted_avg(ren_rows, :taux, :arr)
     @ren_pager = TablePager.new(ren_rows, params: params, prefix: "ren",
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },
@@ -44,6 +47,7 @@ class PortfolioController < ApplicationController
     ups_rows = filter_by_name(@upsell_deals, @ups_q) { |d| d.company.name }
     ups_rows = ups_rows.select { |d| @ups_produits.include?(d.produit) } if @ups_produits.present?
     ups_rows = ups_rows.select { |d| @ups_statuts.include?(d.statut_signature) } if @ups_statuts.present?
+    @ups_projection_total = ups_rows.sum { |d| d.projection.to_f }
     @ups_pager = TablePager.new(ups_rows, params: params, prefix: "ups",
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },
@@ -62,5 +66,12 @@ class PortfolioController < ApplicationController
     return list if query.blank?
     q = query.downcase
     list.select { |r| (block_given? ? yield(r) : r.name).to_s.downcase.include?(q) }
+  end
+
+  def weighted_avg(rows, value_method, weight_method)
+    total_weight = rows.sum { |r| r.public_send(weight_method).to_f }
+    return nil if total_weight <= 0
+
+    rows.sum { |r| r.public_send(value_method).to_f * r.public_send(weight_method).to_f } / total_weight
   end
 end

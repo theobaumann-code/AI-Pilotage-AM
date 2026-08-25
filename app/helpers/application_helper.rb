@@ -66,8 +66,8 @@ module ApplicationHelper
 
   # Auto-submits the enclosing form shortly after the user stops typing, so a table's search box filters
   # live (inside its turbo-frame) without waiting for Enter or a button click.
-  def live_search_field(name, value)
-    search_field_tag(name, value, placeholder: "Rechercher une entreprise…", class: "table-search",
+  def live_search_field(name, value, placeholder: "Rechercher une entreprise…")
+    search_field_tag(name, value, placeholder: placeholder, class: "table-search",
       oninput: "clearTimeout(this._debounce); this._debounce = setTimeout(() => this.form.requestSubmit(), 350);")
   end
 

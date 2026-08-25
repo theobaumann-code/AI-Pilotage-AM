@@ -36,6 +36,23 @@ class UpsellDealTest < ActiveSupport::TestCase
     assert_equal 40, deal.probabilite_signature
   end
 
+  test "moving off Signé resets the forced 100 back to 0 instead of leaving it stuck" do
+    deal = build_deal(probabilite_signature: 40, statut_signature: "Signé")
+    deal.save!
+    assert_equal 100, deal.probabilite_signature
+
+    deal.update!(statut_signature: "En cours")
+    assert_equal 0, deal.probabilite_signature
+  end
+
+  test "editing another field on an already-non-signed upsell does not touch probabilite_signature" do
+    deal = build_deal(probabilite_signature: 40, statut_signature: "En cours")
+    deal.save!
+
+    deal.update!(nombre_salaries: 12)
+    assert_equal 40, deal.probabilite_signature
+  end
+
   test "upsell_amount is derived from nombre_salaries and the produit rate, never stored" do
     deal = build_deal(produit: "Mutuelle", nombre_salaries: 10)
     assert_in_delta 1_400.0, deal.upsell_amount, 0.01 # 10 × 140

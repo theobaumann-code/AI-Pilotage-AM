@@ -212,8 +212,8 @@
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("upsell_q", "upsell_produits", "upsell_statuts", "gups_page") %>
           <%= live_search_field :upsell_q, @upsell_q %>
-          <%= filter_chip_group(:upsell_produits, UpsellDeal::PRODUITS, @upsell_produits) %>
-          <%= filter_chip_group(:upsell_statuts, UpsellDeal::STATUTS_SIGNATURE, @upsell_statuts) %>
+          <%= render "shared/checklist_filter", param_name: "upsell_produits", options: UpsellDeal::PRODUITS, selected: @upsell_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "upsell_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @upsell_statuts, legend: "Statut" %>
         <% end %>
       </div>
     </div>

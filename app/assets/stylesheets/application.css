@@ -197,15 +197,6 @@ td.rowaction{width:36px;text-align:center;}
 }
 .table-toolbar-controls select{padding:8px 10px;}
 .table-toolbar-controls form{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.filter-chip-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.filter-chip{
-  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;
-  border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;
-  color:var(--text-muted);cursor:pointer;user-select:none;white-space:nowrap;
-}
-.filter-chip:hover{background:var(--hover-tint);}
-.filter-chip input{margin:0;cursor:pointer;}
-.filter-chip:has(input:checked){background:var(--primary);border-color:var(--primary);color:#fff;}
 .page-size-label{font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:6px;white-space:nowrap;}
 .pagination-bar{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 0 2px;}
 .pagination-bar .page-info{font-size:12px;color:var(--text-muted);font-weight:600;white-space:nowrap;}

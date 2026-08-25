@@ -76,8 +76,8 @@
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("ren_q", "ren_produits", "ren_statuts", "ren_page") %>
           <%= live_search_field :ren_q, @ren_q %>
-          <%= filter_chip_group(:ren_produits, ProduitDeal::PRODUITS, @ren_produits) %>
-          <%= filter_chip_group(:ren_statuts, ProduitDeal::STATUTS_RENOUVELLEMENT, @ren_statuts) %>
+          <%= render "shared/checklist_filter", param_name: "ren_produits", options: ProduitDeal::PRODUITS, selected: @ren_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "ren_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @ren_statuts, legend: "Statut" %>
         <% end %>
       </div>
     </div>
@@ -128,8 +128,8 @@
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("ups_q", "ups_produits", "ups_statuts", "ups_page") %>
           <%= live_search_field :ups_q, @ups_q %>
-          <%= filter_chip_group(:ups_produits, UpsellDeal::PRODUITS, @ups_produits) %>
-          <%= filter_chip_group(:ups_statuts, UpsellDeal::STATUTS_SIGNATURE, @ups_statuts) %>
+          <%= render "shared/checklist_filter", param_name: "ups_produits", options: UpsellDeal::PRODUITS, selected: @ups_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "ups_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @ups_statuts, legend: "Statut" %>
         <% end %>
       </div>
     </div>

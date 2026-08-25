@@ -73,19 +73,19 @@
   <%= form_with url: historique_path, method: :get do %>
     <div class="toolbar" style="flex-wrap:wrap;align-items:flex-start;gap:18px;">
       <label>AM :
-        <%= render "checklist", param_name: "ams", options: @available_ams, selected: @ams, legend: "Tous les AM" %>
+        <%= render "shared/checklist_filter", param_name: "ams", options: @available_ams, selected: @ams, legend: "Tous les AM" %>
       </label>
       <label>Entreprise :
-        <%= render "checklist", param_name: "noms", options: @available_noms, selected: @noms, legend: "Toutes les entreprises" %>
+        <%= render "shared/checklist_filter", param_name: "noms", options: @available_noms, selected: @noms, legend: "Toutes les entreprises" %>
       </label>
       <label>Produit :
         <%= select_tag :produit, options_for_select(ProduitDeal::PRODUITS, @produit), include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
       </label>
       <label>Statut de renouvellement :
-        <%= render "checklist", param_name: "statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @statuts, legend: "Tous les statuts" %>
+        <%= render "shared/checklist_filter", param_name: "statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @statuts, legend: "Tous les statuts" %>
       </label>
       <label>Assureur :
-        <%= render "checklist", param_name: "assureurs", options: ProduitDeal::ASSUREURS, selected: @assureurs, legend: "Tous les assureurs" %>
+        <%= render "shared/checklist_filter", param_name: "assureurs", options: ProduitDeal::ASSUREURS, selected: @assureurs, legend: "Tous les assureurs" %>
       </label>
     </div>
 

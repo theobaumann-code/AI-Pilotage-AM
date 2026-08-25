@@ -4,6 +4,10 @@
 # (Phase 2) and "Vue globale" (Phase 3).
 class PortfolioSummary
   NRR_TARGET = 101
+  # Portfolio-health budgets requested alongside the summary cards: churn should stay under 5.5% of the
+  # initial ARR, and the ARR gained purely from renewal-rate increases should reach at least 5%.
+  CHURN_LIMIT_PCT = 5.5
+  RENEWAL_TARGET_PCT = 5.0
 
   attr_reader :companies
 
@@ -49,5 +53,28 @@ class PortfolioSummary
 
   def target_met?
     nrr >= NRR_TARGET
+  end
+
+  # The ARR gained (or lost) purely from renewal-rate negotiation — final_arr minus arr for every
+  # non-churned produit deal, i.e. arr × taux/100 summed. Distinct from churn (ARR removed) and upsold
+  # (ARR added from upsells): this isolates what the negotiated renewal rates themselves contributed.
+  def renewal_gain
+    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 }
+  end
+
+  def churn_limit
+    arr_initial * CHURN_LIMIT_PCT / 100
+  end
+
+  def churn_within_limit?
+    churned <= churn_limit
+  end
+
+  def renewal_target
+    arr_initial * RENEWAL_TARGET_PCT / 100
+  end
+
+  def renewal_target_met?
+    renewal_gain >= renewal_target
   end
 end

@@ -23,8 +23,12 @@
             class: "statut-select #{signature_statut_class(deal.statut_signature)}", onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
-  <td class="rowaction">
+  <td class="rowaction" style="white-space:nowrap;">
+    <% if current_user.admin? %>
+      <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
+        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
+    <% end %>
     <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
-          form: { data: { turbo_confirm: "Supprimer cet upsell ?" } } %>
+          form: { data: { turbo_confirm: "Supprimer cet upsell ?" }, style: "display:inline-block;" } %>
   </td>
 </tr>

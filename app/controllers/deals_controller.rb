@@ -1,5 +1,6 @@
 class DealsController < ApplicationController
-  before_action :set_deal, only: [:update, :destroy]
+  before_action :require_admin!, only: [:reassign_am]
+  before_action :set_deal, only: [:update, :destroy, :reassign_am]
 
   def create
     company = resolve_company
@@ -38,6 +39,29 @@ class DealsController < ApplicationController
         format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: @deal.errors.full_messages.to_sentence }
       end
     end
+  end
+
+  # A produit deal never moves alone — it's part of the company's official contract, so reassigning one
+  # reassigns the whole company (all its produits) via Company#reassign_am!, exactly as if done from
+  # scratch. An upsell is one AM's pipeline opportunity, not part of the contract, so it moves by itself:
+  # sets Deal#user directly, leaving the company (and its produits, and any of its OTHER upsells that
+  # already had their own override) completely untouched. Either way this is a rare, bulk-ish admin action,
+  # not a routine field edit — a full-page redirect (like the admin-toggle/deactivate buttons) is simpler
+  # and more correct here than trying to enumerate every row a reassignment could affect via turbo_stream.
+  def reassign_am
+    new_user = User.active.find(params[:user_id])
+
+    if @deal.is_a?(ProduitDeal)
+      @deal.company.reassign_am!(new_user)
+      notice = "Tous les produits de #{@deal.company.name} ont été réaffectés à #{new_user.name}."
+    else
+      @deal.update!(user: new_user)
+      notice = "L'upsell #{@deal.produit} de #{@deal.company.name} a été réaffecté à #{new_user.name}."
+    end
+
+    redirect_back fallback_location: portfolio_path, notice: notice
+  rescue ActiveRecord::RecordNotFound
+    redirect_back fallback_location: portfolio_path, alert: "AM introuvable."
   end
 
   # Produit deals carry official contract data (identifiant, ARR) and are locked to admins for deletion;

@@ -1,7 +1,8 @@
 class PilotageController < ApplicationController
   def show
-    @am_rows = User.active.order(:name).map do |am|
-      { am: am, summary: PortfolioSummary.new(am.companies.includes(:deals)) }
+    @active_ams = User.active.order(:name)
+    @am_rows = @active_ams.map do |am|
+      { am: am, summary: PortfolioSummary.new(am.companies.includes(:deals), user: am) }
     end
     @global_summary = PortfolioSummary.new(Company.all)
 
@@ -29,7 +30,7 @@ class PilotageController < ApplicationController
     @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
     @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
     @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
-    @available_upsell_ams = User.active.order(:name).pluck(:name)
+    @available_upsell_ams = @active_ams.map(&:name)
     @global_upsells = filtered_global_upsells
     @upsell_montant_total = @global_upsells.sum(&:upsell_amount)
     @upsell_projection_total = @global_upsells.sum(&:projection)
@@ -37,7 +38,7 @@ class PilotageController < ApplicationController
     @ups_pager = TablePager.new(@global_upsells, params: params, prefix: "gups",
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },
-        am: ->(d) { TablePager.key(d.company.user.name) },
+        am: ->(d) { TablePager.key(d.effective_user.name) },
         produit: ->(d) { TablePager.key(d.produit) },
         nombre_salaries: ->(d) { TablePager.key(d.nombre_salaries) },
         upsell_amount: ->(d) { TablePager.key(d.upsell_amount) },
@@ -64,9 +65,9 @@ class PilotageController < ApplicationController
   end
 
   def filtered_global_upsells
-    deals = UpsellDeal.includes(company: :user).to_a
+    deals = UpsellDeal.includes(:user, company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@upsell_q.downcase) } if @upsell_q.present?
-    deals = deals.select { |d| @upsell_ams.include?(d.company.user.name) } if @upsell_ams.present?
+    deals = deals.select { |d| @upsell_ams.include?(d.effective_user.name) } if @upsell_ams.present?
     deals = deals.select { |d| @upsell_produits.include?(d.produit) } if @upsell_produits.present?
     deals = deals.select { |d| @upsell_statuts.include?(d.statut_signature) } if @upsell_statuts.present?
     deals.sort_by { |d| d.company.name }

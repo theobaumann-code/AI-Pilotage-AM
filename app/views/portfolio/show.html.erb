@@ -115,6 +115,10 @@
         <% end %>
       </table>
     </div>
+    <% if current_user.admin? %>
+      <%= render "shared/reassign_am_panel", panel_id: "reassign-produit-panel", form_id: "reassign-produit-form",
+            name_span_id: "reassign-produit-name", ams: @viewable_ams %>
+    <% end %>
     <%= pagination_controls(@ren_pager) %>
     <%= page_size_select(@ren_pager) %>
   <% end %>
@@ -165,6 +169,10 @@
         <% end %>
       </table>
     </div>
+    <% if current_user.admin? %>
+      <%= render "shared/reassign_am_panel", panel_id: "reassign-upsell-panel", form_id: "reassign-upsell-form",
+            name_span_id: "reassign-upsell-name", ams: @viewable_ams %>
+    <% end %>
     <%= pagination_controls(@ups_pager) %>
     <%= page_size_select(@ups_pager) %>
   <% end %>

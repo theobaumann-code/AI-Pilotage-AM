@@ -9,10 +9,16 @@ class PortfolioSummary
   CHURN_LIMIT_PCT = 5.5
   RENEWAL_TARGET_PCT = 5.0
 
-  attr_reader :companies
+  attr_reader :companies, :user
 
-  def initialize(companies)
+  # `user:` scopes upsold/upsell-related figures to what's actually in that AM's pipeline right now (an
+  # upsell explicitly reassigned to them counts here even for a company they don't own; one reassigned away
+  # from them doesn't, even though the company is still theirs) — pass it for any single-AM summary. Omit
+  # it for a cross-AM aggregate (e.g. Company.all): every upsell belongs to *someone* in that set either
+  # way, so company-scoped and effective-ownership-scoped totals are the same sum.
+  def initialize(companies, user: nil)
     @companies = companies.to_a
+    @user = user
   end
 
   def produit_deals
@@ -20,7 +26,12 @@ class PortfolioSummary
   end
 
   def upsell_deals
-    @upsell_deals ||= companies.flat_map(&:upsell_deals)
+    @upsell_deals ||= if user
+      company_ids = companies.map(&:id)
+      UpsellDeal.where(user_id: user.id).or(UpsellDeal.where(user_id: nil, company_id: company_ids)).to_a
+    else
+      companies.flat_map(&:upsell_deals)
+    end
   end
 
   def count

@@ -1,0 +1,21 @@
+<%# locals: panel_id, form_id, name_span_id, ams (retargeted per-row by openReassignPanel in application.js) %>
+<div id="<%= panel_id %>" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
+  <p style="padding:16px 22px 0;margin:0;font-weight:700;">Réaffecter <span id="<%= name_span_id %>"></span></p>
+  <%= form_with url: "#", method: :patch, html: { id: form_id } do %>
+    <div class="modal-body">
+      <div class="modal-row">
+        <label>Nouvel AM responsable
+          <select name="user_id" required>
+            <% ams.each do |am| %>
+              <option value="<%= am.id %>"><%= am.name %></option>
+            <% end %>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="button ghost-burgundy" onclick="document.getElementById('<%= panel_id %>').style.display='none';">Annuler</button>
+      <%= submit_tag "Réaffecter", class: "button primary" %>
+    </div>
+  <% end %>
+</div>

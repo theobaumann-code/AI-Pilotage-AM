@@ -1,6 +1,6 @@
 <tr id="<%= dom_id(deal) %>">
   <td><%= deal.company.name %></td>
-  <td><%= deal.company.user.name %></td>
+  <td><%= deal.effective_user.name %></td>
   <td>
     <% if current_user.admin? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
@@ -30,6 +30,12 @@
       <% end %>
     <% else %>
       <span class="statut-select <%= signature_statut_class(deal.statut_signature) %>" style="display:inline-block;padding:4px 10px;"><%= deal.statut_signature %></span>
+    <% end %>
+  </td>
+  <td class="rowaction">
+    <% if current_user.admin? %>
+      <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
+        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
     <% end %>
   </td>
 </tr>

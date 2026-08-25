@@ -15,7 +15,9 @@ Rails.application.routes.draw do
   resources :companies, only: [:create, :destroy] do
     member { patch :reassign_am }
   end
-  resources :deals, only: [:create, :update, :destroy]
+  resources :deals, only: [:create, :update, :destroy] do
+    member { patch :reassign_am }
+  end
   resources :users, only: [:create, :update, :destroy]
   resource :historique, only: [:show], controller: "historique"
   resources :archive_entries, only: [:update]

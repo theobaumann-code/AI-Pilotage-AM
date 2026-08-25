@@ -27,7 +27,7 @@ class DealsController < ApplicationController
     if @deal.update(update_params)
       respond_to do |format|
         format.turbo_stream do
-          owner = portfolio_owner
+          owner = viewed_user
           streams = [
             turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
             turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
@@ -67,18 +67,6 @@ class DealsController < ApplicationController
     scoped_company(@deal.company_id)
   rescue ActiveRecord::RecordNotFound
     redirect_to portfolio_path, alert: "Élément introuvable."
-  end
-
-  # Same "which AM's portfolio is this" resolution as ApplicationController#viewed_user, but keyed off
-  # redirect_user_id (what this controller's forms actually carry) instead of user_id.
-  def portfolio_owner
-    if current_user.admin? && params[:redirect_user_id].present?
-      User.active.find(params[:redirect_user_id])
-    else
-      current_user
-    end
-  rescue ActiveRecord::RecordNotFound
-    current_user
   end
 
   def deal_class

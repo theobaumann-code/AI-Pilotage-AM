@@ -98,10 +98,12 @@
                 <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
                 <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
                 <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
-                <td class="rowaction">
+                <td class="rowaction" style="white-space:nowrap;">
                   <% if current_user.admin? %>
+                    <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
+                      onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>')">✎</button>
                     <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
-                          form: { data: { turbo_confirm: "Désactiver #{am.name} ?" } } %>
+                          form: { data: { turbo_confirm: "Désactiver #{am.name} ?" }, style: "display:inline-block;" } %>
                   <% end %>
                 </td>
               </tr>
@@ -110,6 +112,45 @@
         </tbody>
       </table>
     </div>
+    <% if current_user.admin? %>
+      <%# Lives outside .table-scroll on purpose — that container clips overflow-x, which would cut off a
+          form popped open from a narrow action column deep in a wide table. One shared panel, retargeted
+          by JS to whichever AM's ✎ was clicked, rather than one per row. %>
+      <div id="edit-am-panel" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
+        <p style="padding:16px 22px 0;margin:0;font-weight:700;">Modifier les identifiants de <span id="edit-am-name"></span></p>
+        <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch, html: { id: "edit-am-form" } do %>
+          <div class="modal-body">
+            <div class="modal-row">
+              <label>Email
+                <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
+              </label>
+            </div>
+            <div class="modal-row">
+              <label>Nouveau mot de passe
+                <%= password_field_tag "user[password]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
+              </label>
+              <label>Confirmation
+                <%= password_field_tag "user[password_confirmation]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="button ghost-burgundy" onclick="document.getElementById('edit-am-panel').style.display='none';">Annuler</button>
+            <%= submit_tag "Enregistrer", class: "button primary" %>
+          </div>
+        <% end %>
+      </div>
+      <script>
+        function editAmCredentials(url, email, name) {
+          document.getElementById('edit-am-form').action = url;
+          document.getElementById('edit-am-email').value = email;
+          document.getElementById('edit-am-name').textContent = name;
+          var panel = document.getElementById('edit-am-panel');
+          panel.style.display = 'block';
+          panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      </script>
+    <% end %>
     <%= pagination_controls(@am_pager) %>
     <%= page_size_select(@am_pager) %>
   <% end %>

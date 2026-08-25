@@ -53,29 +53,10 @@ Rails.application.configure do
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
 
-  # Set host to be used by links generated in mailer templates (Devise's password-reset email in particular).
-  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "ai-pilotage-am.osc-fr1.scalingo.io") }
-
-  # No SMTP provider is configured yet (no SMTP_* env vars on Scalingo), so mail delivery is a no-op rather
-  # than raising — without this, Devise's "mot de passe oublié" crashes with a 500 trying to actually send
-  # an email over an unconfigured connection. Set the SMTP_* env vars (any provider: Postmark, Resend,
-  # Mailgun...) to enable real delivery; once SMTP_ADDRESS is present this switches to a real smtp send.
-  if ENV["SMTP_ADDRESS"].present?
-    config.action_mailer.delivery_method = :smtp
-    config.action_mailer.smtp_settings = {
-      address: ENV["SMTP_ADDRESS"],
-      port: ENV.fetch("SMTP_PORT", 587).to_i,
-      domain: ENV["SMTP_DOMAIN"],
-      user_name: ENV["SMTP_USERNAME"],
-      password: ENV["SMTP_PASSWORD"],
-      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym,
-      enable_starttls_auto: true
-    }
-    config.action_mailer.raise_delivery_errors = true
-  else
-    config.action_mailer.perform_deliveries = false
-    config.action_mailer.raise_delivery_errors = false
-  end
+  # Nothing in the app sends email (no :recoverable — see User) — delivery stays a safe no-op rather than
+  # attempting a connection that was never configured.
+  config.action_mailer.perform_deliveries = false
+  config.action_mailer.raise_delivery_errors = false
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

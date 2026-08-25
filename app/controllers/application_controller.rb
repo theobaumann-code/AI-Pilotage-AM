@@ -19,13 +19,20 @@ class ApplicationController < ActionController::Base
 
   # The AM whose portfolio is being viewed: always current_user for a regular AM (real per-user isolation,
   # stronger than the original which let anyone switch AM from a dropdown); an admin may additionally view
-  # any other AM's portfolio via ?user_id=.
+  # any other AM's portfolio via ?user_id= (the initial GET) or ?redirect_user_id= (the PATCH an inline
+  # edit submits — same AM, different param name because it round-trips through deal/archive-entry update
+  # forms baked into that AM's row). Both must resolve to the same id, or a turbo_stream response re-renders
+  # a row's own next edit-form URL using the wrong one (falls back to current_user, i.e. the admin's own
+  # portfolio) — the row silently starts editing the admin's data instead of the AM being viewed.
   def viewed_user
-    if current_user.admin? && params[:user_id].present?
-      User.active.find(params[:user_id])
+    candidate_id = params[:user_id] || params[:redirect_user_id]
+    if current_user.admin? && candidate_id.present?
+      User.active.find(candidate_id)
     else
       current_user
     end
+  rescue ActiveRecord::RecordNotFound
+    current_user
   end
   helper_method :viewed_user
 

@@ -17,25 +17,19 @@ class DealsController < ApplicationController
     end
   end
 
-  # Inline edits respond with turbo_streams that replace this row, its company's "Évolution ARR" row, and
-  # the summary cards, all in place — so changing a field never scrolls the page back to the top, loses
-  # whatever the admin had scrolled/filtered to, or leaves the totals momentarily inconsistent with the
-  # row that just changed. A plain redirect (still used for non-Turbo requests) reloads the whole page.
+  # Inline edits respond with turbo_streams that replace this row and whatever aggregates depend on it, all
+  # in place — so changing a field never scrolls the page back to the top, loses whatever the admin had
+  # scrolled/filtered to, or leaves the totals momentarily inconsistent with the row that just changed.
+  # Which aggregates depend on where the edit came from: Mon portefeuille (the default) also carries the
+  # company's "Évolution ARR" row and that AM's own summary cards; Vue globale's cross-AM upsells table
+  # (row_context=global) instead carries the page-wide summary cards, since there's no single "viewed AM".
+  # Either way this is the AM's real record being updated, so it's already what they'll see next time they
+  # open Mon portefeuille themselves — no separate sync step needed.
+  # A plain redirect (still used for non-Turbo requests) reloads the whole page.
   def update
-    row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
-
     if @deal.update(update_params)
       respond_to do |format|
-        format.turbo_stream do
-          owner = viewed_user
-          streams = [
-            turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
-            turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
-            turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
-              locals: { summary: PortfolioSummary.new(owner.companies.includes(:deals)), dom_id: "portfolio-summary-cards" })
-          ]
-          render turbo_stream: streams
-        end
+        format.turbo_stream { render turbo_stream: update_streams }
         format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: "Modifié." }
       end
     else
@@ -67,6 +61,25 @@ class DealsController < ApplicationController
     scoped_company(@deal.company_id)
   rescue ActiveRecord::RecordNotFound
     redirect_to portfolio_path, alert: "Élément introuvable."
+  end
+
+  def update_streams
+    if params[:row_context] == "global"
+      [
+        turbo_stream.replace(@deal, partial: "pilotage/global_upsell_row", locals: { deal: @deal }),
+        turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
+          locals: { summary: PortfolioSummary.new(Company.all), dom_id: "global-summary-cards" })
+      ]
+    else
+      row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
+      owner = viewed_user
+      [
+        turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
+        turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
+        turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
+          locals: { summary: PortfolioSummary.new(owner.companies.includes(:deals)), dom_id: "portfolio-summary-cards" })
+      ]
+    end
   end
 
   def deal_class

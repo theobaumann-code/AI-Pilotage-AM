@@ -1,0 +1,35 @@
+<tr id="<%= dom_id(deal) %>">
+  <td><%= deal.company.name %></td>
+  <td><%= deal.company.user.name %></td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+        <%= f.select :produit, UpsellDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.produit %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+        <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.nombre_salaries %>
+    <% end %>
+  </td>
+  <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td><%= deal.probabilite_signature %>%</td>
+  <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+        <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {},
+              class: "statut-select #{signature_statut_class(deal.statut_signature)}", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <span class="statut-select <%= signature_statut_class(deal.statut_signature) %>" style="display:inline-block;padding:4px 10px;"><%= deal.statut_signature %></span>
+    <% end %>
+  </td>
+</tr>

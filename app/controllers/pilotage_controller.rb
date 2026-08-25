@@ -26,8 +26,10 @@ class PilotageController < ApplicationController
     @renewal_donut = renewal_donut_slices
 
     @upsell_q = params[:upsell_q].to_s.strip
+    @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
     @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
     @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
+    @available_upsell_ams = User.active.order(:name).pluck(:name)
     @global_upsells = filtered_global_upsells
     @upsell_montant_total = @global_upsells.sum(&:upsell_amount)
     @upsell_projection_total = @global_upsells.sum(&:projection)
@@ -64,6 +66,7 @@ class PilotageController < ApplicationController
   def filtered_global_upsells
     deals = UpsellDeal.includes(company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@upsell_q.downcase) } if @upsell_q.present?
+    deals = deals.select { |d| @upsell_ams.include?(d.company.user.name) } if @upsell_ams.present?
     deals = deals.select { |d| @upsell_produits.include?(d.produit) } if @upsell_produits.present?
     deals = deals.select { |d| @upsell_statuts.include?(d.statut_signature) } if @upsell_statuts.present?
     deals.sort_by { |d| d.company.name }

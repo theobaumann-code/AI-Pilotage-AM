@@ -44,7 +44,7 @@
   </div>
 <% end %>
 
-<%= render "shared/summary_cards", summary: @global_summary %>
+<%= render "shared/summary_cards", summary: @global_summary, dom_id: "global-summary-cards" %>
 
 <div class="section-card">
   <%= turbo_frame_tag "am-table-frame" do %>
@@ -210,8 +210,9 @@
     <div class="table-toolbar">
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("upsell_q", "upsell_produits", "upsell_statuts", "gups_page") %>
+          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_produits", "upsell_statuts", "gups_page") %>
           <%= live_search_field :upsell_q, @upsell_q %>
+          <%= render "shared/checklist_filter", param_name: "upsell_ams", options: @available_upsell_ams, selected: @upsell_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "upsell_produits", options: UpsellDeal::PRODUITS, selected: @upsell_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "upsell_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @upsell_statuts, legend: "Statut" %>
         <% end %>
@@ -235,18 +236,7 @@
           <% if @ups_pager.records.empty? %>
             <tr><td colspan="8" class="empty-state">Aucun upsell pour ce filtre.</td></tr>
           <% else %>
-            <% @ups_pager.records.each do |deal| %>
-              <tr>
-                <td><%= deal.company.name %></td>
-                <td><%= deal.company.user.name %></td>
-                <td><%= deal.produit %></td>
-                <td><%= deal.nombre_salaries %></td>
-                <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= deal.probabilite_signature %>%</td>
-                <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><span class="statut-select <%= signature_statut_class(deal.statut_signature) %>" style="display:inline-block;padding:4px 10px;"><%= deal.statut_signature %></span></td>
-              </tr>
-            <% end %>
+            <%= render partial: "global_upsell_row", collection: @ups_pager.records, as: :deal %>
           <% end %>
         </tbody>
         <% if @ups_pager.records.any? %>

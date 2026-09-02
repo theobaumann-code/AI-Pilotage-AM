@@ -1,7 +1,7 @@
 require "csv"
 
 class ImportsController < ApplicationController
-  before_action :require_admin!
+  before_action :require_kam_or_admin!
 
   def new
   end

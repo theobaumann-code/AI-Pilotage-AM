@@ -13,7 +13,7 @@
     </label>
   <% end %>
   <div class="spacer"></div>
-  <% if current_user.admin? %>
+  <% if current_user.kam_or_admin? %>
     <%= link_to "Import en masse (CSV)", new_import_path, class: "button" %>
   <% end %>
   <details>
@@ -115,9 +115,9 @@
         <% end %>
       </table>
     </div>
-    <% if current_user.admin? %>
+    <% if current_user.kam_or_admin? %>
       <%= render "shared/reassign_am_panel", panel_id: "reassign-produit-panel", form_id: "reassign-produit-form",
-            name_span_id: "reassign-produit-name", ams: @viewable_ams %>
+            name_span_id: "reassign-produit-name", ams: @reassignable_ams %>
     <% end %>
     <%= pagination_controls(@ren_pager) %>
     <%= page_size_select(@ren_pager) %>
@@ -169,9 +169,9 @@
         <% end %>
       </table>
     </div>
-    <% if current_user.admin? %>
+    <% if current_user.kam_or_admin? %>
       <%= render "shared/reassign_am_panel", panel_id: "reassign-upsell-panel", form_id: "reassign-upsell-form",
-            name_span_id: "reassign-upsell-name", ams: @viewable_ams %>
+            name_span_id: "reassign-upsell-name", ams: @reassignable_ams %>
     <% end %>
     <%= pagination_controls(@ups_pager) %>
     <%= page_size_select(@ups_pager) %>

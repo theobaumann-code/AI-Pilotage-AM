@@ -33,7 +33,7 @@
     <% end %>
   </td>
   <td class="rowaction">
-    <% if current_user.admin? %>
+    <% if current_user.kam_or_admin? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
         onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
     <% end %>

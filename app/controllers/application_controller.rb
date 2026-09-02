@@ -17,6 +17,15 @@ class ApplicationController < ActionController::Base
     redirect_back fallback_location: root_path, alert: "Réservé aux administrateurs."
   end
 
+  # KAM sits between AM and admin in the role hierarchy: full rights on their own portfolio like any AM,
+  # plus a couple of things a plain AM doesn't get (CSV import, reassigning a produit/upsell to another AM,
+  # and viewing "Résultats KAM") — everything else stays admin-only.
+  def require_kam_or_admin!
+    return if current_user.kam_or_admin?
+
+    redirect_back fallback_location: root_path, alert: "Réservé aux KAM et administrateurs."
+  end
+
   # The AM whose portfolio is being viewed: always current_user for a regular AM (real per-user isolation,
   # stronger than the original which let anyone switch AM from a dropdown); an admin may additionally view
   # any other AM's portfolio via ?user_id= (the initial GET) or ?redirect_user_id= (the PATCH an inline

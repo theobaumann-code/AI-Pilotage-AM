@@ -1,6 +1,6 @@
 class DealsController < ApplicationController
-  before_action :require_admin!, only: [:reassign_am]
-  before_action :set_deal, only: [:update, :destroy, :reassign_am]
+  before_action :require_kam_or_admin!, only: [:reassign_am]
+  before_action :set_deal, only: [:update, :destroy]
 
   def create
     company = resolve_company
@@ -48,20 +48,24 @@ class DealsController < ApplicationController
   # already had their own override) completely untouched. Either way this is a rare, bulk-ish admin action,
   # not a routine field edit — a full-page redirect (like the admin-toggle/deactivate buttons) is simpler
   # and more correct here than trying to enumerate every row a reassignment could affect via turbo_stream.
+  # Deliberately not scoped through set_deal/scoped_company: a KAM reassigning a deal is, by definition,
+  # very often acting on a company they don't themselves own — require_kam_or_admin! is the only gate this
+  # action needs, same as it's the only thing standing between a plain AM and this action entirely.
   def reassign_am
+    deal = Deal.find(params[:id])
     new_user = User.active.find(params[:user_id])
 
-    if @deal.is_a?(ProduitDeal)
-      @deal.company.reassign_am!(new_user)
-      notice = "Tous les produits de #{@deal.company.name} ont été réaffectés à #{new_user.name}."
+    if deal.is_a?(ProduitDeal)
+      deal.company.reassign_am!(new_user)
+      notice = "Tous les produits de #{deal.company.name} ont été réaffectés à #{new_user.name}."
     else
-      @deal.update!(user: new_user)
-      notice = "L'upsell #{@deal.produit} de #{@deal.company.name} a été réaffecté à #{new_user.name}."
+      deal.update!(user: new_user)
+      notice = "L'upsell #{deal.produit} de #{deal.company.name} a été réaffecté à #{new_user.name}."
     end
 
     redirect_back fallback_location: portfolio_path, notice: notice
   rescue ActiveRecord::RecordNotFound
-    redirect_back fallback_location: portfolio_path, alert: "AM introuvable."
+    redirect_back fallback_location: portfolio_path, alert: "Élément ou AM introuvable."
   end
 
   # Produit deals carry official contract data (identifiant, ARR) and are locked to admins for deletion;

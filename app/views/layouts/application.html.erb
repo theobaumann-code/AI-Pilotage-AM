@@ -41,7 +41,7 @@
         </div>
         <div class="header-actions">
           <div class="admin-zone">
-            <span class="badge <%= current_user.admin? ? 'ok' : 'warn' %>"><%= current_user.admin? ? "Admin" : "AM" %> · <%= current_user.name %></span>
+            <span class="badge <%= current_user.admin? ? 'ok' : (current_user.kam? ? 'kam' : 'warn') %>"><%= current_user.role_label %> · <%= current_user.name %></span>
           </div>
           <%= button_to "Se déconnecter", destroy_user_session_path, method: :delete, class: "button" %>
         </div>
@@ -49,7 +49,10 @@
 
       <nav class="tabs">
         <%= link_to "Mon portefeuille", portfolio_path, class: current_page?(portfolio_path) ? "active" : nil %>
-        <%= link_to "Vue globale", pilotage_path, class: current_page?(pilotage_path) ? "active" : nil %>
+        <%= link_to "Résultats AM", pilotage_path, class: current_page?(pilotage_path) ? "active" : nil %>
+        <% if current_user.kam_or_admin? %>
+          <%= link_to "Résultats KAM", resultats_kam_path, class: current_page?(resultats_kam_path) ? "active" : nil %>
+        <% end %>
         <%= link_to "Historique", historique_path, class: current_page?(historique_path) ? "active" : nil %>
       </nav>
     <% end %>

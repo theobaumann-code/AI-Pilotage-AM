@@ -1,2 +1,261 @@
-<% content_for :title, "Résultats AM — Pilotage NRR" %>
-<%= render "shared/results_page", title: "Résultats AM" %>
+<% content_for :title, "Vue globale — Pilotage NRR" %>
+
+<p class="section-title">Vue globale</p>
+<p class="section-sub">Vue consolidée pour suivre l'atteinte de l'objectif NRR (<%= PortfolioSummary::NRR_TARGET %>%) sur chaque portefeuille.</p>
+
+<% if current_user.admin? %>
+  <div class="toolbar">
+    <div class="spacer"></div>
+    <details>
+      <summary class="button">+ Nouvel AM</summary>
+      <div class="modal-box" style="margin:12px 0 0;">
+        <%= form_with model: User.new, url: users_path do |f| %>
+          <div class="modal-body">
+            <div class="modal-row">
+              <label>Nom
+                <%= f.text_field :name, required: true %>
+              </label>
+              <label>Email
+                <%= f.email_field :email, required: true %>
+              </label>
+            </div>
+            <div class="modal-row">
+              <label>Mot de passe
+                <%= f.password_field :password, required: true, minlength: 6 %>
+              </label>
+              <label>Confirmation
+                <%= f.password_field :password_confirmation, required: true, minlength: 6 %>
+              </label>
+            </div>
+            <div class="modal-row">
+              <label style="flex-direction:row;align-items:center;gap:8px;">
+                <%= f.check_box :admin %>
+                Administrateur (accès complet : import CSV, clôture d'année, gestion des AM...)
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
+            <%= f.submit "Ajouter l'AM", class: "button primary" %>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </div>
+<% end %>
+
+<%= render "shared/summary_cards", summary: @global_summary, dom_id: "global-summary-cards" %>
+
+<div class="section-card">
+  <%= turbo_frame_tag "am-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>AM</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("am_q", "am_page") %>
+          <%= live_search_field :am_q, @am_q, placeholder: "Rechercher un AM…" %>
+        <% end %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="am-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@am_pager, :nom, "AM") %>
+            <%= sortable_th(@am_pager, :role, "Rôle") %>
+            <%= sortable_th(@am_pager, :count, "Nb deals") %>
+            <%= sortable_th(@am_pager, :arr_initial, "ARR initial") %>
+            <%= sortable_th(@am_pager, :churned, "ARR churné") %>
+            <%= sortable_th(@am_pager, :upsold, "ARR upsellé") %>
+            <%= sortable_th(@am_pager, :renewed_arr, "ARR renouvelé") %>
+            <%= sortable_th(@am_pager, :arr_final, "ARR final") %>
+            <%= sortable_th(@am_pager, :nrr, "NRR %") %>
+            <%= sortable_th(@am_pager, :statut, "Statut") %>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @am_pager.records.empty? %>
+            <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
+          <% else %>
+            <% @am_pager.records.each do |row| %>
+              <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+              <tr class="<%= ok ? "ok" : "below" %>">
+                <td><strong><%= am.name %></strong></td>
+                <td>
+                  <span class="badge <%= am.admin? ? "ok" : "warn" %>"><%= am.admin? ? "Admin" : "AM" %></span>
+                  <% if current_user.admin? %>
+                    <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
+                          params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                          form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
+                  <% end %>
+                </td>
+                <td><%= s.count %></td>
+                <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
+                <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
+                <td class="rowaction" style="white-space:nowrap;">
+                  <% if current_user.admin? %>
+                    <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
+                      onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>')">✎</button>
+                    <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
+                          form: { data: { turbo_confirm: "Désactiver #{am.name} ?" }, style: "display:inline-block;" } %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if current_user.admin? %>
+      <%# Lives outside .table-scroll on purpose — that container clips overflow-x, which would cut off a
+          form popped open from a narrow action column deep in a wide table. One shared panel, retargeted
+          by JS to whichever AM's ✎ was clicked, rather than one per row. %>
+      <div id="edit-am-panel" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
+        <p style="padding:16px 22px 0;margin:0;font-weight:700;">Modifier les identifiants de <span id="edit-am-name"></span></p>
+        <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch, html: { id: "edit-am-form" } do %>
+          <div class="modal-body">
+            <div class="modal-row">
+              <label>Email
+                <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
+              </label>
+            </div>
+            <div class="modal-row">
+              <label>Nouveau mot de passe
+                <%= password_field_tag "user[password]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
+              </label>
+              <label>Confirmation
+                <%= password_field_tag "user[password_confirmation]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="button ghost-burgundy" onclick="document.getElementById('edit-am-panel').style.display='none';">Annuler</button>
+            <%= submit_tag "Enregistrer", class: "button primary" %>
+          </div>
+        <% end %>
+      </div>
+      <script>
+        function editAmCredentials(url, email, name) {
+          document.getElementById('edit-am-form').action = url;
+          document.getElementById('edit-am-email').value = email;
+          document.getElementById('edit-am-name').textContent = name;
+          var panel = document.getElementById('edit-am-panel');
+          panel.style.display = 'block';
+          panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      </script>
+    <% end %>
+    <%= pagination_controls(@am_pager) %>
+    <%= page_size_select(@am_pager) %>
+  <% end %>
+</div>
+
+<div class="chart-wrap">
+  <h3>NRR par AM vs objectif (<%= PortfolioSummary::NRR_TARGET %>%)</h3>
+  <% max_scale = [PortfolioSummary::NRR_TARGET + 10, *@am_rows.map { |r| r[:summary].nrr }, 10].max %>
+  <% target_pct = PortfolioSummary::NRR_TARGET.to_f / max_scale * 100 %>
+  <% if @am_rows.empty? %>
+    <div class="empty-state">Aucune donnée à afficher.</div>
+  <% else %>
+    <% @am_rows.each do |row| %>
+      <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+      <% w = [[s.nrr / max_scale * 100, 0].max, 100].min %>
+      <div class="bar-row">
+        <div class="bar-label"><%= am.name %></div>
+        <div class="bar-track">
+          <div class="bar-fill <%= ok ? "ok" : "ko" %>" style="width:<%= w %>%"></div>
+          <div class="bar-target-line" style="left:<%= target_pct %>%"></div>
+        </div>
+        <div class="bar-value"><%= number_with_precision(s.nrr, precision: 1) %>%</div>
+      </div>
+    <% end %>
+  <% end %>
+  <div class="chart-legend">La ligne noire verticale représente l'objectif de <%= PortfolioSummary::NRR_TARGET %>%.</div>
+</div>
+
+<div class="chart-wrap">
+  <h3>Renouvellements : nouveau contrat vs augmentation</h3>
+  <div class="toolbar" style="margin-bottom:14px;">
+    <%= form_with url: pilotage_path, method: :get do %>
+      <label>AM :
+        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.active.order(:name), :id, :name, @renewal_am_id),
+              include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
+      </label>
+      <label>Produit :
+        <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
+              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+  <%= donut_chart(@renewal_donut) %>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Upsells en cours (tous AM)</h3>
+  </div>
+  <div class="summary-cards">
+    <div class="card"><div class="label">Nb upsells</div><div class="value"><%= @global_upsells.size %></div></div>
+    <div class="card"><div class="label">Montant ARR upsellé total</div><div class="value"><%= number_to_currency(@upsell_montant_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+    <div class="card"><div class="label">ARR projeté (selon % de chance)</div><div class="value"><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+    <div class="card"><div class="label">ARR upsellé à date (Signé)</div><div class="value" style="color:var(--green)"><%= number_to_currency(@upsell_signed_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+  </div>
+  <%= turbo_frame_tag "gups-table-frame" do %>
+    <div class="table-toolbar">
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_produits", "upsell_statuts", "gups_page") %>
+          <%= live_search_field :upsell_q, @upsell_q %>
+          <%= render "shared/checklist_filter", param_name: "upsell_ams", options: @available_upsell_ams, selected: @upsell_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "upsell_produits", options: UpsellDeal::PRODUITS, selected: @upsell_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "upsell_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @upsell_statuts, legend: "Statut" %>
+        <% end %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table upsell-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ups_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@ups_pager, :am, "AM") %>
+            <%= sortable_th(@ups_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@ups_pager, :nombre_salaries, "Nb salariés", col_class: "col-salaries") %>
+            <%= sortable_th(@ups_pager, :upsell_amount, "Montant ARR upsellé (€)", col_class: "col-upsell-amount") %>
+            <%= sortable_th(@ups_pager, :probabilite_signature, "% de chance", col_class: "col-proba") %>
+            <%= sortable_th(@ups_pager, :projection, "Projection upsell (€)", col_class: "col-projection") %>
+            <%= sortable_th(@ups_pager, :statut_signature, "Statut de signature", col_class: "col-signed") %>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ups_pager.records.empty? %>
+            <tr><td colspan="9" class="empty-state">Aucun upsell pour ce filtre.</td></tr>
+          <% else %>
+            <%= render partial: "global_upsell_row", collection: @ups_pager.records, as: :deal %>
+          <% end %>
+        </tbody>
+        <% if @ups_pager.records.any? %>
+          <tfoot>
+            <tr class="table-footer-row">
+              <td colspan="6">Total ARR projeté (résultats filtrés)</td>
+              <td><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        <% end %>
+      </table>
+    </div>
+    <% if current_user.admin? %>
+      <%= render "shared/reassign_am_panel", panel_id: "reassign-upsell-panel", form_id: "reassign-upsell-form",
+            name_span_id: "reassign-upsell-name", ams: @active_ams %>
+    <% end %>
+    <%= pagination_controls(@ups_pager) %>
+    <%= page_size_select(@ups_pager) %>
+  <% end %>
+</div>

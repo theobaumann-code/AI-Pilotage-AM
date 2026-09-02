@@ -12,7 +12,6 @@ Rails.application.routes.draw do
 
   resource :portfolio, only: [:show], controller: "portfolio"
   resource :pilotage, only: [:show], controller: "pilotage"
-  resource :resultats_kam, only: [:show], controller: "resultats_kam"
   resources :companies, only: [:create, :destroy] do
     member { patch :reassign_am }
   end

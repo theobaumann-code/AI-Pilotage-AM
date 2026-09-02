@@ -1,6 +1,5 @@
 class CompaniesController < ApplicationController
-  before_action :require_admin!, only: [:destroy]
-  before_action :require_kam_or_admin!, only: [:reassign_am]
+  before_action :require_admin!, only: [:destroy, :reassign_am]
 
   def destroy
     company = Company.find(params[:id])

@@ -8,7 +8,6 @@ class PortfolioController < ApplicationController
     # one of their own companies. See Deal#effective_user / PortfolioSummary.
     @upsell_deals = @summary.upsell_deals.sort_by { |d| d.company.name }
     @viewable_ams = current_user.admin? ? User.active.order(:name) : nil
-    @reassignable_ams = current_user.kam_or_admin? ? User.active.order(:name) : nil
     @selectable_companies = current_user.admin? ? Company.order(:name) : current_user.companies.order(:name)
 
     @evo_q = params[:evo_q].to_s.strip

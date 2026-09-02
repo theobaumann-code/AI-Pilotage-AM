@@ -41,26 +41,14 @@ class ReassignAmTest < ActionDispatch::IntegrationTest
     assert_equal @original_am, produit.reload.effective_user
   end
 
-  test "a plain AM cannot reassign anything" do
-    plain_am = User.create!(email: "regular-reassign@example.com", password: "password123", name: "Regular AM", active: true)
+  test "a non-admin cannot reassign anything" do
+    non_admin = User.create!(email: "regular-reassign@example.com", password: "password123", name: "Regular AM", active: true)
     upsell = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 5,
       probabilite_signature: 50, statut_signature: "En cours")
 
-    sign_in plain_am
-    patch reassign_am_deal_path(upsell), params: { user_id: plain_am.id }
+    sign_in non_admin
+    patch reassign_am_deal_path(upsell), params: { user_id: non_admin.id }
 
     assert_nil upsell.reload.user
-  end
-
-  test "a KAM (not admin) can reassign an upsell" do
-    kam = User.create!(email: "kam-reassign@example.com", password: "password123", name: "KAM Reassign", active: true, kam: true)
-    upsell = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 5,
-      probabilite_signature: 50, statut_signature: "En cours")
-
-    sign_in kam
-    patch reassign_am_deal_path(upsell), params: { user_id: @new_am.id }
-    assert_redirected_to portfolio_path
-
-    assert_equal @new_am, upsell.reload.effective_user
   end
 end

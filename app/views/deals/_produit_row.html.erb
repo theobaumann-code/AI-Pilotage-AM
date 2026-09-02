@@ -62,11 +62,9 @@
   </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction" style="white-space:nowrap;">
-    <% if current_user.kam_or_admin? %>
+    <% if current_user.admin? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
         onclick="openReassignPanel('reassign-produit-panel', 'reassign-produit-form', 'reassign-produit-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
-    <% end %>
-    <% if current_user.admin? %>
       <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
             form: { data: { turbo_confirm: "Supprimer ce produit ?" }, style: "display:inline-block;" } %>
     <% end %>

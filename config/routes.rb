@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  resource :portfolio, only: [:show], controller: "portfolio"
+  resource :portfolio, only: [:show], controller: "portfolio" do
+    get :export_produits
+  end
   resource :pilotage, only: [:show], controller: "pilotage"
   resources :companies, only: [:create, :destroy] do
     member { patch :reassign_am }

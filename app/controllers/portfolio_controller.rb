@@ -1,3 +1,5 @@
+require "csv"
+
 class PortfolioController < ApplicationController
   def show
     @companies = viewed_user.companies.includes(:deals).order(:name)
@@ -25,9 +27,7 @@ class PortfolioController < ApplicationController
     @ren_q = params[:ren_q].to_s.strip
     @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
-    ren_rows = filter_by_name(@produit_deals, @ren_q) { |d| d.company.name }
-    ren_rows = ren_rows.select { |d| @ren_produits.include?(d.produit) } if @ren_produits.present?
-    ren_rows = ren_rows.select { |d| @ren_statuts.include?(d.statut_renouvellement) } if @ren_statuts.present?
+    ren_rows = filtered_produit_deals
     # ARR-weighted like Company#avg_increase_pct, over every filtered row (not just the current page) so
     # the footer always reflects the full filtered set the admin is looking at.
     @ren_taux_avg = weighted_avg(ren_rows, :taux, :arr)
@@ -63,7 +63,35 @@ class PortfolioController < ApplicationController
       }, default_sort: :nom)
   end
 
+  # Mirrors the "Renouvellement" table exactly (same filters, same rows, just unpaginated) but with every
+  # ProduitDeal field, including identifiant — the table itself hides some of these behind sorting/paging.
+  def export_produits
+    @produit_deals = viewed_user.companies.includes(:deals).order(:name).flat_map(&:produit_deals).sort_by { |d| d.company.name }
+    @ren_q = params[:ren_q].to_s.strip
+    @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
+    @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
+
+    csv = CSV.generate(col_sep: ";") do |csv|
+      csv << ["Nom", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)", "Taux négocié (%)",
+              "Statut de renouvellement", "ARR final (€)", "AM"]
+      filtered_produit_deals.each do |d|
+        csv << [d.company.name, d.produit, d.college, d.assureur, d.identifiant, d.arr, d.taux,
+                d.statut_renouvellement, d.final_arr, d.company.user.name]
+      end
+    end
+
+    send_data csv, filename: "produits-#{viewed_user.name.parameterize}-#{Date.current.iso8601}.csv",
+      type: "text/csv; charset=utf-8"
+  end
+
   private
+
+  def filtered_produit_deals
+    rows = filter_by_name(@produit_deals, @ren_q) { |d| d.company.name }
+    rows = rows.select { |d| @ren_produits.include?(d.produit) } if @ren_produits.present?
+    rows = rows.select { |d| @ren_statuts.include?(d.statut_renouvellement) } if @ren_statuts.present?
+    rows
+  end
 
   def filter_by_name(list, query)
     return list if query.blank?

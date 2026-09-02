@@ -79,6 +79,7 @@
           <%= render "shared/checklist_filter", param_name: "ren_produits", options: ProduitDeal::PRODUITS, selected: @ren_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "ren_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @ren_statuts, legend: "Statut" %>
         <% end %>
+        <%= link_to "Exporter CSV", export_produits_portfolio_path(user_id: params[:user_id], ren_q: @ren_q, ren_produits: @ren_produits, ren_statuts: @ren_statuts), class: "button" %>
       </div>
     </div>
     <div class="table-scroll">

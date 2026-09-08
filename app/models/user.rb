@@ -6,7 +6,7 @@ class User < ApplicationRecord
   # globale → AM), which also makes account recovery a normal admin action rather than a self-serve flow
   # that needs real SMTP.
   devise :database_authenticatable,
-         :rememberable, :validatable
+         :rememberable, :validatable, :omniauthable, omniauth_providers: [ :google_oauth2 ]
 
   validates :name, presence: true
 

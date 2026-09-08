@@ -92,7 +92,7 @@ class DealsController < ApplicationController
       [
         turbo_stream.replace(@deal, partial: "pilotage/global_upsell_row", locals: { deal: @deal }),
         turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(Company.all), dom_id: "global-summary-cards" })
+          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
       ]
     else
       row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
@@ -101,7 +101,7 @@ class DealsController < ApplicationController
         turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
         turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
         turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(owner.companies.includes(:deals)), dom_id: "portfolio-summary-cards" })
+          locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals)), dom_id: "portfolio-summary-cards" })
       ]
     end
   end

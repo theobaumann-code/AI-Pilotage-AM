@@ -2,7 +2,10 @@ require "csv"
 
 class PortfolioController < ApplicationController
   def show
-    @companies = viewed_user.companies.includes(:deals).order(:name)
+    # produit_deals/upsell_deals are separate has_many associations from :deals (each scoped by `type`), so
+    # `includes(:deals)` wouldn't preload them — Company's own arr_initial/churned_arr/upsold_arr/final_arr
+    # (used per row below) and @produit_deals all call them directly, one query per company otherwise.
+    @companies = viewed_user.companies.includes(:produit_deals, :upsell_deals).order(:name)
     @summary = PortfolioSummary.new(@companies, user: viewed_user)
     @produit_deals = @companies.flat_map(&:produit_deals).sort_by { |d| d.company.name }
     # Effective ownership, not company ownership — an upsell explicitly reassigned to viewed_user shows up
@@ -66,7 +69,7 @@ class PortfolioController < ApplicationController
   # Mirrors the "Renouvellement" table exactly (same filters, same rows, just unpaginated) but with every
   # ProduitDeal field, including identifiant — the table itself hides some of these behind sorting/paging.
   def export_produits
-    @produit_deals = viewed_user.companies.includes(:deals).order(:name).flat_map(&:produit_deals).sort_by { |d| d.company.name }
+    @produit_deals = viewed_user.companies.includes(:produit_deals).order(:name).flat_map(&:produit_deals).sort_by { |d| d.company.name }
     @ren_q = params[:ren_q].to_s.strip
     @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)

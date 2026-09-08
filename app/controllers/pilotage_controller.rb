@@ -1,10 +1,14 @@
 class PilotageController < ApplicationController
   def show
     @active_ams = User.active.order(:name)
+    # produit_deals/upsell_deals are separate has_many associations from :deals (each with its own `type`
+    # scope), so `includes(:deals)` doesn't preload them — every PortfolioSummary/Company aggregate method
+    # below would otherwise issue its own query per company, which is what made this page crawl once there
+    # were enough companies in production (1200+ queries, 20s+ loads).
     @am_rows = @active_ams.map do |am|
-      { am: am, summary: PortfolioSummary.new(am.companies.includes(:deals), user: am) }
+      { am: am, summary: PortfolioSummary.new(am.companies.includes(:produit_deals), user: am) }
     end
-    @global_summary = PortfolioSummary.new(Company.all)
+    @global_summary = PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals))
 
     @am_q = params[:am_q].to_s.strip
     am_rows_filtered = @am_q.present? ? @am_rows.select { |r| r[:am].name.downcase.include?(@am_q.downcase) } : @am_rows

@@ -13,8 +13,8 @@ class UsersController < ApplicationController
   end
 
   # Two distinct forms post here under the same route: the admin-toggle button (a bare `admin` param) and
-  # the "modifier les identifiants" form (a nested `user` param with email/password) — dispatch on which
-  # one actually showed up rather than giving them separate actions, since both are "update this AM".
+  # the "modifier les identifiants" form (a nested `user` param with name/email/password) — dispatch on
+  # which one actually showed up rather than giving them separate actions, since both are "update this AM".
   def update
     user = User.find(params[:id])
 
@@ -59,7 +59,7 @@ class UsersController < ApplicationController
   # fields blank keeps the current password unchanged (only email is touched), instead of failing Devise's
   # presence validation on an empty password.
   def update_credentials(user)
-    attrs = params.require(:user).permit(:email, :password, :password_confirmation)
+    attrs = params.require(:user).permit(:name, :email, :password, :password_confirmation)
     attrs = attrs.except(:password, :password_confirmation) if attrs[:password].blank?
 
     if user.update(attrs)

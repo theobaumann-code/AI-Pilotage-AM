@@ -121,6 +121,11 @@
         <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch, html: { id: "edit-am-form" } do %>
           <div class="modal-body">
             <div class="modal-row">
+              <label>Nom
+                <%= text_field_tag "user[name]", nil, id: "edit-am-name-input", required: true %>
+              </label>
+            </div>
+            <div class="modal-row">
               <label>Email
                 <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
               </label>
@@ -143,6 +148,7 @@
       <script>
         function editAmCredentials(url, email, name) {
           document.getElementById('edit-am-form').action = url;
+          document.getElementById('edit-am-name-input').value = name;
           document.getElementById('edit-am-email').value = email;
           document.getElementById('edit-am-name').textContent = name;
           var panel = document.getElementById('edit-am-panel');

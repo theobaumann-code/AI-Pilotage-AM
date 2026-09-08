@@ -10,7 +10,7 @@ class GoogleSsoTest < ActionDispatch::IntegrationTest
     ENV["AUTH_ALLOWED_DOMAIN"] = "sidecare.com"
     ENV.delete("AUTH_ALLOWED_EMAILS")
     OmniAuth.config.test_mode = true
-    @user = User.create!(email: "sso@sidecare.com", name: "AM SSO", password: "test-password-123", active: true, admin: false)
+    @user = User.create!(email: "sso@sidecare.com", name: "AM SSO", active: true, admin: false)
   end
 
   teardown do
@@ -84,11 +84,31 @@ class GoogleSsoTest < ActionDispatch::IntegrationTest
     assert_select ".alert", /échoué ou a été annulée/
   end
 
-  test "login shows a POST Google button and password sign in still works" do
+  test "login offers only Google and the legacy password endpoint is disabled" do
     get new_user_session_path
     assert_select "form[action=?][method=post] button[data-turbo=false]", user_google_oauth2_omniauth_authorize_path
-    post user_session_path, params: { user: { email: @user.email, password: "test-password-123" } }
-    assert_redirected_to root_path
+    assert_select "input[type=password]", count: 0
+    post "/users/sign_in", params: { user: { email: @user.email, password: "old-password" } }
+    assert_response :not_found
+    get pilotage_path
+    assert_redirected_to new_user_session_path
+  end
+
+  test "deactivation revokes an existing SSO session" do
+    authenticate
+    @user.update!(active: false)
+    get pilotage_path
+    assert_redirected_to new_user_session_path
+  end
+
+  test "admin can create an AM without a password" do
+    @user.update!(admin: true)
+    authenticate
+    assert_difference "User.count", 1 do
+      post users_path, params: { user: { name: "New AM", email: "new-am@sidecare.com" } }
+    end
+    assert_redirected_to pilotage_path
+    assert_equal "", User.find_by!(email: "new-am@sidecare.com").encrypted_password
   end
 
   test "OAuth callback rejects an invalid state before contacting Google" do

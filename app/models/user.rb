@@ -1,12 +1,14 @@
 class User < ApplicationRecord
-  # No :registerable — AM accounts are created by an admin (via the "+ Nouvel AM" flow), never via public
-  # self-signup, matching how the original tool's AM list was always admin-managed.
-  # No :recoverable — there's no mail delivery in production to actually send a reset link (Devise turned
-  # a misconfigured send into a 500). An admin can change an AM's email/password directly instead (Vue
-  # globale → AM), which also makes account recovery a normal admin action rather than a self-serve flow
-  # that needs real SMTP.
-  devise :database_authenticatable,
-         :rememberable, :validatable, :omniauthable, omniauth_providers: [ :google_oauth2 ]
+  # Access is provisioned by admins; Google is the only authentication strategy.
+  devise :omniauthable, omniauth_providers: [ :google_oauth2 ]
+
+  normalizes :email, with: ->(email) { email.strip.downcase }
+  validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: Devise.email_regexp }
+
+  # Invalidate old password sessions, and SSO sessions after an email/access change.
+  def authenticatable_salt
+    "google-sso:#{email}:#{active?}:#{updated_at&.utc&.iso8601(6)}"
+  end
 
   validates :name, presence: true
 

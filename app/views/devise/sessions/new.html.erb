@@ -3,26 +3,9 @@
   <% if Devise.omniauth_configs.key?(:google_oauth2) %>
     <p>Utilisez votre compte Google professionnel SideCare.</p>
     <%= button_to "Se connecter avec Google", user_google_oauth2_omniauth_authorize_path,
-        method: :post, class: "button", data: { turbo: false } %>
-    <p>ou avec votre mot de passe</p>
-  <% end %>
-
-  <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-    <div class="field">
-      <%= f.label :email, "Adresse e-mail" %><br>
-      <%= f.email_field :email, autofocus: true, autocomplete: "email", required: true %>
-    </div>
-    <div class="field">
-      <%= f.label :password, "Mot de passe" %><br>
-      <%= f.password_field :password, autocomplete: "current-password", required: true %>
-    </div>
-    <% if devise_mapping.rememberable? %>
-      <div class="field">
-        <%= f.check_box :remember_me %>
-        <%= f.label :remember_me, "Se souvenir de moi" %>
-      </div>
-    <% end %>
-    <%= f.submit "Se connecter", class: "button" %>
+        method: :post, class: "button primary", data: { turbo: false } %>
+  <% else %>
+    <p role="alert">La connexion Google n’est pas encore configurée. Contactez un administrateur.</p>
   <% end %>
   <p>Votre compte doit avoir été créé et activé par un administrateur.</p>
 </section>

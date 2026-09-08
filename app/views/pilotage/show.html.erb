@@ -15,16 +15,8 @@
               <label>Nom
                 <%= f.text_field :name, required: true %>
               </label>
-              <label>Email
+              <label>Adresse Google professionnelle
                 <%= f.email_field :email, required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Mot de passe
-                <%= f.password_field :password, required: true, minlength: 6 %>
-              </label>
-              <label>Confirmation
-                <%= f.password_field :password_confirmation, required: true, minlength: 6 %>
               </label>
             </div>
             <div class="modal-row">
@@ -126,16 +118,8 @@
               </label>
             </div>
             <div class="modal-row">
-              <label>Email
+              <label>Adresse Google professionnelle
                 <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Nouveau mot de passe
-                <%= password_field_tag "user[password]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
-              </label>
-              <label>Confirmation
-                <%= password_field_tag "user[password_confirmation]", nil, minlength: 6, placeholder: "Laisser vide pour ne pas changer" %>
               </label>
             </div>
           </div>

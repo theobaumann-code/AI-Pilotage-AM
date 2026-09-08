@@ -2,16 +2,12 @@
 # In production, the first admin will be created manually via the Rails console on Scalingo (one-time setup).
 User.find_or_create_by!(email: "admin@sidecare.com") do |u|
   u.name = "Admin SideCare"
-  u.password = "password123"
-  u.password_confirmation = "password123"
   u.admin = true
   u.active = true
 end
 
 User.find_or_create_by!(email: "am@sidecare.com") do |u|
   u.name = "AM Test"
-  u.password = "password123"
-  u.password_confirmation = "password123"
   u.admin = false
   u.active = true
 end

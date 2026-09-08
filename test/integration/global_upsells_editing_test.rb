@@ -6,8 +6,8 @@ require "test_helper"
 # global-view-only copy — so it shows up unchanged the next time that AM opens Mon portefeuille.
 class GlobalUpsellsEditingTest < ActionDispatch::IntegrationTest
   setup do
-    @admin = User.create!(email: "admin-gups@example.com", password: "password123", name: "Admin Gups", admin: true, active: true)
-    @other_am = User.create!(email: "other-gups@example.com", password: "password123", name: "Other AM", admin: false, active: true)
+    @admin = User.create!(email: "admin-gups@example.com", name: "Admin Gups", admin: true, active: true)
+    @other_am = User.create!(email: "other-gups@example.com", name: "Other AM", admin: false, active: true)
     @company = Company.create!(name: "Client Other AM", user: @other_am)
     @deal = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
       probabilite_signature: 50, statut_signature: "En cours")
@@ -27,7 +27,7 @@ class GlobalUpsellsEditingTest < ActionDispatch::IntegrationTest
   end
 
   test "a non-admin cannot edit another AM's upsell via the global-table path" do
-    other_regular_am = User.create!(email: "third-gups@example.com", password: "password123", name: "Third AM", admin: false, active: true)
+    other_regular_am = User.create!(email: "third-gups@example.com", name: "Third AM", admin: false, active: true)
     sign_in other_regular_am
 
     patch deal_path(@deal), params: { deal: { statut_signature: "Signé" }, row_context: "global" }

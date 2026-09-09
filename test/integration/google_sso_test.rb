@@ -81,7 +81,7 @@ class GoogleSsoTest < ActionDispatch::IntegrationTest
     get user_google_oauth2_omniauth_callback_path
     assert_redirected_to new_user_session_path
     follow_redirect!
-    assert_select ".alert", /échoué ou a été annulée/
+    assert_select ".auth-message-alert", /échoué ou a été annulée/
   end
 
   test "login offers only Google and the legacy password endpoint is disabled" do

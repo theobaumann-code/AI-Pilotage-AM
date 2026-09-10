@@ -2,9 +2,9 @@ require "test_helper"
 
 class ReassignAmTest < ActionDispatch::IntegrationTest
   setup do
-    @admin = User.create!(email: "admin-reassign@example.com", password: "password123", name: "Admin Reassign", admin: true, active: true)
-    @original_am = User.create!(email: "orig-reassign@example.com", password: "password123", name: "Orig AM", active: true)
-    @new_am = User.create!(email: "new-reassign@example.com", password: "password123", name: "New AM", active: true)
+    @admin = User.create!(email: "admin-reassign@example.com", name: "Admin Reassign", admin: true, active: true)
+    @original_am = User.create!(email: "orig-reassign@example.com", name: "Orig AM", active: true)
+    @new_am = User.create!(email: "new-reassign@example.com", name: "New AM", active: true)
     @company = Company.create!(name: "Client Reassign", user: @original_am)
   end
 
@@ -42,7 +42,7 @@ class ReassignAmTest < ActionDispatch::IntegrationTest
   end
 
   test "a non-admin cannot reassign anything" do
-    non_admin = User.create!(email: "regular-reassign@example.com", password: "password123", name: "Regular AM", active: true)
+    non_admin = User.create!(email: "regular-reassign@example.com", name: "Regular AM", active: true)
     upsell = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 5,
       probabilite_signature: 50, statut_signature: "En cours")
 

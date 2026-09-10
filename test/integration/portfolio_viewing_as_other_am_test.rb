@@ -8,14 +8,14 @@ require "test_helper"
 # only carries params[:redirect_user_id], so it silently fell back to current_user (the admin).
 class PortfolioViewingAsOtherAmTest < ActionDispatch::IntegrationTest
   setup do
-    @admin = User.create!(email: "admin-int@example.com", password: "password123", name: "Admin Int", admin: true, active: true)
+    @admin = User.create!(email: "admin-int@example.com", name: "Admin Int", admin: true, active: true)
     # A distinctive ARR on the admin's own portfolio: if the bug regresses and the summary cards fall back
     # to computing from the admin instead of the viewed AM, this exact value would leak into the response.
     admin_company = Company.create!(name: "Admin Own Client", user: @admin)
     ProduitDeal.create!(company: admin_company, produit: "Mutuelle", college: "Cadre", assureur: "AXA",
       identifiant: "admin-1", arr: 99_000, taux: 0, statut_renouvellement: "En cours")
 
-    @other_am = User.create!(email: "other-int@example.com", password: "password123", name: "Other AM", admin: false, active: true)
+    @other_am = User.create!(email: "other-int@example.com", name: "Other AM", admin: false, active: true)
     @company = Company.create!(name: "Client Other AM", user: @other_am)
     @deal = ProduitDeal.create!(company: @company, produit: "Mutuelle", college: "Cadre", assureur: "AXA",
       identifiant: "int-1", arr: 10_000, taux: 2, statut_renouvellement: "En cours")

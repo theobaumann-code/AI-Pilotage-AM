@@ -274,6 +274,15 @@ Devise.setup do |config|
   # ==> OmniAuth
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
+  if ENV["AUTH_GOOGLE_ID"].present? && ENV["AUTH_GOOGLE_SECRET"].present?
+    config.omniauth :google_oauth2, ENV.fetch("AUTH_GOOGLE_ID"), ENV.fetch("AUTH_GOOGLE_SECRET"),
+      scope: "openid,email,profile",
+      access_type: "online",
+      prompt: "select_account",
+      hd: ENV.fetch("AUTH_ALLOWED_DOMAIN", "sidecare.com").strip.downcase,
+      overridable_authorize_options: []
+  end
+
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
 
   # ==> Warden configuration

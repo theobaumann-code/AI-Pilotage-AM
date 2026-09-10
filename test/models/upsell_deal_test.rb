@@ -2,7 +2,7 @@ require "test_helper"
 
 class UpsellDealTest < ActiveSupport::TestCase
   setup do
-    @user = User.create!(email: "am2@example.com", password: "password123", name: "AM Deux", active: true)
+    @user = User.create!(email: "am2@example.com", name: "AM Deux", active: true)
     @company = Company.create!(name: "Cabinet Upsell", user: @user)
   end
 

@@ -6,14 +6,14 @@ class UsersController < ApplicationController
   def create
     user = User.new(user_params)
     if user.save
-      redirect_to pilotage_path, notice: "#{user.name} ajouté. Communiquez-lui son email et son mot de passe pour se connecter."
+      redirect_to pilotage_path, notice: "#{user.name} ajouté. Il peut se connecter avec son compte Google professionnel."
     else
       redirect_to pilotage_path, alert: user.errors.full_messages.to_sentence
     end
   end
 
   # Two distinct forms post here under the same route: the admin-toggle button (a bare `admin` param) and
-  # the "modifier les identifiants" form (a nested `user` param with name/email/password) — dispatch on
+  # the "modifier les identifiants" form (a nested `user` param with name/email) — dispatch on
   # which one actually showed up rather than giving them separate actions, since both are "update this AM".
   def update
     user = User.find(params[:id])
@@ -54,13 +54,9 @@ class UsersController < ApplicationController
     redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.admin? ? "administrateur" : "AM classique"}."
   end
 
-  # There's no self-service "mot de passe oublié" (no mail delivery in production) — this is how an AM
-  # gets back into their account: an admin sets a new email and/or password directly. Leaving the password
-  # fields blank keeps the current password unchanged (only email is touched), instead of failing Devise's
-  # presence validation on an empty password.
+  # Admins manage the Google email used to match an existing AM account.
   def update_credentials(user)
-    attrs = params.require(:user).permit(:name, :email, :password, :password_confirmation)
-    attrs = attrs.except(:password, :password_confirmation) if attrs[:password].blank?
+    attrs = params.require(:user).permit(:name, :email)
 
     if user.update(attrs)
       redirect_to pilotage_path, notice: "Identifiants de #{user.name} mis à jour."
@@ -70,6 +66,6 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :password_confirmation, :admin)
+    params.require(:user).permit(:name, :email, :admin)
   end
 end

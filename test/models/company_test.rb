@@ -2,8 +2,8 @@ require "test_helper"
 
 class CompanyTest < ActiveSupport::TestCase
   setup do
-    @am1 = User.create!(email: "am1@example.com", password: "password123", name: "AM Un", active: true)
-    @am2 = User.create!(email: "am2@example.com", password: "password123", name: "AM Deux", active: true)
+    @am1 = User.create!(email: "am1@example.com", name: "AM Un", active: true)
+    @am2 = User.create!(email: "am2@example.com", name: "AM Deux", active: true)
     @company = Company.create!(name: "Cabinet Reassign", user: @am1)
   end
 

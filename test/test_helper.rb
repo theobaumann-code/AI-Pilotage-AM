@@ -1,4 +1,7 @@
 ENV["RAILS_ENV"] ||= "test"
+# Dummy OAuth credentials only for simulated authentication tests.
+ENV["AUTH_GOOGLE_ID"] ||= "test-client"
+ENV["AUTH_GOOGLE_SECRET"] ||= "test-secret"
 require_relative "../config/environment"
 require "rails/test_help"
 

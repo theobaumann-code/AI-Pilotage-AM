@@ -2,8 +2,8 @@ require "test_helper"
 
 class DealTest < ActiveSupport::TestCase
   setup do
-    @owner = User.create!(email: "owner-deal@example.com", password: "password123", name: "Owner AM", active: true)
-    @other = User.create!(email: "other-deal@example.com", password: "password123", name: "Other AM", active: true)
+    @owner = User.create!(email: "owner-deal@example.com", name: "Owner AM", active: true)
+    @other = User.create!(email: "other-deal@example.com", name: "Other AM", active: true)
     @company = Company.create!(name: "Cabinet Deal", user: @owner)
   end
 

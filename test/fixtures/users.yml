@@ -1,2 +1,1 @@
-# Intentionally empty — users are created explicitly in each test (name/admin/active are NOT NULL,
-# and Devise's validatable module needs a real email/password), fixtures would fight both.
+# Users are created explicitly in each test with their name, email and access flags.

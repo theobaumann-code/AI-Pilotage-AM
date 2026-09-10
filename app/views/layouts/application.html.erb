@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
   <head>
     <title><%= content_for(:title) || "Pilotage NRR — SideCare" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -54,9 +54,11 @@
       </nav>
     <% end %>
 
-    <main>
+    <main class="<%= content_for?(:auth_page) ? "auth-shell" : nil %>">
+      <% unless content_for?(:auth_page) %>
       <% if notice %><p class="notice"><%= notice %></p><% end %>
       <% if alert %><p class="alert"><%= alert %></p><% end %>
+      <% end %>
       <%= yield %>
     </main>
   </body>

@@ -2,7 +2,7 @@ require "test_helper"
 
 class PortfolioSummaryTest < ActiveSupport::TestCase
   setup do
-    @am = User.create!(email: "am-summary@example.com", password: "password123", name: "AM Summary", active: true)
+    @am = User.create!(email: "am-summary@example.com", name: "AM Summary", active: true)
     @company = Company.create!(name: "Cabinet Summary", user: @am)
   end
 
@@ -52,7 +52,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
   end
 
   test "with user:, upsold reflects effective ownership rather than company ownership" do
-    other_am = User.create!(email: "other-summary@example.com", password: "password123", name: "Other Summary", active: true)
+    other_am = User.create!(email: "other-summary@example.com", name: "Other Summary", active: true)
     own_upsell = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
       probabilite_signature: 100, statut_signature: "Signé")
     reassigned_away = UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 10,
@@ -69,7 +69,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
   end
 
   test "without user:, upsold stays company-scoped (used for cross-AM aggregates)" do
-    other_am = User.create!(email: "other-summary2@example.com", password: "password123", name: "Other Summary 2", active: true)
+    other_am = User.create!(email: "other-summary2@example.com", name: "Other Summary 2", active: true)
     UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
       probabilite_signature: 100, statut_signature: "Signé", user: other_am)
 

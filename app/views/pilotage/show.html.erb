@@ -15,16 +15,8 @@
               <label>Nom
                 <%= f.text_field :name, required: true %>
               </label>
-              <label>Email
+              <label>Adresse Google professionnelle
                 <%= f.email_field :email, required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Mot de passe
-                <%= f.password_field :password, required: true, minlength: 6 %>
-              </label>
-              <label>Confirmation
-                <%= f.password_field :password_confirmation, required: true, minlength: 6 %>
               </label>
             </div>
             <div class="modal-row">
@@ -119,11 +111,9 @@
       <div id="edit-am-panel" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
         <p style="padding:16px 22px 0;margin:0;font-weight:700;">Modifier les identifiants de <span id="edit-am-name"></span></p>
         <%# turbo_frame: "_top" forces a full-page redirect on submit — without it, a validation failure
-            (e.g. the password manager silently autofilling mismatched values into the password fields
-            below, which fails Devise's confirmation check and blocks the *entire* update, name included)
-            redirects back inside this frame, which Rails renders with a bare layout that has no flash
-            partial — so the error existed but was never visible, making a real failure look like nothing
-            happened at all. %>
+            (e.g. an email already used by another account) redirects back inside this frame, which Rails
+            renders with a bare layout that has no flash partial — so the error existed but was never
+            visible, making a real failure look like nothing happened at all. %>
         <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch,
               html: { id: "edit-am-form" }, data: { turbo_frame: "_top" } do %>
           <div class="modal-body">
@@ -133,18 +123,8 @@
               </label>
             </div>
             <div class="modal-row">
-              <label>Email
+              <label>Adresse Google professionnelle
                 <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Nouveau mot de passe
-                <%= password_field_tag "user[password]", nil, minlength: 6, autocomplete: "new-password",
-                      placeholder: "Laisser vide pour ne pas changer" %>
-              </label>
-              <label>Confirmation
-                <%= password_field_tag "user[password_confirmation]", nil, minlength: 6, autocomplete: "new-password",
-                      placeholder: "Laisser vide pour ne pas changer" %>
               </label>
             </div>
           </div>

@@ -1,3 +1,5 @@
+require "csv"
+
 class PilotageController < ApplicationController
   def show
     @active_ams = User.active.order(:name)
@@ -50,6 +52,45 @@ class PilotageController < ApplicationController
         projection: ->(d) { TablePager.key(d.projection) },
         statut_signature: ->(d) { TablePager.key(d.statut_signature) }
       }, default_sort: :nom)
+  end
+
+  # Mirrors "Upsells en cours (tous AM)" exactly (same filters, unpaginated), across every AM.
+  def export_upsells
+    @upsell_q = params[:upsell_q].to_s.strip
+    @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
+    @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
+    @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
+
+    csv = CSV.generate(col_sep: ";") do |csv|
+      csv << ["Nom", "AM", "Produit", "Nb salariés", "Montant ARR upsellé (€)", "% de chance",
+              "Projection upsell (€)", "Statut de signature"]
+      filtered_global_upsells.each do |d|
+        csv << [d.company.name, d.effective_user.name, d.produit, d.nombre_salaries, d.upsell_amount,
+                d.probabilite_signature, d.projection, d.statut_signature]
+      end
+    end
+
+    send_data "\xEF\xBB\xBF" + csv, filename: "upsells-tous-am-#{Date.current.iso8601}.csv",
+      type: "text/csv; charset=utf-8"
+  end
+
+  # Every produit deal across every AM — there's no on-screen raw table to mirror here (only the
+  # "Nouveau contrat vs augmentation" donut, which shows aggregate counts, not rows), so this is
+  # deliberately unfiltered: the whole renewal dataset in one file.
+  def export_produits
+    deals = ProduitDeal.includes(company: :user).to_a.sort_by { |d| d.company.name }
+
+    csv = CSV.generate(col_sep: ";") do |csv|
+      csv << ["Nom", "AM", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)", "Taux négocié (%)",
+              "Statut de renouvellement", "ARR final (€)"]
+      deals.each do |d|
+        csv << [d.company.name, d.company.user.name, d.produit, d.college, d.assureur, d.identifiant,
+                d.arr, d.taux, d.statut_renouvellement, d.final_arr]
+      end
+    end
+
+    send_data "\xEF\xBB\xBF" + csv, filename: "produits-tous-am-#{Date.current.iso8601}.csv",
+      type: "text/csv; charset=utf-8"
   end
 
   private

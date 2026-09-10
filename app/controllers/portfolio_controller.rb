@@ -83,7 +83,10 @@ class PortfolioController < ApplicationController
       end
     end
 
-    send_data csv, filename: "produits-#{viewed_user.name.parameterize}-#{Date.current.iso8601}.csv",
+    # Excel (the realistic destination for this file) assumes the system codepage without a BOM, which
+    # mangles every accented character ("Collège" → "CollÃ¨ge") — the export looked broken even though the
+    # data was correct. Prepending the UTF-8 BOM makes Excel detect the encoding correctly.
+    send_data "\xEF\xBB\xBF" + csv, filename: "produits-#{viewed_user.name.parameterize}-#{Date.current.iso8601}.csv",
       type: "text/csv; charset=utf-8"
   end
 

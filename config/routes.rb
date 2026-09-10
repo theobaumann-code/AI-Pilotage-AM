@@ -17,7 +17,10 @@ Rails.application.routes.draw do
   resource :portfolio, only: [:show], controller: "portfolio" do
     get :export_produits
   end
-  resource :pilotage, only: [:show], controller: "pilotage"
+  resource :pilotage, only: [:show], controller: "pilotage" do
+    get :export_upsells
+    get :export_produits
+  end
   resources :companies, only: [:create, :destroy] do
     member { patch :reassign_am }
   end

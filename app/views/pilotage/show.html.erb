@@ -188,7 +188,7 @@
       </label>
     <% end %>
     <div class="spacer"></div>
-    <%= link_to "Exporter les produits (CSV)", export_produits_pilotage_path, class: "button" %>
+    <%= link_to "Exporter les produits (CSV)", export_produits_pilotage_path, class: "button", data: { turbo: false } %>
   </div>
   <%= donut_chart(@renewal_donut) %>
 </div>
@@ -214,7 +214,7 @@
           <%= render "shared/checklist_filter", param_name: "upsell_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @upsell_statuts, legend: "Statut" %>
         <% end %>
         <%= link_to "Exporter CSV", export_upsells_pilotage_path(upsell_q: @upsell_q, upsell_ams: @upsell_ams,
-              upsell_produits: @upsell_produits, upsell_statuts: @upsell_statuts), class: "button" %>
+              upsell_produits: @upsell_produits, upsell_statuts: @upsell_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">

@@ -32,7 +32,7 @@ class BonusTrackerUpsellEstimatorTest < ActiveSupport::TestCase
     end
 
     assert_equal "Bearer secret", captured_request["Authorization"]
-    assert_equal({"identifiers" => ["12345678900012"], "product" => "Mutuelle", "employees" => 20}, JSON.parse(captured_request.body))
+    assert_equal({"identifiers" => ["12345678900012"], "company_name" => "Estimate Client", "product" => "Mutuelle", "employees" => 20}, JSON.parse(captured_request.body))
   end
 
   test "marks an upsell unavailable instead of using a fixed fallback" do

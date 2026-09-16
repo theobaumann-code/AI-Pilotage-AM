@@ -39,7 +39,8 @@ class BonusTrackerUpsellEstimator
 
   def estimate
     identifiers = @deal.company.produit_deals.filter_map { |product| normalize_identifier(product.identifiant) }.uniq
-    raise EstimationError, "Aucun identifiant BO exploitable pour ce client" if identifiers.empty?
+    company_name = @deal.company.name.to_s.strip
+    raise EstimationError, "Aucun identifiant ni nom exploitable pour ce client" if identifiers.empty? && company_name.blank?
     raise EstimationError, "Estimateur Bonus Tracker non configuré" if @endpoint.blank? || @token.blank?
 
     uri = URI(@endpoint)
@@ -48,6 +49,7 @@ class BonusTrackerUpsellEstimator
     request["Content-Type"] = "application/json"
     request.body = JSON.generate(
       identifiers: identifiers,
+      company_name: company_name,
       product: @deal.produit,
       employees: @deal.nombre_salaries.to_i
     )

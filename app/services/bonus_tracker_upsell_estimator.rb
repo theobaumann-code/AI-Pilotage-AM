@@ -54,7 +54,7 @@ class BonusTrackerUpsellEstimator
       employees: @deal.nombre_salaries.to_i
     )
 
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: 3, read_timeout: 25) do |http|
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: 5, read_timeout: 120) do |http|
       http.request(request)
     end
     raise EstimationError, "Bonus Tracker a répondu #{response.code}" unless response.is_a?(Net::HTTPSuccess)

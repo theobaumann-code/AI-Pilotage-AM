@@ -1,11 +1,18 @@
 class Deal < ApplicationRecord
   self.inheritance_column = :type
 
-  # €/employee/year — identical rate table to the original UPSELL_RATE_PER_EMPLOYEE.
+  # Gross-to-net conversion for Mutuelle (health) rates only — Prévoyance was already quoted net. Matches
+  # the ConvertMutuelleArrToNet migration, which applied the same factor to every existing Mutuelle
+  # ProduitDeal's stored ARR (except the AMs whose portfolios were already net).
+  MUTUELLE_GROSS_TO_NET = 1.1537
+
+  # €/employee/year — identical rate table to the original UPSELL_RATE_PER_EMPLOYEE, with the Mutuelle
+  # portion converted to net (see MUTUELLE_GROSS_TO_NET). The combined rate only converts its Mutuelle
+  # share (140€) — the Prévoyance share (36.90€) it's added to stays untouched.
   UPSELL_RATE_PER_EMPLOYEE = {
-    "Mutuelle" => 140.0,
+    "Mutuelle" => 140.0 / MUTUELLE_GROSS_TO_NET,
     "Prévoyance" => 36.90,
-    "Mutuelle/Prévoyance" => 176.90
+    "Mutuelle/Prévoyance" => (140.0 / MUTUELLE_GROSS_TO_NET) + 36.90
   }.freeze
 
   belongs_to :company

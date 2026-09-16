@@ -53,9 +53,9 @@ class UpsellDealTest < ActiveSupport::TestCase
     assert_equal 40, deal.probabilite_signature
   end
 
-  test "upsell_amount is derived from nombre_salaries and the produit rate, never stored" do
-    deal = build_deal(produit: "Mutuelle", nombre_salaries: 10)
-    assert_in_delta 10 * Deal::UPSELL_RATE_PER_EMPLOYEE["Mutuelle"], deal.upsell_amount, 0.01
+  test "upsell_amount uses the BO-backed estimate stored in arr" do
+    deal = build_deal(produit: "Mutuelle", nombre_salaries: 10, arr: 1_234.56)
+    assert_in_delta 1_234.56, deal.upsell_amount, 0.01
   end
 
   test "identifiant uniqueness does not apply to upsells (no identifiant column meaning here)" do

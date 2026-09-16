@@ -10,13 +10,15 @@
       <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
-  <td class="computed"><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="computed" title="<%= deal.arr_estimation_reference.presence || "Estimation BO indisponible" %>">
+    <%= deal.arr_estimable? ? number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) : "—" %>
+  </td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
       <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.signed?, onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
-  <td class="computed"><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="computed"><%= deal.arr_estimable? ? number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) : "—" %></td>
   <td>
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
       <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {},

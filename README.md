@@ -49,3 +49,22 @@ bin/rails test
 Les tests SSO utilisent des réponses Google simulées, sans vrais identifiants.
 Après déploiement, vérifier avec un compte AM autorisé, un compte non autorisé,
 et la déconnexion. L’aller-retour Google réel nécessite la configuration OAuth.
+
+## Estimation de l'ARR des upsells
+
+Les upsells ne reposent plus sur un montant fixe par salarié. L'application
+normalise le SIRET/SIREN des produits existants du client, le rattache au BO via
+Bonus Tracker, puis conserve le montant et les métadonnées renvoyés par son
+moteur primes/ARR.
+
+Configurer les deux variables suivantes avec le même secret interne que dans
+Bonus Tracker :
+
+```text
+BONUS_TRACKER_UPSELL_ESTIMATOR_URL=https://<bonus-tracker>/api/internal/upsell-arr-estimate
+BONUS_TRACKER_INTERNAL_TOKEN=<secret partagé>
+```
+
+Après la migration et la configuration, recalculer les lignes existantes avec
+`bin/rails upsell_arr:refresh`. Une ligne non rattachée ou non valorisable est
+affichée comme indisponible ; aucune moyenne fixe de secours n'est appliquée.

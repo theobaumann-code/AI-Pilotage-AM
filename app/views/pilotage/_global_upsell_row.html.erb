@@ -19,9 +19,11 @@
       <%= deal.nombre_salaries %>
     <% end %>
   </td>
-  <td><%= number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td title="<%= deal.arr_estimation_reference.presence || "Estimation BO indisponible" %>">
+    <%= deal.arr_estimable? ? number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) : "—" %>
+  </td>
   <td><%= deal.probabilite_signature %>%</td>
-  <td><%= number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td><%= deal.arr_estimable? ? number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) : "—" %></td>
   <td>
     <% if current_user.admin? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>

@@ -1,20 +1,6 @@
 class Deal < ApplicationRecord
   self.inheritance_column = :type
 
-  # Gross-to-net conversion for Mutuelle (health) rates only — Prévoyance was already quoted net. Matches
-  # the ConvertMutuelleArrToNet migration, which applied the same factor to every existing Mutuelle
-  # ProduitDeal's stored ARR (except the AMs whose portfolios were already net).
-  MUTUELLE_GROSS_TO_NET = 1.1537
-
-  # €/employee/year — identical rate table to the original UPSELL_RATE_PER_EMPLOYEE, with the Mutuelle
-  # portion converted to net (see MUTUELLE_GROSS_TO_NET). The combined rate only converts its Mutuelle
-  # share (140€) — the Prévoyance share (36.90€) it's added to stays untouched.
-  UPSELL_RATE_PER_EMPLOYEE = {
-    "Mutuelle" => 140.0 / MUTUELLE_GROSS_TO_NET,
-    "Prévoyance" => 36.90,
-    "Mutuelle/Prévoyance" => (140.0 / MUTUELLE_GROSS_TO_NET) + 36.90
-  }.freeze
-
   belongs_to :company
   # Owner override — see the AddUserToDeals migration. Only ever set on UpsellDeal; a ProduitDeal's
   # effective_user is always its company's owner (produits move as a whole with the company, never alone).
@@ -30,10 +16,12 @@ class Deal < ApplicationRecord
     user || company.user
   end
 
-  # Always derived, never stored authoritatively — matches computeUpsellAmount(c) in the original, which
-  # recomputes from nombre_salaries × tarif[produit] every time rather than trusting a persisted value.
+  # For upsells, `arr` is the latest estimate returned by Bonus Tracker after
+  # matching the company to the BO. It is deliberately not recomputed from a
+  # fixed per-employee table here: doing so would silently replace the richer
+  # premium/commission estimate whenever the record is displayed.
   def upsell_amount
-    nombre_salaries.to_i * (UPSELL_RATE_PER_EMPLOYEE[produit] || 0)
+    is_a?(UpsellDeal) ? arr.to_d : 0.to_d
   end
 
   def projection

@@ -72,6 +72,7 @@ class CsvImport
         deal = Deal.find(u.deal_id)
         company = deal.company
         deal.update!(u.attrs)
+        BonusTrackerUpsellEstimator.refresh!(deal) if deal.is_a?(UpsellDeal)
         reassign_company(company, u.am_name) if u.am_name && company.user.name != u.am_name
       rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
         raise ApplyError, "#{u.company_name} : #{e.message}"
@@ -81,7 +82,8 @@ class CsvImport
         company = Company.find_or_create_by_name!(c.company_name, user: am)
         reassign_company(company, c.am_name) if company.user.name != c.am_name
         klass = deal_type == "upsell" ? UpsellDeal : ProduitDeal
-        klass.create!(c.attrs.merge(company: company))
+        deal = klass.create!(c.attrs.merge(company: company))
+        BonusTrackerUpsellEstimator.refresh!(deal) if deal.is_a?(UpsellDeal)
       rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
         raise ApplyError, "#{c.company_name} : #{e.message}"
       end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_16_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_16_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,6 +56,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_16_100000) do
 
   create_table "deals", force: :cascade do |t|
     t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.datetime "arr_estimated_at"
+    t.string "arr_estimation_formula_version"
+    t.text "arr_estimation_reference"
+    t.string "arr_estimation_source"
     t.string "assureur"
     t.string "college"
     t.bigint "company_id", null: false

@@ -14,6 +14,10 @@ class UpsellDeal < Deal
     statut_signature == SIGNE
   end
 
+  def arr_estimable?
+    arr_estimation_source.present? && arr_estimation_source != "unavailable"
+  end
+
   private
 
   # Rule 5: marking an upsell "Signé" always forces probabilite_signature to 100. Moving back off "Signé"

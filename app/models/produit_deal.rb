@@ -2,7 +2,7 @@ class ProduitDeal < Deal
   PRODUITS = ["Mutuelle", "Prévoyance"].freeze
   COLLEGES = ["Ensemble du personnel", "Non cadre", "Cadre"].freeze
   # Kept alphabetical (case-insensitive) so every select/filter built from this list reads that way too.
-  ASSUREURS = ["AG2R", "Allianz", "Apicil", "AXA", "Gan", "Generali", "Groupama", "Harmonie",
+  ASSUREURS = ["AG2R", "Allianz", "Apicil", "Audiens", "AXA", "Gan", "Generali", "Groupama", "Harmonie",
                "Malakoff Humanis", "PanoCare", "Spvie", "Swiss Life", "Uniprévoyance"].freeze
   STATUTS_RENOUVELLEMENT = ["En cours", "Nouveau contrat", "Augmenté", "Augmentation particulière", "Churné"].freeze
   CHURNED = "Churné"

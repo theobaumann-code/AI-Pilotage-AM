@@ -167,29 +167,6 @@
 </div>
 
 <div class="chart-wrap">
-  <h3>NRR par AM vs objectif (<%= PortfolioSummary::NRR_TARGET %>%)</h3>
-  <% max_scale = [PortfolioSummary::NRR_TARGET + 10, *@am_rows.map { |r| r[:summary].nrr }, 10].max %>
-  <% target_pct = PortfolioSummary::NRR_TARGET.to_f / max_scale * 100 %>
-  <% if @am_rows.empty? %>
-    <div class="empty-state">Aucune donnée à afficher.</div>
-  <% else %>
-    <% @am_rows.each do |row| %>
-      <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
-      <% w = [[s.nrr / max_scale * 100, 0].max, 100].min %>
-      <div class="bar-row">
-        <div class="bar-label"><%= am.name %></div>
-        <div class="bar-track">
-          <div class="bar-fill <%= ok ? "ok" : "ko" %>" style="width:<%= w %>%"></div>
-          <div class="bar-target-line" style="left:<%= target_pct %>%"></div>
-        </div>
-        <div class="bar-value"><%= number_with_precision(s.nrr, precision: 1) %>%</div>
-      </div>
-    <% end %>
-  <% end %>
-  <div class="chart-legend">La ligne noire verticale représente l'objectif de <%= PortfolioSummary::NRR_TARGET %>%.</div>
-</div>
-
-<div class="chart-wrap">
   <h3>Renouvellements : nouveau contrat vs augmentation</h3>
   <div class="toolbar" style="margin-bottom:14px;">
     <%= form_with url: pilotage_path, method: :get do %>

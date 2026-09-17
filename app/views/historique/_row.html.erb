@@ -1,4 +1,4 @@
-<% editable = !r.is_live && current_user.admin? %>
+<% editable = !r.is_live && current_user.privileged? %>
 <tr id="<%= r.dom_id %>" class="<%= "churn-yes" if r.churned? %>">
   <td><%= r.nom %></td>
   <td><%= r.am || "—" %></td>

@@ -3,7 +3,7 @@
 <p class="section-title">Vue globale</p>
 <p class="section-sub">Vue consolidée pour suivre l'atteinte de l'objectif NRR (<%= PortfolioSummary::NRR_TARGET %>%) sur chaque portefeuille.</p>
 
-<% if current_user.admin? %>
+<% if current_user.privileged? %>
   <div class="toolbar">
     <div class="spacer"></div>
     <details>
@@ -24,6 +24,10 @@
                 <%= f.check_box :admin %>
                 Administrateur (accès complet : import CSV, clôture d'année, gestion des AM...)
               </label>
+              <label style="flex-direction:row;align-items:center;gap:8px;">
+                <%= f.check_box :kam %>
+                KAM (mêmes droits qu'un administrateur)
+              </label>
             </div>
           </div>
           <div class="modal-footer">
@@ -38,7 +42,8 @@
 
 <div class="toolbar" style="margin-bottom:14px;">
   <%= form_with url: pilotage_path, method: :get do %>
-    <%= preserved_query_fields("summary_ams") %>
+    <%= preserved_query_fields("summary_ams", "summary_roles") %>
+    <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_summary_roles, selected: @summary_roles, legend: "Équipe" %>
     <%= render "shared/checklist_filter", param_name: "summary_ams", options: @available_summary_ams, selected: @summary_ams, legend: "AM" %>
   <% end %>
 </div>
@@ -81,11 +86,14 @@
               <tr class="<%= ok ? "ok" : "below" %>">
                 <td><strong><%= am.name %></strong></td>
                 <td>
-                  <span class="badge <%= am.admin? ? "ok" : "warn" %>"><%= am.admin? ? "Admin" : "AM" %></span>
-                  <% if current_user.admin? %>
+                  <span class="badge <%= role_badge_class(am) %>"><%= am.role_label %></span>
+                  <% if current_user.privileged? %>
                     <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
                           params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
                           form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
+                    <%= button_to (am.kam? ? "Retirer KAM" : "Rendre KAM"), user_path(am), method: :patch,
+                          params: { kam: am.kam? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                          form: { data: { turbo_confirm: am.kam? ? "Retirer le statut KAM de #{am.name} ?" : "Donner le statut KAM à #{am.name} ?" } } %>
                   <% end %>
                 </td>
                 <td><%= s.count %></td>
@@ -97,7 +105,7 @@
                 <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
                 <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
                 <td class="rowaction" style="white-space:nowrap;">
-                  <% if current_user.admin? %>
+                  <% if current_user.privileged? %>
                     <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
                       onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>')">✎</button>
                     <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
@@ -110,7 +118,7 @@
         </tbody>
       </table>
     </div>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%# Lives outside .table-scroll on purpose — that container clips overflow-x, which would cut off a
           form popped open from a narrow action column deep in a wide table. One shared panel, retargeted
           by JS to whichever AM's ✎ was clicked, rather than one per row. %>
@@ -248,7 +256,7 @@
         </tbody>
       </table>
     </div>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= render "shared/reassign_am_panel", panel_id: "reassign-gprod-panel", form_id: "reassign-gprod-form",
             name_span_id: "reassign-gprod-name", ams: @active_ams %>
     <% end %>
@@ -314,7 +322,7 @@
         <% end %>
       </table>
     </div>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= render "shared/reassign_am_panel", panel_id: "reassign-upsell-panel", form_id: "reassign-upsell-form",
             name_span_id: "reassign-upsell-name", ams: @active_ams %>
     <% end %>

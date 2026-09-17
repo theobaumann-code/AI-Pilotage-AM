@@ -6,7 +6,7 @@
 <div class="toolbar">
   <span class="badge">Année en cours : <%= @current_year %></span>
 
-  <% if current_user.admin? %>
+  <% if current_user.privileged? %>
     <details>
       <summary class="button">Modifier l'année en cours</summary>
       <div class="modal-box" style="margin:12px 0 0;">
@@ -28,7 +28,7 @@
   <details>
     <summary class="button ghost-burgundy">🗑 Corbeille<% if @trash_batches.any? %><span class="badge warn" style="margin-left:6px;"><%= @trash_batches.size %></span><% end %></summary>
     <div class="modal-box" style="margin:12px 0 0;max-width:520px;">
-      <% if current_user.admin? && @archivable_years.any? %>
+      <% if current_user.privileged? && @archivable_years.any? %>
         <p style="margin:0 0 8px;font-size:12px;color:var(--text-muted);">Déplacer une année archivée vers la corbeille (réversible) :</p>
         <% @archivable_years.each do |y| %>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;">
@@ -48,7 +48,7 @@
               <strong>Année <%= batch.year %></strong>
               <div style="font-size:12px;color:var(--text-muted);">supprimée le <%= batch.deleted_at.strftime("%d/%m/%Y %H:%M") %></div>
             </div>
-            <% if current_user.admin? %>
+            <% if current_user.privileged? %>
               <div style="display:flex;gap:8px;flex-shrink:0;">
                 <%= button_to "Restaurer", restore_trash_batch_path(batch), method: :patch, class: "button" %>
                 <%= button_to "Supprimer définitivement", trash_batch_path(batch), method: :delete, class: "button ghost-danger",
@@ -63,7 +63,7 @@
 
   <div class="spacer"></div>
 
-  <% if current_user.admin? %>
+  <% if current_user.privileged? %>
     <%= button_to "Clôturer l'année en cours et passer à la suivante →", year_closure_path, method: :post, class: "button primary",
           form: { data: { turbo_confirm: "Clôturer l'année #{@current_year} ? Les produits renouvelés seront reconduits (nouvelle base ARR, taux remis à zéro), les contrats churnés et les upsells seront retirés du portefeuille actif. Tout reste consultable dans l'historique." } } %>
   <% end %>

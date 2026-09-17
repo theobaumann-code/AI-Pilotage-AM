@@ -41,7 +41,7 @@
         </div>
         <div class="header-actions">
           <div class="admin-zone">
-            <span class="badge <%= current_user.admin? ? 'ok' : 'warn' %>"><%= current_user.admin? ? "Admin" : "AM" %> · <%= current_user.name %></span>
+            <span class="badge <%= role_badge_class(current_user) %>"><%= current_user.role_label %> · <%= current_user.name %></span>
           </div>
           <%= button_to "Se déconnecter", destroy_user_session_path, method: :delete, class: "button" %>
         </div>

@@ -2,7 +2,7 @@
   <td><%= deal.company.name %></td>
   <td><%= deal.effective_user.name %></td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
         <%= f.select :produit, UpsellDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -11,7 +11,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
         <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -25,7 +25,7 @@
   <td><%= deal.probabilite_signature %>%</td>
   <td><%= deal.arr_estimable? ? number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) : "—" %></td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
         <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {},
               class: "statut-select #{signature_statut_class(deal.statut_signature)}", onchange: "this.form.requestSubmit()" %>
@@ -35,7 +35,7 @@
     <% end %>
   </td>
   <td class="rowaction">
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
         onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
     <% end %>

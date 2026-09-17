@@ -12,8 +12,8 @@ class PortfolioController < ApplicationController
     # here even for a company they don't otherwise own, and one reassigned away from them doesn't, even for
     # one of their own companies. See Deal#effective_user / PortfolioSummary.
     @upsell_deals = @summary.upsell_deals.sort_by { |d| d.company.name }
-    @viewable_ams = current_user.admin? ? User.active.order(:name) : nil
-    @selectable_companies = current_user.admin? ? Company.order(:name) : current_user.companies.order(:name)
+    @viewable_ams = current_user.privileged? ? User.active.order(:name) : nil
+    @selectable_companies = current_user.privileged? ? Company.order(:name) : current_user.companies.order(:name)
 
     @evo_q = params[:evo_q].to_s.strip
     @evo_pager = TablePager.new(filter_by_name(@companies.to_a, @evo_q, &:name), params: params, prefix: "evo",

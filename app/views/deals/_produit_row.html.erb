@@ -5,7 +5,7 @@
 <tr id="<%= dom_id(deal) %>" class="<%= "churn-yes" if deal.churned? %>">
   <td><strong><%= deal.company.name %></strong></td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.select :produit, ProduitDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -14,7 +14,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.select :college, ProduitDeal::COLLEGES, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -23,7 +23,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.select :assureur, ProduitDeal::ASSUREURS, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -32,7 +32,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.text_field :identifiant, **locked_field_attrs("Confirmer la modification de l'ID externe ?") %>
       <% end %>
@@ -41,7 +41,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.number_field :arr, step: "0.01", **locked_field_attrs("Confirmer la modification de l'ARR ?") %>
       <% end %>
@@ -67,7 +67,7 @@
   </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction" style="white-space:nowrap;">
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
         onclick="openReassignPanel('reassign-produit-panel', 'reassign-produit-form', 'reassign-produit-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
       <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",

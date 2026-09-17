@@ -7,7 +7,7 @@
   <td><%= deal.identifiant %></td>
   <td><%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
         <%= f.number_field :taux, step: "0.01", disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -16,7 +16,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
         <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, {},
               class: "statut-select #{renewal_statut_class(deal.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
@@ -26,7 +26,7 @@
     <% end %>
   </td>
   <td>
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
         <%= f.number_field :risque_churn, min: 0, max: 100, disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
       <% end %>
@@ -36,7 +36,7 @@
   </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction">
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
         onclick="openReassignPanel('reassign-gprod-panel', 'reassign-gprod-form', 'reassign-gprod-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
     <% end %>

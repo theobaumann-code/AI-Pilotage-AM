@@ -149,7 +149,7 @@ class DealsController < ApplicationController
     if params[:company_id].present?
       scoped_company(params[:company_id])
     elsif params[:new_company_name].present?
-      owner = if current_user.admin? && params[:new_company_user_id].present?
+      owner = if current_user.privileged? && params[:new_company_user_id].present?
         User.active.find(params[:new_company_user_id])
       else
         current_user
@@ -169,7 +169,7 @@ class DealsController < ApplicationController
 
   def update_params
     fields = @deal.is_a?(UpsellDeal) ? upsell_fields : produit_fields
-    fields = fields - admin_only_fields unless current_user.admin?
+    fields = fields - admin_only_fields unless current_user.privileged?
     params.require(:deal).permit(*fields)
   end
 

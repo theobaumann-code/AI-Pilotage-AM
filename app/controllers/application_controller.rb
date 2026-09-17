@@ -11,10 +11,12 @@ class ApplicationController < ActionController::Base
 
   # Shared gate for the ~15 admin-only actions from the original app (add/delete AM, add/delete produit
   # deal, identifiant/arr fields, CSV import, year close, trash restore/purge, archived-row editing...).
+  # KAM has the exact same rights as admin (User#privileged?) — only the NRR/portfolio math stays identical
+  # between AM and KAM, everything else that's admin-gated is equally open to both.
   def require_admin!
-    return if current_user.admin?
+    return if current_user.privileged?
 
-    redirect_back fallback_location: root_path, alert: "Réservé aux administrateurs."
+    redirect_back fallback_location: root_path, alert: "Réservé aux administrateurs et aux KAM."
   end
 
   # The AM whose portfolio is being viewed: always current_user for a regular AM (real per-user isolation,
@@ -26,7 +28,7 @@ class ApplicationController < ActionController::Base
   # portfolio) — the row silently starts editing the admin's data instead of the AM being viewed.
   def viewed_user
     candidate_id = params[:user_id] || params[:redirect_user_id]
-    if current_user.admin? && candidate_id.present?
+    if current_user.privileged? && candidate_id.present?
       User.active.find(candidate_id)
     else
       current_user
@@ -40,7 +42,7 @@ class ApplicationController < ActionController::Base
   # admin-gated in the original (e.g. deleting an upsell) — the original never needed this because it had
   # no real multi-user isolation at all; this is a deliberate strengthening, not a behavior port.
   def scoped_company(id)
-    scope = current_user.admin? ? Company.all : current_user.companies
+    scope = current_user.privileged? ? Company.all : current_user.companies
     scope.find(id)
   end
 end

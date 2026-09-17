@@ -13,7 +13,7 @@
     <% end %>
   </td>
   <td class="rowaction">
-    <% if current_user.admin? %>
+    <% if current_user.privileged? %>
       <%= button_to "🗑", company_path(company), method: :delete, class: "icon-btn",
             form: { data: { turbo_confirm: "Supprimer #{company.name} et tous ses produits/upsells ?" } } %>
     <% end %>

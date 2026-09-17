@@ -28,4 +28,25 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
     assert_match "10,000", global_cards
     assert_no_match "100,000", global_cards
   end
+
+  test "filtering by team (role) narrows both the summary cards and the AM roster" do
+    kam = User.create!(email: "kam-gsum@example.com", name: "Kam Gsum", kam: true, active: true)
+    ProduitDeal.create!(company: Company.create!(name: "Client Kam Gsum", user: kam), produit: "Mutuelle",
+      identifiant: "gsum-kam", college: "Cadre", assureur: "AXA", arr: 1_000, taux: 0, statut_renouvellement: "En cours")
+
+    sign_in @admin
+    get pilotage_path, params: { summary_roles: ["KAM"] }
+    assert_response :success
+    global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
+    assert_match "1,000", global_cards
+    assert_no_match "10,000", global_cards
+    assert_no_match "100,000", global_cards
+
+    # Scoped to the roster table itself, not the whole page — the reassign-target <select> deliberately
+    # lists every active AM regardless of this filter, so a whole-body check would false-fail on it.
+    roster = @response.body[/id="am-table-frame">.*?<\/table>/m]
+    assert_match "Kam Gsum", roster
+    assert_no_match "AM A Gsum", roster
+    assert_no_match "AM B Gsum", roster
+  end
 end

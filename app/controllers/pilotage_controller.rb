@@ -11,17 +11,30 @@ class PilotageController < ApplicationController
       { am: am, summary: PortfolioSummary.new(am.companies.includes(:produit_deals), user: am) }
     end
     @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
+    @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
+    @available_summary_roles = ["Admin", "KAM", "AM"]
+
+    # Both filters narrow the same "team" of AMs — used below for both the summary cards and the roster
+    # table, so selecting a role and/or specific names filters the two together rather than independently.
+    filtered_ams = @active_ams
+    filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.role_label) } if @summary_roles.present?
+    filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
+    team_filter_active = @summary_ams.present? || @summary_roles.present?
+
     summary_companies = Company.includes(:produit_deals, :upsell_deals)
-    summary_companies = summary_companies.joins(:user).where(users: { name: @summary_ams }) if @summary_ams.present?
+    summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
     @global_summary = PortfolioSummary.new(summary_companies)
 
     @am_q = params[:am_q].to_s.strip
-    am_rows_filtered = @am_q.present? ? @am_rows.select { |r| r[:am].name.downcase.include?(@am_q.downcase) } : @am_rows
+    am_rows_filtered = @am_rows
+    am_rows_filtered = am_rows_filtered.select { |r| @summary_roles.include?(r[:am].role_label) } if @summary_roles.present?
+    am_rows_filtered = am_rows_filtered.select { |r| @summary_ams.include?(r[:am].name) } if @summary_ams.present?
+    am_rows_filtered = am_rows_filtered.select { |r| r[:am].name.downcase.include?(@am_q.downcase) } if @am_q.present?
     @am_pager = TablePager.new(am_rows_filtered, params: params, prefix: "am",
       sort_procs: {
         nom: ->(r) { TablePager.key(r[:am].name) },
-        role: ->(r) { TablePager.key(r[:am].admin? ? 1 : 0) },
+        role: ->(r) { TablePager.key({ admin: 0, kam: 1, am: 2 }[r[:am].role]) },
         count: ->(r) { TablePager.key(r[:summary].count) },
         arr_initial: ->(r) { TablePager.key(r[:summary].arr_initial) },
         churned: ->(r) { TablePager.key(r[:summary].churned) },

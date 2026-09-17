@@ -25,4 +25,24 @@ class User < ApplicationRecord
   def inactive_message
     active? ? super : :deactivated
   end
+
+  # Admin always wins if somehow both flags are set (shouldn't normally happen via the UI, which treats
+  # them as separate toggles, but this keeps role/role_label well-defined regardless).
+  def role
+    return :admin if admin?
+    return :kam if kam?
+    :am
+  end
+
+  def role_label
+    { admin: "Admin", kam: "KAM", am: "AM" }.fetch(role)
+  end
+
+  # KAM has the same rights as admin everywhere in the app (see ApplicationController#require_admin! and
+  # every current_user.privileged? check) — only the NRR/portfolio calculations themselves stay identical
+  # for AM and KAM. Deliberately not folded into `admin?` itself: that column still needs to mean exactly
+  # "is a real administrator" for the last-admin safeguard and the role badge.
+  def privileged?
+    admin? || kam?
+  end
 end

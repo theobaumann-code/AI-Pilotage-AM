@@ -12,14 +12,17 @@ class UsersController < ApplicationController
     end
   end
 
-  # Two distinct forms post here under the same route: the admin-toggle button (a bare `admin` param) and
-  # the "modifier les identifiants" form (a nested `user` param with name/email) — dispatch on
-  # which one actually showed up rather than giving them separate actions, since both are "update this AM".
+  # Three distinct forms post here under the same route: the admin-toggle button (a bare `admin` param),
+  # the KAM-toggle button (a bare `kam` param), and the "modifier les identifiants" form (a nested `user`
+  # param with name/email) — dispatch on which one actually showed up rather than giving them separate
+  # actions, since all three are "update this AM".
   def update
     user = User.find(params[:id])
 
     if params[:user].present?
       update_credentials(user)
+    elsif params.key?(:kam)
+      update_kam_flag(user)
     else
       update_admin_flag(user)
     end
@@ -51,7 +54,14 @@ class UsersController < ApplicationController
     end
 
     user.update!(admin: new_admin)
-    redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.admin? ? "administrateur" : "AM classique"}."
+    redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.role_label}."
+  end
+
+  # KAM has the same rights as admin (see ApplicationController#require_admin!) — no "last KAM" safeguard
+  # is needed the way there is for admin, since a real admin (or another KAM) can always grant it back.
+  def update_kam_flag(user)
+    user.update!(kam: ActiveModel::Type::Boolean.new.cast(params[:kam]))
+    redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.role_label}."
   end
 
   # Admins manage the Google email used to match an existing AM account.
@@ -66,6 +76,6 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :admin)
+    params.require(:user).permit(:name, :email, :admin, :kam)
   end
 end

@@ -22,6 +22,12 @@ module ApplicationHelper
     SIGNATURE_STATUT_CLASS[statut]
   end
 
+  ROLE_BADGE_CLASS = { admin: "ok", kam: "kam", am: "warn" }.freeze
+
+  def role_badge_class(user)
+    ROLE_BADGE_CLASS[user.role]
+  end
+
   # Builds a query string for a sort/pagination link that preserves every other param currently on the
   # page (the other two tables' filters/sort/page, the AM selector...) while overriding just the ones
   # this particular link is changing.

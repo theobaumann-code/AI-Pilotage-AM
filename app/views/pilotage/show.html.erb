@@ -36,6 +36,12 @@
   </div>
 <% end %>
 
+<div class="toolbar" style="margin-bottom:14px;">
+  <%= form_with url: pilotage_path, method: :get do %>
+    <%= preserved_query_fields("summary_ams") %>
+    <%= render "shared/checklist_filter", param_name: "summary_ams", options: @available_summary_ams, selected: @summary_ams, legend: "AM" %>
+  <% end %>
+</div>
 <%= render "shared/summary_cards", summary: @global_summary, dom_id: "global-summary-cards" %>
 
 <div class="section-card">

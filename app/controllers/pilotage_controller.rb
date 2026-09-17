@@ -10,7 +10,11 @@ class PilotageController < ApplicationController
     @am_rows = @active_ams.map do |am|
       { am: am, summary: PortfolioSummary.new(am.companies.includes(:produit_deals), user: am) }
     end
-    @global_summary = PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals))
+    @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
+    @available_summary_ams = @active_ams.map(&:name)
+    summary_companies = Company.includes(:produit_deals, :upsell_deals)
+    summary_companies = summary_companies.joins(:user).where(users: { name: @summary_ams }) if @summary_ams.present?
+    @global_summary = PortfolioSummary.new(summary_companies)
 
     @am_q = params[:am_q].to_s.strip
     am_rows_filtered = @am_q.present? ? @am_rows.select { |r| r[:am].name.downcase.include?(@am_q.downcase) } : @am_rows

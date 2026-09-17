@@ -1,0 +1,44 @@
+<tr id="<%= dom_id(deal) %>" class="<%= "churn-yes" if deal.churned? %>">
+  <td><%= deal.company.name %></td>
+  <td><%= deal.company.user.name %></td>
+  <td><%= deal.produit %></td>
+  <td><%= deal.college %></td>
+  <td><%= deal.assureur %></td>
+  <td><%= deal.identifiant %></td>
+  <td><%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.number_field :taux, step: "0.01", disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= number_with_precision(deal.taux, precision: 1) %>%
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.select :statut_renouvellement, ProduitDeal::STATUTS_RENOUVELLEMENT, {},
+              class: "statut-select #{renewal_statut_class(deal.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <span class="statut-select <%= renewal_statut_class(deal.statut_renouvellement) %>" style="display:inline-block;padding:4px 10px;"><%= deal.statut_renouvellement %></span>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.admin? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.number_field :risque_churn, min: 0, max: 100, disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.risque_churn %>%
+    <% end %>
+  </td>
+  <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="rowaction">
+    <% if current_user.admin? %>
+      <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
+        onclick="openReassignPanel('reassign-gprod-panel', 'reassign-gprod-form', 'reassign-gprod-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
+    <% end %>
+  </td>
+</tr>

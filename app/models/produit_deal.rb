@@ -11,6 +11,7 @@ class ProduitDeal < Deal
   validates :college, presence: true, inclusion: { in: COLLEGES }
   validates :assureur, presence: true, inclusion: { in: ASSUREURS }
   validates :statut_renouvellement, inclusion: { in: STATUTS_RENOUVELLEMENT }
+  validates :risque_churn, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   # Rule 1 (model-level mirror of the DB partial index): uniqueness scoped to produit, and — since
   # ArchiveEntry is a completely separate table/model, never a Deal — this can never see archived years,
   # exactly matching the original's "identifiant reuse after churn" allowance.
@@ -35,8 +36,12 @@ class ProduitDeal < Deal
 
   private
 
-  # Rule 4: churn always forces taux to 0.
+  # Rule 4: churn always forces taux to 0. A produit that has already churned is a certainty, not a risk
+  # estimate — its churn probability is pinned to 100 rather than left at whatever an AM last entered.
   def apply_business_rules
-    self.taux = 0 if churned?
+    if churned?
+      self.taux = 0
+      self.risque_churn = 100
+    end
   end
 end

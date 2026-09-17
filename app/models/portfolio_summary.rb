@@ -46,8 +46,11 @@ class PortfolioSummary
     produit_deals.select(&:churned?).sum { |d| d.arr.to_f }
   end
 
+  # Projected, not actual-only: a signed upsell already carries probabilite_signature 100 (see UpsellDeal's
+  # business rule), so it still contributes its full amount here — the only behavior change is that
+  # in-pipeline upsells now contribute their probability-weighted share too, instead of $0 until signed.
   def upsold
-    upsell_deals.select(&:signed?).sum(&:upsell_amount)
+    upsell_deals.sum(&:projection)
   end
 
   def renewed_arr
@@ -73,12 +76,29 @@ class PortfolioSummary
     produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 }
   end
 
+  # Risk-weighted ARR of produits that haven't churned yet (arr × risque_churn/100, summed) — the AM's own
+  # estimate of what's likely to be lost next, distinct from `churned` (already lost). Already-churned
+  # produits are excluded here since their loss is counted once, in `churned`, not twice.
+  def churn_projete
+    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 }
+  end
+
+  # Actual churn plus the projected risk on what's still active — the single figure the 5.5% budget is
+  # meant to protect against going forward, not just what has already happened.
+  def churn_total
+    churned + churn_projete
+  end
+
   def churn_limit
     arr_initial * CHURN_LIMIT_PCT / 100
   end
 
   def churn_within_limit?
     churned <= churn_limit
+  end
+
+  def churn_total_within_limit?
+    churn_total <= churn_limit
   end
 
   def renewal_target

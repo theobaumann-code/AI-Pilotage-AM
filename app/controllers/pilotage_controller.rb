@@ -32,6 +32,28 @@ class PilotageController < ApplicationController
     @renewal_produit = params[:renewal_produit]
     @renewal_donut = renewal_donut_slices
 
+    @produit_q = params[:produit_q].to_s.strip
+    @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
+    @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
+    @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
+    @available_produit_ams = @active_ams.map(&:name)
+    @global_produits = filtered_global_produits
+    @produit_taux_avg = weighted_avg(@global_produits, :taux, :arr)
+    @gprod_pager = TablePager.new(@global_produits, params: params, prefix: "gprod",
+      sort_procs: {
+        nom: ->(d) { TablePager.key(d.company.name) },
+        am: ->(d) { TablePager.key(d.company.user.name) },
+        produit: ->(d) { TablePager.key(d.produit) },
+        college: ->(d) { TablePager.key(d.college) },
+        assureur: ->(d) { TablePager.key(d.assureur) },
+        identifiant: ->(d) { TablePager.key(d.identifiant) },
+        arr: ->(d) { TablePager.key(d.arr.to_f) },
+        taux: ->(d) { TablePager.key(d.taux.to_f) },
+        statut_renouvellement: ->(d) { TablePager.key(d.statut_renouvellement) },
+        risque_churn: ->(d) { TablePager.key(d.risque_churn) },
+        final_arr: ->(d) { TablePager.key(d.final_arr) }
+      }, default_sort: :nom)
+
     @upsell_q = params[:upsell_q].to_s.strip
     @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
     @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
@@ -74,18 +96,19 @@ class PilotageController < ApplicationController
       type: "text/csv; charset=utf-8"
   end
 
-  # Every produit deal across every AM — there's no on-screen raw table to mirror here (only the
-  # "Nouveau contrat vs augmentation" donut, which shows aggregate counts, not rows), so this is
-  # deliberately unfiltered: the whole renewal dataset in one file.
+  # Mirrors "Produits à renouveler (tous AM)" exactly (same filters, unpaginated), across every AM.
   def export_produits
-    deals = ProduitDeal.includes(company: :user).to_a.sort_by { |d| d.company.name }
+    @produit_q = params[:produit_q].to_s.strip
+    @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
+    @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
+    @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
       csv << ["Nom", "AM", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)", "Taux négocié (%)",
-              "Statut de renouvellement", "ARR final (€)"]
-      deals.each do |d|
+              "Statut de renouvellement", "% risque churn", "ARR final (€)"]
+      filtered_global_produits.each do |d|
         csv << [d.company.name, d.company.user.name, d.produit, d.college, d.assureur, d.identifiant,
-                d.arr, d.taux, d.statut_renouvellement, d.final_arr]
+                d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr]
       end
     end
 
@@ -116,5 +139,21 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @upsell_produits.include?(d.produit) } if @upsell_produits.present?
     deals = deals.select { |d| @upsell_statuts.include?(d.statut_signature) } if @upsell_statuts.present?
     deals.sort_by { |d| d.company.name }
+  end
+
+  def filtered_global_produits
+    deals = ProduitDeal.includes(company: :user).to_a
+    deals = deals.select { |d| d.company.name.downcase.include?(@produit_q.downcase) } if @produit_q.present?
+    deals = deals.select { |d| @produit_ams.include?(d.company.user.name) } if @produit_ams.present?
+    deals = deals.select { |d| @produit_produits.include?(d.produit) } if @produit_produits.present?
+    deals = deals.select { |d| @produit_statuts.include?(d.statut_renouvellement) } if @produit_statuts.present?
+    deals.sort_by { |d| d.company.name }
+  end
+
+  def weighted_avg(rows, value_method, weight_method)
+    total_weight = rows.sum { |r| r.public_send(weight_method).to_f }
+    return nil if total_weight <= 0
+
+    rows.sum { |r| r.public_send(value_method).to_f * r.public_send(weight_method).to_f } / total_weight
   end
 end

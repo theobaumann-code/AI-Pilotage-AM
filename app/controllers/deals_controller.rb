@@ -117,6 +117,12 @@ class DealsController < ApplicationController
         turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
           locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
       ]
+    elsif params[:row_context] == "global_produit"
+      [
+        turbo_stream.replace(@deal, partial: "pilotage/global_produit_row", locals: { deal: @deal }),
+        turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
+          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
+      ]
     else
       row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
       owner = viewed_user
@@ -168,7 +174,7 @@ class DealsController < ApplicationController
   end
 
   def produit_fields
-    [:produit, :college, :assureur, :arr, :taux, :identifiant, :statut_renouvellement]
+    [:produit, :college, :assureur, :arr, :taux, :identifiant, :statut_renouvellement, :risque_churn]
   end
 
   def upsell_fields
@@ -176,7 +182,7 @@ class DealsController < ApplicationController
   end
 
   # Contract-of-record fields on a produit deal (identifiant, ARR, and the choices that define the
-  # contract itself) stay admin-only; taux/statut_renouvellement remain open to the owning AM.
+  # contract itself) stay admin-only; taux/statut_renouvellement/risque_churn remain open to the owning AM.
   def admin_only_fields
     [:produit, :college, :assureur, :arr, :identifiant]
   end

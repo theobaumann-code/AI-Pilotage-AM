@@ -187,10 +187,68 @@
               include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
       </label>
     <% end %>
-    <div class="spacer"></div>
-    <%= link_to "Exporter les produits (CSV)", export_produits_pilotage_path, class: "button", data: { turbo: false } %>
   </div>
   <%= donut_chart(@renewal_donut) %>
+</div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h3>Produits à renouveler (tous AM)</h3>
+  </div>
+  <div class="summary-cards">
+    <div class="card"><div class="label">Nb produits</div><div class="value"><%= @global_produits.size %></div></div>
+    <div class="card"><div class="label">ARR total</div><div class="value"><%= number_to_currency(@global_produits.sum { |d| d.arr.to_f }, unit: "€", format: "%n %u", precision: 0) %></div></div>
+    <div class="card"><div class="label">Taux moyen pondéré par l'ARR</div><div class="value"><%= @produit_taux_avg.nil? ? "—" : "#{@produit_taux_avg >= 0 ? "+" : ""}#{number_with_precision(@produit_taux_avg, precision: 1)}%" %></div></div>
+    <div class="card"><div class="label">ARR final</div><div class="value"><%= number_to_currency(@global_produits.sum { |d| d.final_arr.to_f }, unit: "€", format: "%n %u", precision: 0) %></div></div>
+  </div>
+  <%= turbo_frame_tag "gprod-table-frame" do %>
+    <div class="table-toolbar">
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("produit_q", "produit_ams", "produit_produits", "produit_statuts", "gprod_page") %>
+          <%= live_search_field :produit_q, @produit_q %>
+          <%= render "shared/checklist_filter", param_name: "produit_ams", options: @available_produit_ams, selected: @produit_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "produit_produits", options: ProduitDeal::PRODUITS, selected: @produit_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "produit_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @produit_statuts, legend: "Statut" %>
+        <% end %>
+        <%= link_to "Exporter CSV", export_produits_pilotage_path(produit_q: @produit_q, produit_ams: @produit_ams,
+              produit_produits: @produit_produits, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table renewal-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@gprod_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@gprod_pager, :am, "AM") %>
+            <%= sortable_th(@gprod_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@gprod_pager, :college, "Collège", col_class: "col-college") %>
+            <%= sortable_th(@gprod_pager, :assureur, "Assureur", col_class: "col-assureur") %>
+            <%= sortable_th(@gprod_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <%= sortable_th(@gprod_pager, :arr, "ARR (€)", col_class: "col-arr") %>
+            <%= sortable_th(@gprod_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
+            <%= sortable_th(@gprod_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
+            <%= sortable_th(@gprod_pager, :risque_churn, "% risque churn", col_class: "col-taux") %>
+            <%= sortable_th(@gprod_pager, :final_arr, "ARR final", col_class: "col-final") %>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @gprod_pager.records.empty? %>
+            <tr><td colspan="12" class="empty-state">Aucun produit configuré.</td></tr>
+          <% else %>
+            <%= render partial: "pilotage/global_produit_row", collection: @gprod_pager.records, as: :deal %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if current_user.admin? %>
+      <%= render "shared/reassign_am_panel", panel_id: "reassign-gprod-panel", form_id: "reassign-gprod-form",
+            name_span_id: "reassign-gprod-name", ams: @active_ams %>
+    <% end %>
+    <%= pagination_controls(@gprod_pager) %>
+    <%= page_size_select(@gprod_pager) %>
+  <% end %>
 </div>
 
 <div class="section-card">

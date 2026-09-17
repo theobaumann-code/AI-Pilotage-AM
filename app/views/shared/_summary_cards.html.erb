@@ -12,6 +12,13 @@
     </span>
   </div>
   <div class="card">
+    <div class="label">Churn projeté (risque)</div>
+    <div class="value" style="color:var(--red)"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %></div>
+    <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>">
+      <%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>% (<%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %>)
+    </span>
+  </div>
+  <div class="card">
     <div class="label">ARR renouvellement</div>
     <div class="value" style="color:<%= summary.renewal_gain >= 0 ? "var(--green)" : "var(--red)" %>"><%= number_to_currency(summary.renewal_gain, unit: "€", format: "%n %u", precision: 0) %></div>
     <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>">

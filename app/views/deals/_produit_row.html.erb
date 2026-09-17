@@ -60,6 +60,11 @@
             class: "statut-select #{renewal_statut_class(deal.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
+  <td>
+    <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
+      <%= f.number_field :risque_churn, min: 0, max: 100, disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
+    <% end %>
+  </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction" style="white-space:nowrap;">
     <% if current_user.admin? %>

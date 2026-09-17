@@ -97,4 +97,21 @@ class ProduitDealTest < ActiveSupport::TestCase
     deal = build_deal(produit: "Autre")
     assert_not deal.valid?
   end
+
+  test "churn forces risque_churn to 100" do
+    deal = build_deal(risque_churn: 20, statut_renouvellement: "Churné")
+    deal.valid?
+    assert_equal 100, deal.risque_churn
+  end
+
+  test "risque_churn is left untouched for non-churned statuses" do
+    deal = build_deal(risque_churn: 30, statut_renouvellement: "Nouveau contrat")
+    deal.valid?
+    assert_equal 30, deal.risque_churn
+  end
+
+  test "rejects a risque_churn outside 0..100" do
+    assert_not build_deal(risque_churn: 101).valid?
+    assert_not build_deal(risque_churn: -1).valid?
+  end
 end

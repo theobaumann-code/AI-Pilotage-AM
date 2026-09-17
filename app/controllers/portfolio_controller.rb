@@ -44,6 +44,7 @@ class PortfolioController < ApplicationController
         arr: ->(d) { TablePager.key(d.arr.to_f) },
         taux: ->(d) { TablePager.key(d.taux.to_f) },
         statut_renouvellement: ->(d) { TablePager.key(d.statut_renouvellement) },
+        risque_churn: ->(d) { TablePager.key(d.risque_churn) },
         final_arr: ->(d) { TablePager.key(d.final_arr) }
       }, default_sort: :nom)
 
@@ -76,10 +77,10 @@ class PortfolioController < ApplicationController
 
     csv = CSV.generate(col_sep: ";") do |csv|
       csv << ["Nom", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)", "Taux négocié (%)",
-              "Statut de renouvellement", "ARR final (€)", "AM"]
+              "Statut de renouvellement", "% risque churn", "ARR final (€)", "AM"]
       filtered_produit_deals.each do |d|
         csv << [d.company.name, d.produit, d.college, d.assureur, d.identifiant, d.arr, d.taux,
-                d.statut_renouvellement, d.final_arr, d.company.user.name]
+                d.statut_renouvellement, d.risque_churn, d.final_arr, d.company.user.name]
       end
     end
 

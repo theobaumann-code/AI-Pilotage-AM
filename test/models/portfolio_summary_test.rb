@@ -76,4 +76,37 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     unscoped = PortfolioSummary.new(@am.companies.includes(:deals))
     assert_equal 1, unscoped.upsell_deals.size, "company-scoped mode ignores the override entirely"
   end
+
+  test "upsold is the probability-weighted projection across every upsell, not just signed ones" do
+    UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 100, statut_signature: "Signé", arr: 1_000)
+    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+
+    # Signed contributes its full amount (probability already forced to 100), the in-pipeline one
+    # contributes half its estimate — not $0, the way a signed-only total would.
+    assert_in_delta 1_000 + 1_000, summary.upsold, 0.01
+  end
+
+  test "churn_projete is the risk-weighted ARR of produits that haven't churned yet" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 20)
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 5_000, taux: 0, statut_renouvellement: "Churné", risque_churn: 40)
+
+    # Only the non-churned deal counts (10_000 * 20%) — the churned one is already counted in `churned`,
+    # not double-counted here even though its risque_churn was forced to 100 by the model callback.
+    assert_in_delta 2_000, summary.churn_projete, 0.01
+    assert_in_delta 5_000 + 2_000, summary.churn_total, 0.01
+  end
+
+  test "churn_total_within_limit? blends actual and projected churn against the 5.5% budget" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 10)
+
+    # initial = 100_000, limit = 5_500; churned = 0, projected = 100_000 * 10% = 10_000 — over the limit
+    # even though nothing has actually churned yet.
+    assert summary.churn_within_limit?
+    assert_not summary.churn_total_within_limit?
+  end
 end

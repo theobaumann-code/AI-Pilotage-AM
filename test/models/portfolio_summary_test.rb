@@ -132,6 +132,18 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 101.0, summary.nrr, 0.01
   end
 
+  test "arr_final/nrr subtract projected churn risk, unlike arr_final_actual/nrr_actual" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 10)
+
+    # renewed_arr = 100_000 (nothing churned yet), churn_projete = 100_000 * 10% = 10_000.
+    # arr_final_actual/nrr_actual ignore that risk entirely; arr_final/nrr must bake it in.
+    assert_in_delta 100_000, summary.arr_final_actual, 0.01
+    assert_in_delta 100.0, summary.nrr_actual, 0.01
+    assert_in_delta 90_000, summary.arr_final, 0.01
+    assert_in_delta 90.0, summary.nrr, 0.01
+  end
+
   test "renewal_rate is renewal_gain expressed as a % of arr_initial" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")

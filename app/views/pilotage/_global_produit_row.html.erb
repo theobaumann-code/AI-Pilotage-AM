@@ -4,7 +4,9 @@
   <td><%= deal.produit %></td>
   <td><%= deal.college %></td>
   <td><%= deal.assureur %></td>
-  <td><%= deal.identifiant %></td>
+  <% if current_user.admin? %>
+    <td><%= deal.identifiant %></td>
+  <% end %>
   <td><%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td>
     <% if current_user.privileged? %>

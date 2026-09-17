@@ -68,9 +68,11 @@ class PortfolioSummary
     renewed_arr + upsold_actual
   end
 
-  # Behind the "ARR final projeté" card — renewed ARR plus every upsell's probability-weighted projection.
+  # Behind the "ARR final projeté" card — renewed ARR minus the risk-weighted churn still to come, plus
+  # every upsell's probability-weighted projection. Unlike `arr_final_actual`, this is forward-looking: it
+  # must reflect `churn_projete`, not just already-confirmed churn (which `renewed_arr` alone excludes).
   def arr_final
-    renewed_arr + upsold
+    renewed_arr - churn_projete + upsold
   end
 
   def nrr_actual

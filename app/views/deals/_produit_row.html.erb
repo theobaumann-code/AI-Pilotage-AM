@@ -31,15 +31,13 @@
       <%= deal.assureur %>
     <% end %>
   </td>
-  <td>
-    <% if current_user.privileged? %>
+  <% if current_user.admin? %>
+    <td>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.text_field :identifiant, **locked_field_attrs("Confirmer la modification de l'ID externe ?") %>
       <% end %>
-    <% else %>
-      <%= deal.identifiant %>
-    <% end %>
-  </td>
+    </td>
+  <% end %>
   <td>
     <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>

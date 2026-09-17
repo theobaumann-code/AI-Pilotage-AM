@@ -239,7 +239,9 @@
             <%= sortable_th(@gprod_pager, :produit, "Produit", col_class: "col-produit") %>
             <%= sortable_th(@gprod_pager, :college, "Collège", col_class: "col-college") %>
             <%= sortable_th(@gprod_pager, :assureur, "Assureur", col_class: "col-assureur") %>
-            <%= sortable_th(@gprod_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <% if current_user.admin? %>
+              <%= sortable_th(@gprod_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <% end %>
             <%= sortable_th(@gprod_pager, :arr, "ARR (€)", col_class: "col-arr") %>
             <%= sortable_th(@gprod_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
             <%= sortable_th(@gprod_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
@@ -250,7 +252,7 @@
         </thead>
         <tbody>
           <% if @gprod_pager.records.empty? %>
-            <tr><td colspan="12" class="empty-state">Aucun produit configuré.</td></tr>
+            <tr><td colspan="<%= current_user.admin? ? 12 : 11 %>" class="empty-state">Aucun produit configuré.</td></tr>
           <% else %>
             <%= render partial: "pilotage/global_produit_row", collection: @gprod_pager.records, as: :deal %>
           <% end %>

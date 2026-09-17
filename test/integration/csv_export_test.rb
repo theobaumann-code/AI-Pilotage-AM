@@ -18,6 +18,21 @@ class CsvExportTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert @response.body.b.start_with?("\xEF\xBB\xBF".b), "expected a UTF-8 BOM at the start of the CSV"
     assert_match "Cadre", @response.body
+  end
+
+  test "Mon portefeuille's export omits the ID externe column for a non-admin AM" do
+    sign_in @am
+    get export_produits_portfolio_path
+    assert_response :success
+    assert_no_match "ID externe", @response.body
+    assert_no_match "csv-1", @response.body
+  end
+
+  test "Mon portefeuille's export includes the ID externe column for an admin" do
+    sign_in @admin
+    get export_produits_portfolio_path(user_id: @am.id)
+    assert_response :success
+    assert_match "ID externe", @response.body
     assert_match "csv-1", @response.body
   end
 

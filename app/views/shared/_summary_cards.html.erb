@@ -1,57 +1,70 @@
 <% nrr_actual_ok = summary.nrr_actual_target_met? %>
 <% nrr_projected_ok = summary.target_met? %>
 <div class="summary-cards" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
-  <div class="card nrr">
-    <div class="label">NRR actuel</div>
-    <div class="value"><%= number_with_precision(summary.nrr_actual, precision: 1) %>%</div>
-    <span class="badge <%= nrr_actual_ok ? "ok" : "ko" %>"><%= nrr_actual_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
-    <div class="progress-track">
-      <div class="progress-fill" style="width:<%= [summary.nrr_actual, 100].min %>%; background:<%= nrr_actual_ok ? "var(--green)" : "var(--red)" %>"></div>
+  <div class="metric-card">
+    <div class="metric-card-title">NRR</div>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value"><%= number_with_precision(summary.nrr_actual, precision: 1) %>%</div>
+        <span class="badge <%= nrr_actual_ok ? "ok" : "ko" %>"><%= nrr_actual_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
+      </div>
+      <div class="metric-col">
+        <div class="metric-col-label">Projeté</div>
+        <div class="metric-col-value"><%= number_with_precision(summary.nrr, precision: 1) %>%</div>
+        <span class="badge <%= nrr_projected_ok ? "ok" : "ko" %>"><%= nrr_projected_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
+      </div>
     </div>
   </div>
-  <div class="card nrr">
-    <div class="label">NRR projeté</div>
-    <div class="value"><%= number_with_precision(summary.nrr, precision: 1) %>%</div>
-    <span class="badge <%= nrr_projected_ok ? "ok" : "ko" %>"><%= nrr_projected_ok ? "✓ Objectif atteint" : "✗ Objectif non atteint" %></span>
-    <div class="progress-track">
-      <div class="progress-fill" style="width:<%= [summary.nrr, 100].min %>%; background:<%= nrr_projected_ok ? "var(--green)" : "var(--red)" %>"></div>
+
+  <div class="metric-card">
+    <div class="metric-card-title">Churn</div>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %></div>
+        <span class="badge <%= summary.churn_within_limit? ? "ok" : "ko" %>"><%= summary.churn_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
+      </div>
+      <div class="metric-col">
+        <div class="metric-col-label">Projeté</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %></div>
+        <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>"><%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
+      </div>
+    </div>
+    <div class="metric-card-footnote">Limite : <%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %></div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-card-title">Upsell</div>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.upsold_actual, unit: "€", format: "%n %u", precision: 0) %></div>
+      </div>
+      <div class="metric-col">
+        <div class="metric-col-label">Projeté</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.upsold, unit: "€", format: "%n %u", precision: 0) %></div>
+      </div>
     </div>
   </div>
-  <div class="card">
-    <div class="label">Churn</div>
-    <div class="value" style="color:var(--red)"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %></div>
-    <span class="badge <%= summary.churn_within_limit? ? "ok" : "ko" %>">
-      <%= summary.churn_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>% (<%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %>)
-    </span>
+
+  <div class="metric-card">
+    <div class="metric-card-title">ARR final</div>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.arr_final_actual, unit: "€", format: "%n %u", precision: 0) %></div>
+      </div>
+      <div class="metric-col">
+        <div class="metric-col-label">Projeté</div>
+        <div class="metric-col-value"><%= number_to_currency(summary.arr_final, unit: "€", format: "%n %u", precision: 0) %></div>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <div class="label">Churn projeté</div>
-    <div class="value" style="color:var(--red)"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %></div>
-    <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>">
-      <%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>% (<%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %>)
-    </span>
-  </div>
-  <div class="card">
-    <div class="label">Upsell</div>
-    <div class="value" style="color:var(--green)"><%= number_to_currency(summary.upsold_actual, unit: "€", format: "%n %u", precision: 0) %></div>
-  </div>
-  <div class="card">
-    <div class="label">Upsell projeté</div>
-    <div class="value" style="color:var(--green)"><%= number_to_currency(summary.upsold, unit: "€", format: "%n %u", precision: 0) %></div>
-  </div>
-  <div class="card">
-    <div class="label">Taux de renouvellement</div>
-    <div class="value" style="color:<%= summary.renewal_rate >= 0 ? "var(--green)" : "var(--red)" %>"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
-    <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>">
-      <%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%
-    </span>
-  </div>
-  <div class="card">
-    <div class="label">ARR final</div>
-    <div class="value"><%= number_to_currency(summary.arr_final_actual, unit: "€", format: "%n %u", precision: 0) %></div>
-  </div>
-  <div class="card">
-    <div class="label">ARR final projeté</div>
-    <div class="value"><%= number_to_currency(summary.arr_final, unit: "€", format: "%n %u", precision: 0) %></div>
+
+  <div class="metric-card metric-card-single">
+    <div class="metric-card-title">Taux de renouvellement</div>
+    <div class="metric-col-value metric-standalone-value"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
+    <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>"><%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%</span>
   </div>
 </div>

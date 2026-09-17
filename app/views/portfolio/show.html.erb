@@ -90,7 +90,9 @@
             <%= sortable_th(@ren_pager, :produit, "Produit", col_class: "col-produit") %>
             <%= sortable_th(@ren_pager, :college, "Collège", col_class: "col-college") %>
             <%= sortable_th(@ren_pager, :assureur, "Assureur", col_class: "col-assureur") %>
-            <%= sortable_th(@ren_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <% if current_user.admin? %>
+              <%= sortable_th(@ren_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <% end %>
             <%= sortable_th(@ren_pager, :arr, "ARR (€)", col_class: "col-arr") %>
             <%= sortable_th(@ren_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
             <%= sortable_th(@ren_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
@@ -101,7 +103,7 @@
         </thead>
         <tbody>
           <% if @ren_pager.records.empty? %>
-            <tr><td colspan="11" class="empty-state">Aucun produit pour le moment.</td></tr>
+            <tr><td colspan="<%= current_user.admin? ? 11 : 10 %>" class="empty-state">Aucun produit pour le moment.</td></tr>
           <% else %>
             <%= render partial: "deals/produit_row", collection: @ren_pager.records, as: :deal %>
           <% end %>
@@ -109,7 +111,7 @@
         <% if @ren_pager.records.any? %>
           <tfoot>
             <tr class="table-footer-row">
-              <td colspan="6">Taux moyen pondéré par l'ARR (résultats filtrés)</td>
+              <td colspan="<%= current_user.admin? ? 6 : 5 %>">Taux moyen pondéré par l'ARR (résultats filtrés)</td>
               <td><%= @ren_taux_avg.nil? ? "—" : "#{@ren_taux_avg >= 0 ? "+" : ""}#{number_with_precision(@ren_taux_avg, precision: 1)}%" %></td>
               <td colspan="4"></td>
             </tr>

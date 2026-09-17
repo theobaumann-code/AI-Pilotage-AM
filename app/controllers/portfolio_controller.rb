@@ -76,11 +76,15 @@ class PortfolioController < ApplicationController
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)", "Taux négocié (%)",
-              "Statut de renouvellement", "% risque churn", "ARR final (€)", "AM"]
+      header = ["Nom", "Produit", "Collège", "Assureur"]
+      header << "ID externe" if current_user.admin?
+      header.concat(["ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)", "AM"])
+      csv << header
       filtered_produit_deals.each do |d|
-        csv << [d.company.name, d.produit, d.college, d.assureur, d.identifiant, d.arr, d.taux,
-                d.statut_renouvellement, d.risque_churn, d.final_arr, d.company.user.name]
+        row = [d.company.name, d.produit, d.college, d.assureur]
+        row << d.identifiant if current_user.admin?
+        row.concat([d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr, d.company.user.name])
+        csv << row
       end
     end
 

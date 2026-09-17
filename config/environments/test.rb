@@ -31,6 +31,11 @@ Rails.application.configure do
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 
+  # Jobs (e.g. the Google Sheets sync triggered on every produit/company/AM change) just enqueue instead
+  # of actually running — the default :async adapter would fire them on a background thread mid-test-run,
+  # making real network calls and racing the test's own assertions/transaction rollback.
+  config.active_job.queue_adapter = :test
+
   # Tell Action Mailer not to deliver emails to the real world.
   # The :test delivery method accumulates sent emails in the
   # ActionMailer::Base.deliveries array.

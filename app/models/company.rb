@@ -7,6 +7,14 @@ class Company < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 
+  # The Google Sheet export denormalizes company name and AM name onto each produit row — a rename or
+  # reassignment doesn't touch any ProduitDeal itself, so it needs its own trigger to keep the sheet current.
+  after_commit :sync_to_google_sheets, if: -> { saved_change_to_name? || saved_change_to_user_id? }
+
+  def sync_to_google_sheets
+    GoogleSheetsSyncJob.perform_later
+  end
+
   # A plain find_or_create_by!(name: ...) looks up by an exact, case-sensitive match — given the model's
   # own uniqueness rule (and its "lower(name)" DB index) is case-insensitive, that mismatch meant a name
   # differing only by case from an existing company (e.g. a CSV row spelling it "CARON SERVICES" against

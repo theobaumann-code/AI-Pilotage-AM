@@ -10,7 +10,15 @@ class User < ApplicationRecord
     "google-sso:#{email}:#{active?}:#{updated_at&.utc&.iso8601(6)}"
   end
 
+  def sync_to_google_sheets
+    GoogleSheetsSyncJob.perform_later
+  end
+
   validates :name, presence: true
+
+  # The Google Sheet export denormalizes each produit's AM name onto its row — a rename doesn't touch any
+  # ProduitDeal itself, so it needs its own trigger to keep the sheet current.
+  after_commit :sync_to_google_sheets, if: :saved_change_to_name?
 
   has_many :companies, dependent: :restrict_with_error
   # dependent: :restrict_with_error — mirrors the "one company = one AM" invariant: an AM with an active

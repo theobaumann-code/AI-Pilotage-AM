@@ -114,4 +114,11 @@ class ProduitDealTest < ActiveSupport::TestCase
     assert_not build_deal(risque_churn: 101).valid?
     assert_not build_deal(risque_churn: -1).valid?
   end
+
+  test "creating, updating or destroying a produit enqueues a Google Sheets sync" do
+    deal = nil
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { deal = build_deal.tap(&:save!) }
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { deal.update!(taux: 5) }
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { deal.destroy! }
+  end
 end

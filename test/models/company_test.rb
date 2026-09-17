@@ -26,4 +26,10 @@ class CompanyTest < ActiveSupport::TestCase
     dup = Company.new(name: "unique corp", user: @am2)
     assert_not dup.valid?
   end
+
+  test "renaming or reassigning a company enqueues a Google Sheets sync, an unrelated save does not" do
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { @company.update!(name: "Cabinet Renommé") }
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { @company.reassign_am!(@am2) }
+    assert_no_enqueued_jobs(only: GoogleSheetsSyncJob) { @company.touch }
+  end
 end

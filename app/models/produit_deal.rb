@@ -22,6 +22,7 @@ class ProduitDeal < Deal
   validates :college, uniqueness: { scope: [:company_id, :produit, :assureur] }, if: :college?
 
   before_validation :apply_business_rules
+  after_commit :sync_to_google_sheets
 
   def churned?
     statut_renouvellement == CHURNED
@@ -35,6 +36,10 @@ class ProduitDeal < Deal
   end
 
   private
+
+  def sync_to_google_sheets
+    GoogleSheetsSyncJob.perform_later
+  end
 
   # Rule 4: churn always forces taux to 0. A produit that has already churned is a certainty, not a risk
   # estimate — its churn probability is pinned to 100 rather than left at whatever an AM last entered.

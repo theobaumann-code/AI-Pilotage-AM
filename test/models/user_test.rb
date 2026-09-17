@@ -41,4 +41,11 @@ class UserTest < ActiveSupport::TestCase
     assert_not user.admin?
     assert_not user.kam?
   end
+
+  test "renaming an AM enqueues a Google Sheets sync, an unrelated save does not" do
+    user = User.create!(email: "sync-name@example.com", name: "Nom Initial", active: true)
+
+    assert_enqueued_with(job: GoogleSheetsSyncJob) { user.update!(name: "Nom Modifié") }
+    assert_no_enqueued_jobs(only: GoogleSheetsSyncJob) { user.touch }
+  end
 end

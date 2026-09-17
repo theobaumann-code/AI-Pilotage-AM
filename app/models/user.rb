@@ -38,6 +38,14 @@ class User < ApplicationRecord
     { admin: "Admin", kam: "KAM", am: "AM" }.fetch(role)
   end
 
+  # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin) instead of
+  # two independent checkboxes — assignable like any other attribute (user.update(role: "KAM")). Any value
+  # other than the three known labels is treated as "AM", the safe default.
+  def role=(label)
+    self.admin = (label.to_s == "Admin")
+    self.kam = (label.to_s == "KAM")
+  end
+
   # KAM has the same rights as admin everywhere in the app (see ApplicationController#require_admin! and
   # every current_user.privileged? check) — only the NRR/portfolio calculations themselves stay identical
   # for AM and KAM. Deliberately not folded into `admin?` itself: that column still needs to mean exactly

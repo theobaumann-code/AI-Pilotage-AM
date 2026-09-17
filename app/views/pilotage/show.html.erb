@@ -20,13 +20,8 @@
               </label>
             </div>
             <div class="modal-row">
-              <label style="flex-direction:row;align-items:center;gap:8px;">
-                <%= f.check_box :admin %>
-                Administrateur (accès complet : import CSV, clôture d'année, gestion des AM...)
-              </label>
-              <label style="flex-direction:row;align-items:center;gap:8px;">
-                <%= f.check_box :kam %>
-                KAM (mêmes droits qu'un administrateur)
+              <label>Équipe
+                <%= f.select :role, ["AM", "KAM", "Admin"], selected: "AM" %>
               </label>
             </div>
           </div>
@@ -107,7 +102,7 @@
                 <td class="rowaction" style="white-space:nowrap;">
                   <% if current_user.privileged? %>
                     <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
-                      onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>')">✎</button>
+                      onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>', '<%= j am.role_label %>')">✎</button>
                     <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
                           form: { data: { turbo_confirm: "Désactiver #{am.name} ?" }, style: "display:inline-block;" } %>
                   <% end %>
@@ -141,6 +136,11 @@
                 <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
               </label>
             </div>
+            <div class="modal-row">
+              <label>Équipe
+                <%= select_tag "user[role]", options_for_select(["AM", "KAM", "Admin"]), id: "edit-am-role" %>
+              </label>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="button ghost-burgundy" onclick="document.getElementById('edit-am-panel').style.display='none';">Annuler</button>
@@ -149,10 +149,11 @@
         <% end %>
       </div>
       <script>
-        function editAmCredentials(url, email, name) {
+        function editAmCredentials(url, email, name, role) {
           document.getElementById('edit-am-form').action = url;
           document.getElementById('edit-am-name-input').value = name;
           document.getElementById('edit-am-email').value = email;
+          document.getElementById('edit-am-role').value = role;
           document.getElementById('edit-am-name').textContent = name;
           var panel = document.getElementById('edit-am-panel');
           panel.style.display = 'block';

@@ -32,7 +32,7 @@ class UsersController < ApplicationController
 
   def destroy
     user = User.find(params[:id])
-    if user.admin? && User.where(admin: true, active: true).count <= 1
+    if last_active_admin?(user)
       return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
     end
 
@@ -44,12 +44,17 @@ class UsersController < ApplicationController
 
   private
 
-  # Guarded against removing the last active admin, so the app can never end up with nobody able to reach
-  # admin-only actions (including this one).
+  # True once `user` is the ONLY thing standing between the app and having zero active admins — checked
+  # before any action (admin-toggle, role select in the edit panel, deactivation) that could remove admin
+  # from them, so the app can never end up with nobody able to reach admin-only actions.
+  def last_active_admin?(user)
+    user.admin? && User.where(admin: true, active: true).count <= 1
+  end
+
   def update_admin_flag(user)
     new_admin = ActiveModel::Type::Boolean.new.cast(params[:admin])
 
-    if user.admin? && !new_admin && User.where(admin: true, active: true).count <= 1
+    if !new_admin && last_active_admin?(user)
       return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
     end
 
@@ -64,9 +69,14 @@ class UsersController < ApplicationController
     redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.role_label}."
   end
 
-  # Admins manage the Google email used to match an existing AM account.
+  # Admins manage the Google email used to match an existing AM account, and now also the team (rôle)
+  # right from the same panel — subject to the same last-admin safeguard as the dedicated toggle button.
   def update_credentials(user)
-    attrs = params.require(:user).permit(:name, :email)
+    attrs = params.require(:user).permit(:name, :email, :role)
+
+    if attrs[:role].present? && attrs[:role] != "Admin" && last_active_admin?(user)
+      return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
+    end
 
     if user.update(attrs)
       redirect_to pilotage_path, notice: "Identifiants de #{user.name} mis à jour."
@@ -76,6 +86,6 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :admin, :kam)
+    params.require(:user).permit(:name, :email, :admin, :kam, :role)
   end
 end

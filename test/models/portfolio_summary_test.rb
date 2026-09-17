@@ -109,4 +109,34 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert summary.churn_within_limit?
     assert_not summary.churn_total_within_limit?
   end
+
+  test "upsold_actual counts only signed upsells, unlike the probability-weighted upsold" do
+    UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 100, statut_signature: "Signé", arr: 1_000)
+    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+
+    assert_in_delta 1_000, summary.upsold_actual, 0.01
+    assert_in_delta 1_000 + 1_000, summary.upsold, 0.01
+  end
+
+  test "arr_final_actual and nrr_actual use only signed upsells; arr_final/nrr use the projection" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
+    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+
+    assert_in_delta 100_000, summary.arr_final_actual, 0.01
+    assert_in_delta 100.0, summary.nrr_actual, 0.01
+    assert_in_delta 101_000, summary.arr_final, 0.01
+    assert_in_delta 101.0, summary.nrr, 0.01
+  end
+
+  test "renewal_rate is renewal_gain expressed as a % of arr_initial" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")
+
+    assert_in_delta 5.0, summary.renewal_rate, 0.01
+    assert summary.renewal_target_met?
+  end
 end

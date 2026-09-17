@@ -46,9 +46,15 @@ class PortfolioSummary
     produit_deals.select(&:churned?).sum { |d| d.arr.to_f }
   end
 
+  # Only fully-signed upsells — the confirmed number behind the "Upsell" card. See `upsold` for the
+  # probability-weighted projection behind "Upsell projeté".
+  def upsold_actual
+    upsell_deals.select(&:signed?).sum(&:upsell_amount)
+  end
+
   # Projected, not actual-only: a signed upsell already carries probabilite_signature 100 (see UpsellDeal's
-  # business rule), so it still contributes its full amount here — the only behavior change is that
-  # in-pipeline upsells now contribute their probability-weighted share too, instead of $0 until signed.
+  # business rule), so it still contributes its full amount here — the only difference from `upsold_actual`
+  # is that in-pipeline upsells contribute their probability-weighted share too, instead of $0 until signed.
   def upsold
     upsell_deals.sum(&:projection)
   end
@@ -57,12 +63,26 @@ class PortfolioSummary
     produit_deals.reject(&:churned?).sum(&:final_arr)
   end
 
+  # Behind the "ARR final" card — renewed ARR plus only the upsells actually signed so far.
+  def arr_final_actual
+    renewed_arr + upsold_actual
+  end
+
+  # Behind the "ARR final projeté" card — renewed ARR plus every upsell's probability-weighted projection.
   def arr_final
     renewed_arr + upsold
   end
 
+  def nrr_actual
+    arr_initial > 0 ? (arr_final_actual / arr_initial * 100) : 0
+  end
+
   def nrr
     arr_initial > 0 ? (arr_final / arr_initial * 100) : 0
+  end
+
+  def nrr_actual_target_met?
+    nrr_actual >= NRR_TARGET
   end
 
   def target_met?
@@ -107,5 +127,12 @@ class PortfolioSummary
 
   def renewal_target_met?
     renewal_gain >= renewal_target
+  end
+
+  # Behind the "Taux de renouvellement" card — renewal_gain re-expressed as a % of arr_initial, so it reads
+  # alongside NRR/churn as a rate rather than a raw € amount. Equivalent to renewal_target_met? at the 5%
+  # mark, just expressed directly as a percentage instead of comparing two € figures.
+  def renewal_rate
+    arr_initial > 0 ? (renewal_gain / arr_initial * 100) : 0
   end
 end

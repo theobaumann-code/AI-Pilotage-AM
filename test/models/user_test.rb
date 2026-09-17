@@ -19,4 +19,26 @@ class UserTest < ActiveSupport::TestCase
     assert User.new(kam: true).privileged?
     assert_not User.new(admin: false, kam: false).privileged?
   end
+
+  test "role= sets admin/kam from the Équipe selector's three labels" do
+    user = User.new
+    user.role = "Admin"
+    assert user.admin?
+    assert_not user.kam?
+
+    user.role = "KAM"
+    assert_not user.admin?
+    assert user.kam?
+
+    user.role = "AM"
+    assert_not user.admin?
+    assert_not user.kam?
+  end
+
+  test "role= treats any unrecognized value as AM" do
+    user = User.new(admin: true, kam: false)
+    user.role = "n'importe quoi"
+    assert_not user.admin?
+    assert_not user.kam?
+  end
 end

@@ -43,9 +43,11 @@ class DealsController < ApplicationController
         format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: "Modifié." }
       end
     else
+      error_message = @deal.errors.full_messages.to_sentence
+      @deal.reload
       respond_to do |format|
-        format.turbo_stream { head :unprocessable_entity }
-        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: @deal.errors.full_messages.to_sentence }
+        format.turbo_stream { render turbo_stream: error_streams(error_message), status: :unprocessable_entity }
+        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: error_message }
       end
     end
   end
@@ -124,7 +126,6 @@ class DealsController < ApplicationController
           locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
       ]
     else
-      row_partial = @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
       owner = viewed_user
       [
         turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
@@ -133,6 +134,25 @@ class DealsController < ApplicationController
           locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals)), dom_id: "portfolio-summary-cards" })
       ]
     end
+  end
+
+  # A rejected inline edit must still hand Turbo a real body to swap in — an empty 422 (the previous
+  # behavior) leaves a turbo-frame-scoped form with nothing to match against its enclosing frame, and Turbo
+  # blanks the whole frame ("Content missing") instead of just that row. Reverting @deal before rendering
+  # means the row shows its last valid value again, with the actual reason surfaced via the flash instead.
+  def row_partial
+    case params[:row_context]
+    when "global" then "pilotage/global_upsell_row"
+    when "global_produit" then "pilotage/global_produit_row"
+    else @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
+    end
+  end
+
+  def error_streams(message)
+    [
+      turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
+      turbo_stream.replace("flash", partial: "shared/flash", locals: { notice: nil, alert: message })
+    ]
   end
 
   def deal_class

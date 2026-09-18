@@ -64,8 +64,7 @@
 
     <main class="<%= content_for?(:auth_page) ? "auth-shell" : nil %>">
       <% unless content_for?(:auth_page) %>
-      <% if notice %><p class="notice"><%= notice %></p><% end %>
-      <% if alert %><p class="alert"><%= alert %></p><% end %>
+      <div id="flash"><%= render "shared/flash", notice: notice, alert: alert %></div>
       <% end %>
       <%= yield %>
     </main>

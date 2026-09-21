@@ -38,7 +38,7 @@ class ProduitDeal < Deal
   private
 
   def sync_to_google_sheets
-    GoogleSheetsSyncJob.perform_later
+    GoogleSheetsSyncJob.enqueue
   end
 
   # Rule 4: churn always forces taux to 0. A produit that has already churned is a certainty, not a risk

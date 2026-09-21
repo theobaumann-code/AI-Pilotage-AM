@@ -11,7 +11,7 @@ class User < ApplicationRecord
   end
 
   def sync_to_google_sheets
-    GoogleSheetsSyncJob.perform_later
+    GoogleSheetsSyncJob.enqueue
   end
 
   validates :name, presence: true

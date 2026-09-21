@@ -12,7 +12,7 @@ class Company < ApplicationRecord
   after_commit :sync_to_google_sheets, if: -> { saved_change_to_name? || saved_change_to_user_id? }
 
   def sync_to_google_sheets
-    GoogleSheetsSyncJob.perform_later
+    GoogleSheetsSyncJob.enqueue
   end
 
   # A plain find_or_create_by!(name: ...) looks up by an exact, case-sensitive match — given the model's

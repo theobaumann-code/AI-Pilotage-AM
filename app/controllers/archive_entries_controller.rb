@@ -13,7 +13,7 @@ class ArchiveEntriesController < ApplicationController
     entry.save!
     row = HistoriqueQuery::Row.from_archive_entry(entry)
     respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.replace(row.dom_id, partial: "historique/row", locals: { r: row }) }
+      format.turbo_stream { render turbo_stream: turbo_stream.replace(row.dom_id, partial: "historique/row", locals: { r: row }, method: :morph) }
       format.html { redirect_back fallback_location: historique_path, notice: "Modifié." }
     end
   rescue ActiveRecord::RecordNotFound

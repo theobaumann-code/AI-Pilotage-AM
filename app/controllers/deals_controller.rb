@@ -115,23 +115,23 @@ class DealsController < ApplicationController
   def update_streams
     if params[:row_context] == "global"
       [
-        turbo_stream.replace(@deal, partial: "pilotage/global_upsell_row", locals: { deal: @deal }),
+        turbo_stream.replace(@deal, partial: "pilotage/global_upsell_row", locals: { deal: @deal }, method: :morph),
         turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
+          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" }, method: :morph)
       ]
     elsif params[:row_context] == "global_produit"
       [
-        turbo_stream.replace(@deal, partial: "pilotage/global_produit_row", locals: { deal: @deal }),
+        turbo_stream.replace(@deal, partial: "pilotage/global_produit_row", locals: { deal: @deal }, method: :morph),
         turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" })
+          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" }, method: :morph)
       ]
     else
       owner = viewed_user
       [
-        turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
-        turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }),
+        turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }, method: :morph),
+        turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }, method: :morph),
         turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals)), dom_id: "portfolio-summary-cards" })
+          locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals)), dom_id: "portfolio-summary-cards" }, method: :morph)
       ]
     end
   end
@@ -150,7 +150,7 @@ class DealsController < ApplicationController
 
   def error_streams(message)
     [
-      turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }),
+      turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }, method: :morph),
       turbo_stream.replace("flash", partial: "shared/flash", locals: { notice: nil, alert: message })
     ]
   end

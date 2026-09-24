@@ -46,20 +46,41 @@
 
 <%# Small contracts nobody actively manages (no AM, no individual renewal tracking) — SideCare still wants
     their combined weight visible on Vue globale, but mixing them into the NRR/churn cards above would be
-    meaningless (there's no per-contract renewal data to compute a rate from). Kept as a single standalone
-    figure, editable by admins only, clearly separate from the AM-tracked metrics. %>
-<div class="metric-card metric-card-single" style="max-width:320px;margin-bottom:24px;">
-  <div class="metric-card-title">ARR non accompagné</div>
-  <div class="metric-col-value metric-standalone-value"><%= number_to_currency(@arr_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
+    meaningless (there's no per-contract renewal data to compute those from). Kept as its own isolated card
+    with three manually-set figures (ARR, churn, taux de renouvellement), editable by admins only. %>
+<div class="metric-card" style="max-width:520px;margin-bottom:24px;">
+  <div class="metric-card-title">Portefeuille non accompagné</div>
+  <div class="metric-pair">
+    <div class="metric-col">
+      <div class="metric-col-label">ARR</div>
+      <div class="metric-col-value"><%= number_to_currency(@app_setting.arr_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
+    </div>
+    <div class="metric-col">
+      <div class="metric-col-label">Churn</div>
+      <div class="metric-col-value"><%= number_to_currency(@app_setting.churn_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
+    </div>
+    <div class="metric-col">
+      <div class="metric-col-label">Taux de renouvellement</div>
+      <div class="metric-col-value"><%= number_with_precision(@app_setting.taux_renouvellement_non_accompagne, precision: 1) %>%</div>
+    </div>
+  </div>
   <% if current_user.admin? %>
     <details>
       <summary class="button" style="margin-top:10px;">Modifier</summary>
       <div class="modal-box" style="margin:12px 0 0;">
         <%= form_with url: app_setting_path, method: :patch do %>
           <div class="modal-body">
-            <label>Nouvel ARR non accompagné (€)
-              <%= number_field_tag :arr_non_accompagne, @arr_non_accompagne, step: "0.01", min: 0 %>
-            </label>
+            <div class="modal-row">
+              <label>ARR non accompagné (€)
+                <%= number_field_tag :arr_non_accompagne, @app_setting.arr_non_accompagne, step: "0.01", min: 0 %>
+              </label>
+              <label>Churn non accompagné (€)
+                <%= number_field_tag :churn_non_accompagne, @app_setting.churn_non_accompagne, step: "0.01", min: 0 %>
+              </label>
+              <label>Taux de renouvellement non accompagné (%)
+                <%= number_field_tag :taux_renouvellement_non_accompagne, @app_setting.taux_renouvellement_non_accompagne, step: "0.1" %>
+              </label>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>

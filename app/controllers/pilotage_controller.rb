@@ -2,6 +2,7 @@ require "csv"
 
 class PilotageController < ApplicationController
   def show
+    @arr_non_accompagne = AppSetting.instance.arr_non_accompagne
     @active_ams = User.active.order(:name)
     # produit_deals/upsell_deals are separate has_many associations from :deals (each with its own `type`
     # scope), so `includes(:deals)` doesn't preload them — every PortfolioSummary/Company aggregate method

@@ -44,6 +44,33 @@
 </div>
 <%= render "shared/summary_cards", summary: @global_summary, dom_id: "global-summary-cards" %>
 
+<%# Small contracts nobody actively manages (no AM, no individual renewal tracking) — SideCare still wants
+    their combined weight visible on Vue globale, but mixing them into the NRR/churn cards above would be
+    meaningless (there's no per-contract renewal data to compute a rate from). Kept as a single standalone
+    figure, editable by admins only, clearly separate from the AM-tracked metrics. %>
+<div class="metric-card metric-card-single" style="max-width:320px;margin-bottom:24px;">
+  <div class="metric-card-title">ARR non accompagné</div>
+  <div class="metric-col-value metric-standalone-value"><%= number_to_currency(@arr_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
+  <% if current_user.admin? %>
+    <details>
+      <summary class="button" style="margin-top:10px;">Modifier</summary>
+      <div class="modal-box" style="margin:12px 0 0;">
+        <%= form_with url: app_setting_path, method: :patch do %>
+          <div class="modal-body">
+            <label>Nouvel ARR non accompagné (€)
+              <%= number_field_tag :arr_non_accompagne, @arr_non_accompagne, step: "0.01", min: 0 %>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
+            <button type="submit" class="button primary">Enregistrer</button>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  <% end %>
+</div>
+
 <div class="section-card">
   <%= turbo_frame_tag "am-table-frame" do %>
     <div class="table-toolbar">

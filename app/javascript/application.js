@@ -13,3 +13,18 @@ window.openReassignPanel = function (panelId, formId, nameSpanId, url, label) {
   panel.style.display = "block";
   panel.scrollIntoView({ block: "center", behavior: "smooth" });
 };
+
+// Keeps a checklist-filter dropdown's open/closed state (see shared/_checklist_filter.html.erb) tracked
+// in its own hidden field, so the NEXT form submission — whether it's another checkbox in this same
+// filter, or something unrelated like the table's search box — carries forward what the user actually did
+// (open or closed) instead of the server re-inferring "open" purely from "something is selected", which
+// used to reopen a filter the user had deliberately closed as soon as any other control in the same form
+// triggered a reload. The native "toggle" event on <details> doesn't bubble, but it does fire during the
+// capture phase on ancestors, so one delegated listener here covers every filter on the page without
+// needing to re-attach after each Turbo navigation.
+document.addEventListener("toggle", (event) => {
+  const details = event.target;
+  if (!(details instanceof HTMLDetailsElement) || !details.classList.contains("checklist-filter")) return;
+  const openField = details.querySelector("[data-checklist-open-field]");
+  if (openField) openField.value = details.open ? "1" : "0";
+}, true);

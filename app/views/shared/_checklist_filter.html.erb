@@ -1,14 +1,20 @@
 <%# Each checkbox submits the form immediately (see onchange below), which reloads the page — a plain
     <details> would default back to closed on that reload, forcing you to reopen it before checking the
-    next box. Keeping it open whenever something's already selected lets you tick several boxes in a row
-    without re-clicking the filter each time; it only closes again once you explicitly clear the selection
-    (or click the summary to collapse it yourself). %>
-<details class="checklist-filter" <%= "open" if selected.any? %>>
+    next box. So this tracks the panel's open/closed state explicitly via a hidden field (kept in sync by
+    the toggle listener in application.js) instead of just inferring it from "something is selected":
+    that inference alone reopened the panel on *any* later reload — a search, a sort, another filter —
+    even after you'd deliberately closed it yourself. With no prior explicit state (first visit), it still
+    falls back to "open when something's selected" so the very first checkbox click doesn't require an
+    extra click to see the panel open. %>
+<% open_param = "#{param_name}_open" %>
+<% is_open = params.key?(open_param) ? params[open_param] == "1" : selected.any? %>
+<details class="checklist-filter" <%= "open" if is_open %>>
   <summary class="checklist-filter-toggle <%= "active" if selected.any? %>">
     <span class="checklist-filter-label"><%= selected.any? ? "#{legend} (#{selected.size})" : legend %></span>
     <span class="checklist-filter-caret">▾</span>
   </summary>
   <div class="checklist-filter-panel">
+    <%= hidden_field_tag open_param, (is_open ? "1" : "0"), id: nil, data: { checklist_open_field: true } %>
     <div class="checklist-filter-options">
       <% options.each do |opt| %>
         <label class="checklist-filter-option">

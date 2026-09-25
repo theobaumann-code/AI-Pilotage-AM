@@ -37,7 +37,7 @@
 
 <div class="toolbar" style="margin-bottom:14px;">
   <%= form_with url: pilotage_path, method: :get do %>
-    <%= preserved_query_fields("summary_ams", "summary_roles") %>
+    <%= preserved_query_fields("summary_ams", "summary_ams_open", "summary_roles", "summary_roles_open") %>
     <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_roles, selected: @summary_roles, legend: "Équipe" %>
     <%= render "shared/checklist_filter", param_name: "summary_ams", options: @available_summary_ams, selected: @summary_ams, legend: "AM" %>
   <% end %>
@@ -245,7 +245,8 @@
     <div class="table-toolbar">
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("produit_q", "produit_ams", "produit_roles", "produit_produits", "produit_statuts", "gprod_page") %>
+          <%= preserved_query_fields("produit_q", "produit_ams", "produit_ams_open", "produit_roles", "produit_roles_open",
+                "produit_produits", "produit_produits_open", "produit_statuts", "produit_statuts_open", "gprod_page") %>
           <%= live_search_field :produit_q, @produit_q %>
           <%= render "shared/checklist_filter", param_name: "produit_roles", options: @available_roles, selected: @produit_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "produit_ams", options: @available_produit_ams, selected: @produit_ams, legend: "AM" %>
@@ -308,7 +309,8 @@
     <div class="table-toolbar">
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_roles", "upsell_produits", "upsell_statuts", "gups_page") %>
+          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_ams_open", "upsell_roles", "upsell_roles_open",
+                "upsell_produits", "upsell_produits_open", "upsell_statuts", "upsell_statuts_open", "gups_page") %>
           <%= live_search_field :upsell_q, @upsell_q %>
           <%= render "shared/checklist_filter", param_name: "upsell_roles", options: @available_roles, selected: @upsell_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "upsell_ams", options: @available_upsell_ams, selected: @upsell_ams, legend: "AM" %>

@@ -23,6 +23,16 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
     assert_no_match "Client Gprod", @response.body
   end
 
+  test "the produits table is also filterable by team (role), not just by named AM" do
+    sign_in @am
+    get pilotage_path, params: { produit_roles: ["Admin"] }
+    assert_response :success
+    assert_no_match "Client Gprod", @response.body
+
+    get pilotage_path, params: { produit_roles: ["AM"] }
+    assert_match "Client Gprod", @response.body
+  end
+
   test "an admin editing another AM's produit from the global table persists to that AM's real record" do
     sign_in @admin
 

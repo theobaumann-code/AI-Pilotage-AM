@@ -11,10 +11,10 @@ class PilotageController < ApplicationController
     @am_rows = @active_ams.map do |am|
       { am: am, summary: PortfolioSummary.new(am.companies.includes(:produit_deals), user: am) }
     end
+    @available_roles = ["Admin", "KAM", "AM"]
     @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
     @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
-    @available_summary_roles = ["Admin", "KAM", "AM"]
 
     # Both filters narrow the same "team" of AMs — used below for both the summary cards and the roster
     # table, so selecting a role and/or specific names filters the two together rather than independently.
@@ -52,6 +52,7 @@ class PilotageController < ApplicationController
 
     @produit_q = params[:produit_q].to_s.strip
     @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
+    @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
     @available_produit_ams = @active_ams.map(&:name)
@@ -74,6 +75,7 @@ class PilotageController < ApplicationController
 
     @upsell_q = params[:upsell_q].to_s.strip
     @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
+    @upsell_roles = Array(params[:upsell_roles]).reject(&:blank?)
     @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
     @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
     @available_upsell_ams = @active_ams.map(&:name)
@@ -98,6 +100,7 @@ class PilotageController < ApplicationController
   def export_upsells
     @upsell_q = params[:upsell_q].to_s.strip
     @upsell_ams = Array(params[:upsell_ams]).reject(&:blank?)
+    @upsell_roles = Array(params[:upsell_roles]).reject(&:blank?)
     @upsell_produits = Array(params[:upsell_produits]).reject(&:blank?)
     @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
 
@@ -118,6 +121,7 @@ class PilotageController < ApplicationController
   def export_produits
     @produit_q = params[:produit_q].to_s.strip
     @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
+    @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
 
@@ -158,6 +162,7 @@ class PilotageController < ApplicationController
     deals = UpsellDeal.includes(:user, company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@upsell_q.downcase) } if @upsell_q.present?
     deals = deals.select { |d| @upsell_ams.include?(d.effective_user.name) } if @upsell_ams.present?
+    deals = deals.select { |d| @upsell_roles.include?(d.effective_user.role_label) } if @upsell_roles.present?
     deals = deals.select { |d| @upsell_produits.include?(d.produit) } if @upsell_produits.present?
     deals = deals.select { |d| @upsell_statuts.include?(d.statut_signature) } if @upsell_statuts.present?
     deals.sort_by { |d| d.company.name }
@@ -167,6 +172,7 @@ class PilotageController < ApplicationController
     deals = ProduitDeal.includes(company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@produit_q.downcase) } if @produit_q.present?
     deals = deals.select { |d| @produit_ams.include?(d.company.user.name) } if @produit_ams.present?
+    deals = deals.select { |d| @produit_roles.include?(d.company.user.role_label) } if @produit_roles.present?
     deals = deals.select { |d| @produit_produits.include?(d.produit) } if @produit_produits.present?
     deals = deals.select { |d| @produit_statuts.include?(d.statut_renouvellement) } if @produit_statuts.present?
     deals.sort_by { |d| d.company.name }

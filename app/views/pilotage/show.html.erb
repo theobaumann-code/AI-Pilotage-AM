@@ -38,7 +38,7 @@
 <div class="toolbar" style="margin-bottom:14px;">
   <%= form_with url: pilotage_path, method: :get do %>
     <%= preserved_query_fields("summary_ams", "summary_roles") %>
-    <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_summary_roles, selected: @summary_roles, legend: "Équipe" %>
+    <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_roles, selected: @summary_roles, legend: "Équipe" %>
     <%= render "shared/checklist_filter", param_name: "summary_ams", options: @available_summary_ams, selected: @summary_ams, legend: "AM" %>
   <% end %>
 </div>
@@ -245,14 +245,15 @@
     <div class="table-toolbar">
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("produit_q", "produit_ams", "produit_produits", "produit_statuts", "gprod_page") %>
+          <%= preserved_query_fields("produit_q", "produit_ams", "produit_roles", "produit_produits", "produit_statuts", "gprod_page") %>
           <%= live_search_field :produit_q, @produit_q %>
+          <%= render "shared/checklist_filter", param_name: "produit_roles", options: @available_roles, selected: @produit_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "produit_ams", options: @available_produit_ams, selected: @produit_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "produit_produits", options: ProduitDeal::PRODUITS, selected: @produit_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "produit_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @produit_statuts, legend: "Statut" %>
         <% end %>
         <%= link_to "Exporter CSV", export_produits_pilotage_path(produit_q: @produit_q, produit_ams: @produit_ams,
-              produit_produits: @produit_produits, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
+              produit_roles: @produit_roles, produit_produits: @produit_produits, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">
@@ -307,14 +308,15 @@
     <div class="table-toolbar">
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_produits", "upsell_statuts", "gups_page") %>
+          <%= preserved_query_fields("upsell_q", "upsell_ams", "upsell_roles", "upsell_produits", "upsell_statuts", "gups_page") %>
           <%= live_search_field :upsell_q, @upsell_q %>
+          <%= render "shared/checklist_filter", param_name: "upsell_roles", options: @available_roles, selected: @upsell_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "upsell_ams", options: @available_upsell_ams, selected: @upsell_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "upsell_produits", options: UpsellDeal::PRODUITS, selected: @upsell_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "upsell_statuts", options: UpsellDeal::STATUTS_SIGNATURE, selected: @upsell_statuts, legend: "Statut" %>
         <% end %>
         <%= link_to "Exporter CSV", export_upsells_pilotage_path(upsell_q: @upsell_q, upsell_ams: @upsell_ams,
-              upsell_produits: @upsell_produits, upsell_statuts: @upsell_statuts), class: "button", data: { turbo: false } %>
+              upsell_roles: @upsell_roles, upsell_produits: @upsell_produits, upsell_statuts: @upsell_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">

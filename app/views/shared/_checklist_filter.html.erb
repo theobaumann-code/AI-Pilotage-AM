@@ -1,4 +1,9 @@
-<details class="checklist-filter">
+<%# Each checkbox submits the form immediately (see onchange below), which reloads the page — a plain
+    <details> would default back to closed on that reload, forcing you to reopen it before checking the
+    next box. Keeping it open whenever something's already selected lets you tick several boxes in a row
+    without re-clicking the filter each time; it only closes again once you explicitly clear the selection
+    (or click the summary to collapse it yourself). %>
+<details class="checklist-filter" <%= "open" if selected.any? %>>
   <summary class="checklist-filter-toggle <%= "active" if selected.any? %>">
     <span class="checklist-filter-label"><%= selected.any? ? "#{legend} (#{selected.size})" : legend %></span>
     <span class="checklist-filter-caret">▾</span>

@@ -12,25 +12,32 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 2, statut_renouvellement: "En cours", risque_churn: 10)
   end
 
+  # Scoped to the produits table's own frame, not the whole page — "Client Gprod" also has a nonzero
+  # risque_churn on this same deal, so it legitimately shows up in the separate "Entreprises à risque"
+  # table too (a different, independent set of risque_* filters) regardless of this filter.
+  def produits_table(body)
+    body[/id="gprod-table-frame">.*?<\/turbo-frame>/m]
+  end
+
   test "everyone can see every AM's produits, filterable by AM/produit/statut" do
     sign_in @am
     get pilotage_path
     assert_response :success
-    assert_match "Client Gprod", @response.body
-    assert_match "10%", @response.body
+    assert_match "Client Gprod", produits_table(@response.body)
+    assert_match "10%", produits_table(@response.body)
 
     get pilotage_path, params: { produit_ams: [@admin.name] }
-    assert_no_match "Client Gprod", @response.body
+    assert_no_match "Client Gprod", produits_table(@response.body)
   end
 
   test "the produits table is also filterable by team (role), not just by named AM" do
     sign_in @am
     get pilotage_path, params: { produit_roles: ["Admin"] }
     assert_response :success
-    assert_no_match "Client Gprod", @response.body
+    assert_no_match "Client Gprod", produits_table(@response.body)
 
     get pilotage_path, params: { produit_roles: ["AM"] }
-    assert_match "Client Gprod", @response.body
+    assert_match "Client Gprod", produits_table(@response.body)
   end
 
   test "an admin editing another AM's produit from the global table persists to that AM's real record" do

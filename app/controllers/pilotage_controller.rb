@@ -4,20 +4,11 @@ class PilotageController < ApplicationController
   def show
     @app_setting = AppSetting.instance
     @active_ams = User.active.order(:name)
-    # produit_deals/upsell_deals are separate has_many associations from :deals (each with its own `type`
-    # scope), so `includes(:deals)` doesn't preload them — every PortfolioSummary/Company aggregate method
-    # below would otherwise issue its own query per company, which is what made this page crawl once there
-    # were enough companies in production (1200+ queries, 20s+ loads).
-    @am_rows = @active_ams.map do |am|
-      { am: am, summary: PortfolioSummary.new(am.companies.includes(:produit_deals), user: am) }
-    end
     @available_roles = ["Admin", "KAM", "AM"]
     @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
     @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
 
-    # Both filters narrow the same "team" of AMs — used below for both the summary cards and the roster
-    # table, so selecting a role and/or specific names filters the two together rather than independently.
     filtered_ams = @active_ams
     filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.role_label) } if @summary_roles.present?
     filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
@@ -27,28 +18,21 @@ class PilotageController < ApplicationController
     summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
     @global_summary = PortfolioSummary.new(summary_companies)
 
-    @am_q = params[:am_q].to_s.strip
-    am_rows_filtered = @am_rows
-    am_rows_filtered = am_rows_filtered.select { |r| @summary_roles.include?(r[:am].role_label) } if @summary_roles.present?
-    am_rows_filtered = am_rows_filtered.select { |r| @summary_ams.include?(r[:am].name) } if @summary_ams.present?
-    am_rows_filtered = am_rows_filtered.select { |r| r[:am].name.downcase.include?(@am_q.downcase) } if @am_q.present?
-    @am_pager = TablePager.new(am_rows_filtered, params: params, prefix: "am",
+    @risque_q = params[:risque_q].to_s.strip
+    @risque_ams = Array(params[:risque_ams]).reject(&:blank?)
+    @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
+    @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
+    @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+    @available_risque_ams = @active_ams.map(&:name)
+    @at_risk_companies = filtered_at_risk_companies
+    @rque_pager = TablePager.new(@at_risk_companies, params: params, prefix: "rque",
       sort_procs: {
-        nom: ->(r) { TablePager.key(r[:am].name) },
-        role: ->(r) { TablePager.key({ admin: 0, kam: 1, am: 2 }[r[:am].role]) },
-        count: ->(r) { TablePager.key(r[:summary].count) },
-        arr_initial: ->(r) { TablePager.key(r[:summary].arr_initial) },
-        churned: ->(r) { TablePager.key(r[:summary].churned) },
-        upsold: ->(r) { TablePager.key(r[:summary].upsold) },
-        renewed_arr: ->(r) { TablePager.key(r[:summary].renewed_arr) },
-        arr_final: ->(r) { TablePager.key(r[:summary].arr_final) },
-        nrr: ->(r) { TablePager.key(r[:summary].nrr) },
-        statut: ->(r) { TablePager.key(r[:summary].target_met? ? 1 : 0) }
-      }, default_sort: :nom)
-
-    @renewal_am_id = params[:renewal_am_id]
-    @renewal_produit = params[:renewal_produit]
-    @renewal_donut = renewal_donut_slices
+        nom: ->(r) { TablePager.key(r[:company].name) },
+        am: ->(r) { TablePager.key(r[:am].name) },
+        count: ->(r) { TablePager.key(r[:count]) },
+        arr_at_risk: ->(r) { TablePager.key(r[:arr_at_risk]) },
+        max_risque: ->(r) { TablePager.key(r[:max_risque]) }
+      }, default_sort: :arr_at_risk, default_dir: "desc")
 
     @produit_q = params[:produit_q].to_s.strip
     @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
@@ -142,20 +126,49 @@ class PilotageController < ApplicationController
       type: "text/csv; charset=utf-8"
   end
 
+  # Mirrors "Entreprises à risque" exactly (same filters, unpaginated), across every AM.
+  def export_risque
+    @risque_q = params[:risque_q].to_s.strip
+    @risque_ams = Array(params[:risque_ams]).reject(&:blank?)
+    @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
+    @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
+    @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+
+    csv = CSV.generate(col_sep: ";") do |csv|
+      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max"]
+      filtered_at_risk_companies.each do |r|
+        csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque]]
+      end
+    end
+
+    send_data "\xEF\xBB\xBF" + csv, filename: "entreprises-a-risque-#{Date.current.iso8601}.csv",
+      type: "text/csv; charset=utf-8"
+  end
+
   private
 
-  # Mirrors the original's "Nouveau contrat vs Augmentation" donut: only produit deals that were actually
-  # renewed are in scope — "En cours" and "Churné" fall outside this chart entirely.
-  def renewal_donut_slices
-    scope = ProduitDeal.joins(:company)
-    scope = scope.where(companies: { user_id: @renewal_am_id }) if @renewal_am_id.present?
-    scope = scope.where(produit: @renewal_produit) if @renewal_produit.present?
-    nouveau = scope.where(statut_renouvellement: "Nouveau contrat").count
-    augmentation = scope.where(statut_renouvellement: ["Augmenté", "Augmentation particulière"]).count
-    [
-      { label: "Nouveau contrat", value: nouveau, color: "var(--primary)" },
-      { label: "Augmentation", value: augmentation, color: "var(--burgundy)" }
-    ]
+  # A company is "at risk" once at least one of its still-active (non-churned) produits carries a nonzero
+  # risque_churn — grouped from the same filtered produit-deal scope filtered_global_produits uses, so the
+  # AM/Équipe/Produit/Statut filters behave identically to every other Vue globale table.
+  def filtered_at_risk_companies
+    deals = ProduitDeal.includes(company: :user).to_a
+    deals = deals.reject(&:churned?)
+    deals = deals.select { |d| d.risque_churn.to_i > 0 }
+    deals = deals.select { |d| d.company.name.downcase.include?(@risque_q.downcase) } if @risque_q.present?
+    deals = deals.select { |d| @risque_ams.include?(d.company.user.name) } if @risque_ams.present?
+    deals = deals.select { |d| @risque_roles.include?(d.company.user.role_label) } if @risque_roles.present?
+    deals = deals.select { |d| @risque_produits.include?(d.produit) } if @risque_produits.present?
+    deals = deals.select { |d| @risque_statuts.include?(d.statut_renouvellement) } if @risque_statuts.present?
+
+    deals.group_by(&:company).map do |company, company_deals|
+      {
+        company: company,
+        am: company.user,
+        count: company_deals.size,
+        arr_at_risk: company_deals.sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 },
+        max_risque: company_deals.map(&:risque_churn).max
+      }
+    end
   end
 
   def filtered_global_upsells

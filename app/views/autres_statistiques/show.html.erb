@@ -1,0 +1,21 @@
+<% content_for :title, "Autres statistiques — Pilotage NRR" %>
+
+<p class="section-title">Autres statistiques</p>
+<p class="section-sub">Statistiques complémentaires, séparées de Vue globale.</p>
+
+<div class="chart-wrap">
+  <h3>Renouvellements : nouveau contrat vs augmentation</h3>
+  <div class="toolbar" style="margin-bottom:14px;">
+    <%= form_with url: autres_statistiques_path, method: :get do %>
+      <label>AM :
+        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.active.order(:name), :id, :name, @renewal_am_id),
+              include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
+      </label>
+      <label>Produit :
+        <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
+              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+  <%= donut_chart(@renewal_donut) %>
+</div>

@@ -1,0 +1,150 @@
+<% content_for :title, "Gestion des droits — Pilotage NRR" %>
+
+<p class="section-title">Gestion des droits</p>
+<p class="section-sub">Liste des AM et gestion de leurs droits d'accès.</p>
+
+<div class="toolbar">
+  <div class="spacer"></div>
+  <details>
+    <summary class="button">+ Nouvel AM</summary>
+    <div class="modal-box" style="margin:12px 0 0;">
+      <%= form_with model: User.new, url: users_path do |f| %>
+        <div class="modal-body">
+          <div class="modal-row">
+            <label>Nom
+              <%= f.text_field :name, required: true %>
+            </label>
+            <label>Adresse Google professionnelle
+              <%= f.email_field :email, required: true %>
+            </label>
+          </div>
+          <div class="modal-row">
+            <label>Équipe
+              <%= f.select :role, ["AM", "KAM", "Admin"], selected: "AM" %>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
+          <%= f.submit "Ajouter l'AM", class: "button primary" %>
+        </div>
+      <% end %>
+    </div>
+  </details>
+</div>
+
+<div class="section-card">
+  <%= turbo_frame_tag "am-table-frame" do %>
+    <div class="table-toolbar">
+      <h3>AM</h3>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("am_q", "am_page") %>
+          <%= live_search_field :am_q, @am_q, placeholder: "Rechercher un AM…" %>
+        <% end %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="am-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@am_pager, :nom, "AM") %>
+            <%= sortable_th(@am_pager, :role, "Rôle") %>
+            <%= sortable_th(@am_pager, :count, "Nb deals") %>
+            <%= sortable_th(@am_pager, :arr_initial, "ARR initial") %>
+            <%= sortable_th(@am_pager, :churned, "ARR churné") %>
+            <%= sortable_th(@am_pager, :upsold, "ARR upsellé") %>
+            <%= sortable_th(@am_pager, :renewed_arr, "ARR renouvelé") %>
+            <%= sortable_th(@am_pager, :arr_final, "ARR final") %>
+            <%= sortable_th(@am_pager, :nrr, "NRR %") %>
+            <%= sortable_th(@am_pager, :statut, "Statut") %>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @am_pager.records.empty? %>
+            <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
+          <% else %>
+            <% @am_pager.records.each do |row| %>
+              <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
+              <tr class="<%= ok ? "ok" : "below" %>">
+                <td><strong><%= am.name %></strong></td>
+                <td>
+                  <span class="badge <%= role_badge_class(am) %>"><%= am.role_label %></span>
+                  <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
+                        params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                        form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
+                  <%= button_to (am.kam? ? "Retirer KAM" : "Rendre KAM"), user_path(am), method: :patch,
+                        params: { kam: am.kam? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
+                        form: { data: { turbo_confirm: am.kam? ? "Retirer le statut KAM de #{am.name} ?" : "Donner le statut KAM à #{am.name} ?" } } %>
+                </td>
+                <td><%= s.count %></td>
+                <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
+                <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
+                <td class="rowaction" style="white-space:nowrap;">
+                  <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
+                    onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>', '<%= j am.role_label %>')">✎</button>
+                  <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
+                        form: { data: { turbo_confirm: "Désactiver #{am.name} ?" }, style: "display:inline-block;" } %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%# Lives outside .table-scroll on purpose — that container clips overflow-x, which would cut off a
+        form popped open from a narrow action column deep in a wide table. One shared panel, retargeted
+        by JS to whichever AM's ✎ was clicked, rather than one per row. %>
+    <div id="edit-am-panel" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
+      <p style="padding:16px 22px 0;margin:0;font-weight:700;">Modifier les identifiants de <span id="edit-am-name"></span></p>
+      <%# turbo_frame: "_top" forces a full-page redirect on submit — without it, a validation failure
+          (e.g. an email already used by another account) redirects back inside this frame, which Rails
+          renders with a bare layout that has no flash partial — so the error existed but was never
+          visible, making a real failure look like nothing happened at all. %>
+      <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch,
+            html: { id: "edit-am-form" }, data: { turbo_frame: "_top" } do %>
+        <div class="modal-body">
+          <div class="modal-row">
+            <label>Nom
+              <%= text_field_tag "user[name]", nil, id: "edit-am-name-input", required: true %>
+            </label>
+          </div>
+          <div class="modal-row">
+            <label>Adresse Google professionnelle
+              <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
+            </label>
+          </div>
+          <div class="modal-row">
+            <label>Équipe
+              <%= select_tag "user[role]", options_for_select(["AM", "KAM", "Admin"]), id: "edit-am-role" %>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="button ghost-burgundy" onclick="document.getElementById('edit-am-panel').style.display='none';">Annuler</button>
+          <%= submit_tag "Enregistrer", class: "button primary" %>
+        </div>
+      <% end %>
+    </div>
+    <script>
+      function editAmCredentials(url, email, name, role) {
+        document.getElementById('edit-am-form').action = url;
+        document.getElementById('edit-am-name-input').value = name;
+        document.getElementById('edit-am-email').value = email;
+        document.getElementById('edit-am-role').value = role;
+        document.getElementById('edit-am-name').textContent = name;
+        var panel = document.getElementById('edit-am-panel');
+        panel.style.display = 'block';
+        panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    </script>
+    <%= pagination_controls(@am_pager) %>
+    <%= page_size_select(@am_pager) %>
+  <% end %>
+</div>

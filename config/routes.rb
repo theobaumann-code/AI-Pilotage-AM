@@ -20,7 +20,10 @@ Rails.application.routes.draw do
   resource :pilotage, only: [:show], controller: "pilotage" do
     get :export_upsells
     get :export_produits
+    get :export_risque
   end
+  resource :gestion_droits, only: [:show], controller: "gestion_droits"
+  resource :autres_statistiques, only: [:show], controller: "autres_statistiques"
   resources :companies, only: [:create, :destroy] do
     member { patch :reassign_am }
   end

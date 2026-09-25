@@ -8,12 +8,12 @@ class TablePager
 
   attr_reader :prefix, :page, :page_size, :sort_field, :sort_dir, :total_count, :total_pages
 
-  def initialize(records, params:, prefix:, sort_procs:, default_sort:)
+  def initialize(records, params:, prefix:, sort_procs:, default_sort:, default_dir: "asc")
     @prefix = prefix
     @sort_procs = sort_procs
     requested_sort = params[sort_param].to_s.to_sym
     @sort_field = sort_procs.key?(requested_sort) ? requested_sort : default_sort
-    @sort_dir = params[dir_param] == "desc" ? "desc" : "asc"
+    @sort_dir = %w[asc desc].include?(params[dir_param]) ? params[dir_param] : default_dir
     @page_size = PAGE_SIZES.include?(params[size_param].to_i) ? params[size_param].to_i : DEFAULT_PAGE_SIZE
 
     sorted = records.sort_by(&@sort_procs.fetch(@sort_field))

@@ -3,38 +3,6 @@
 <p class="section-title">Vue globale</p>
 <p class="section-sub">Vue consolidée pour suivre l'atteinte de l'objectif NRR (<%= PortfolioSummary::NRR_TARGET %>%) sur chaque portefeuille.</p>
 
-<% if current_user.privileged? %>
-  <div class="toolbar">
-    <div class="spacer"></div>
-    <details>
-      <summary class="button">+ Nouvel AM</summary>
-      <div class="modal-box" style="margin:12px 0 0;">
-        <%= form_with model: User.new, url: users_path do |f| %>
-          <div class="modal-body">
-            <div class="modal-row">
-              <label>Nom
-                <%= f.text_field :name, required: true %>
-              </label>
-              <label>Adresse Google professionnelle
-                <%= f.email_field :email, required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Équipe
-                <%= f.select :role, ["AM", "KAM", "Admin"], selected: "AM" %>
-              </label>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
-            <%= f.submit "Ajouter l'AM", class: "button primary" %>
-          </div>
-        <% end %>
-      </div>
-    </details>
-  </div>
-<% end %>
-
 <div class="toolbar" style="margin-bottom:14px;">
   <%= form_with url: pilotage_path, method: :get do %>
     <%= preserved_query_fields("summary_ams", "summary_ams_open", "summary_roles", "summary_roles_open") %>
@@ -93,142 +61,57 @@
 </div>
 
 <div class="section-card">
-  <%= turbo_frame_tag "am-table-frame" do %>
+  <div class="table-toolbar">
+    <h3>Entreprises à risque</h3>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">Toute entreprise avec au moins un produit à renouveler portant un % de risque de churn.</p>
+  <%= turbo_frame_tag "rque-table-frame" do %>
     <div class="table-toolbar">
-      <h3>AM</h3>
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("am_q", "am_page") %>
-          <%= live_search_field :am_q, @am_q, placeholder: "Rechercher un AM…" %>
+          <%= preserved_query_fields("risque_q", "risque_ams", "risque_ams_open", "risque_roles", "risque_roles_open",
+                "risque_produits", "risque_produits_open", "risque_statuts", "risque_statuts_open", "rque_page") %>
+          <%= live_search_field :risque_q, @risque_q %>
+          <%= render "shared/checklist_filter", param_name: "risque_roles", options: @available_roles, selected: @risque_roles, legend: "Équipe" %>
+          <%= render "shared/checklist_filter", param_name: "risque_ams", options: @available_risque_ams, selected: @risque_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "risque_produits", options: ProduitDeal::PRODUITS, selected: @risque_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "risque_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT - ProduitDeal::CHURNED_STATUSES, selected: @risque_statuts, legend: "Statut" %>
         <% end %>
+        <%= link_to "Exporter CSV", export_risque_pilotage_path(risque_q: @risque_q, risque_ams: @risque_ams,
+              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_statuts: @risque_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">
-      <table class="am-table">
+      <table class="deals-table renewal-table">
         <thead>
           <tr>
-            <%= sortable_th(@am_pager, :nom, "AM") %>
-            <%= sortable_th(@am_pager, :role, "Rôle") %>
-            <%= sortable_th(@am_pager, :count, "Nb deals") %>
-            <%= sortable_th(@am_pager, :arr_initial, "ARR initial") %>
-            <%= sortable_th(@am_pager, :churned, "ARR churné") %>
-            <%= sortable_th(@am_pager, :upsold, "ARR upsellé") %>
-            <%= sortable_th(@am_pager, :renewed_arr, "ARR renouvelé") %>
-            <%= sortable_th(@am_pager, :arr_final, "ARR final") %>
-            <%= sortable_th(@am_pager, :nrr, "NRR %") %>
-            <%= sortable_th(@am_pager, :statut, "Statut") %>
-            <th></th>
+            <%= sortable_th(@rque_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@rque_pager, :am, "AM") %>
+            <%= sortable_th(@rque_pager, :count, "Nb produits à risque") %>
+            <%= sortable_th(@rque_pager, :arr_at_risk, "ARR à risque (€)") %>
+            <%= sortable_th(@rque_pager, :max_risque, "% risque max") %>
           </tr>
         </thead>
         <tbody>
-          <% if @am_pager.records.empty? %>
-            <tr><td colspan="11" class="empty-state">Aucun AM configuré.</td></tr>
+          <% if @rque_pager.records.empty? %>
+            <tr><td colspan="5" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
           <% else %>
-            <% @am_pager.records.each do |row| %>
-              <% am = row[:am]; s = row[:summary]; ok = s.target_met? %>
-              <tr class="<%= ok ? "ok" : "below" %>">
-                <td><strong><%= am.name %></strong></td>
-                <td>
-                  <span class="badge <%= role_badge_class(am) %>"><%= am.role_label %></span>
-                  <% if current_user.privileged? %>
-                    <%= button_to (am.admin? ? "Retirer admin" : "Rendre admin"), user_path(am), method: :patch,
-                          params: { admin: am.admin? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
-                          form: { data: { turbo_confirm: am.admin? ? "Retirer les droits admin de #{am.name} ?" : "Donner les droits admin à #{am.name} ?" } } %>
-                    <%= button_to (am.kam? ? "Retirer KAM" : "Rendre KAM"), user_path(am), method: :patch,
-                          params: { kam: am.kam? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
-                          form: { data: { turbo_confirm: am.kam? ? "Retirer le statut KAM de #{am.name} ?" : "Donner le statut KAM à #{am.name} ?" } } %>
-                  <% end %>
-                </td>
-                <td><%= s.count %></td>
-                <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
-                <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
-                <td class="rowaction" style="white-space:nowrap;">
-                  <% if current_user.privileged? %>
-                    <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"
-                      onclick="editAmCredentials('<%= j user_path(am) %>', '<%= j am.email %>', '<%= j am.name %>', '<%= j am.role_label %>')">✎</button>
-                    <%= button_to "✕", user_path(am), method: :delete, class: "icon-btn",
-                          form: { data: { turbo_confirm: "Désactiver #{am.name} ?" }, style: "display:inline-block;" } %>
-                  <% end %>
-                </td>
+            <% @rque_pager.records.each do |r| %>
+              <tr id="<%= dom_id(r[:company], :risque) %>">
+                <td><strong><%= r[:company].name %></strong></td>
+                <td><%= r[:am].name %></td>
+                <td><%= r[:count] %></td>
+                <td style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
+                <td><%= r[:max_risque] %>%</td>
               </tr>
             <% end %>
           <% end %>
         </tbody>
       </table>
     </div>
-    <% if current_user.privileged? %>
-      <%# Lives outside .table-scroll on purpose — that container clips overflow-x, which would cut off a
-          form popped open from a narrow action column deep in a wide table. One shared panel, retargeted
-          by JS to whichever AM's ✎ was clicked, rather than one per row. %>
-      <div id="edit-am-panel" class="modal-box" style="display:none;margin:12px 0;max-width:420px;">
-        <p style="padding:16px 22px 0;margin:0;font-weight:700;">Modifier les identifiants de <span id="edit-am-name"></span></p>
-        <%# turbo_frame: "_top" forces a full-page redirect on submit — without it, a validation failure
-            (e.g. an email already used by another account) redirects back inside this frame, which Rails
-            renders with a bare layout that has no flash partial — so the error existed but was never
-            visible, making a real failure look like nothing happened at all. %>
-        <%= form_with url: user_path(@am_rows.first&.fetch(:am) || current_user), method: :patch,
-              html: { id: "edit-am-form" }, data: { turbo_frame: "_top" } do %>
-          <div class="modal-body">
-            <div class="modal-row">
-              <label>Nom
-                <%= text_field_tag "user[name]", nil, id: "edit-am-name-input", required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Adresse Google professionnelle
-                <%= email_field_tag "user[email]", nil, id: "edit-am-email", required: true %>
-              </label>
-            </div>
-            <div class="modal-row">
-              <label>Équipe
-                <%= select_tag "user[role]", options_for_select(["AM", "KAM", "Admin"]), id: "edit-am-role" %>
-              </label>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="button ghost-burgundy" onclick="document.getElementById('edit-am-panel').style.display='none';">Annuler</button>
-            <%= submit_tag "Enregistrer", class: "button primary" %>
-          </div>
-        <% end %>
-      </div>
-      <script>
-        function editAmCredentials(url, email, name, role) {
-          document.getElementById('edit-am-form').action = url;
-          document.getElementById('edit-am-name-input').value = name;
-          document.getElementById('edit-am-email').value = email;
-          document.getElementById('edit-am-role').value = role;
-          document.getElementById('edit-am-name').textContent = name;
-          var panel = document.getElementById('edit-am-panel');
-          panel.style.display = 'block';
-          panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        }
-      </script>
-    <% end %>
-    <%= pagination_controls(@am_pager) %>
-    <%= page_size_select(@am_pager) %>
+    <%= pagination_controls(@rque_pager) %>
+    <%= page_size_select(@rque_pager) %>
   <% end %>
-</div>
-
-<div class="chart-wrap">
-  <h3>Renouvellements : nouveau contrat vs augmentation</h3>
-  <div class="toolbar" style="margin-bottom:14px;">
-    <%= form_with url: pilotage_path, method: :get do %>
-      <label>AM :
-        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.active.order(:name), :id, :name, @renewal_am_id),
-              include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
-      </label>
-      <label>Produit :
-        <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
-              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
-      </label>
-    <% end %>
-  </div>
-  <%= donut_chart(@renewal_donut) %>
 </div>
 
 <div class="section-card">

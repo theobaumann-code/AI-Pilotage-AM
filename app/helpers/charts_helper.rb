@@ -85,7 +85,11 @@ module ChartsHelper
 
   # Stacked SVG circles via stroke-dasharray/stroke-dashoffset — the same dependency-free donut technique
   # as the original app, so there is no charting library to port or keep in sync.
-  def donut_chart(slices)
+  #
+  # value_format/total_label let this double as an ARR-weighted donut (Autres statistiques' répartitions)
+  # instead of just a deal-count one (the renewal donut) — both default to the original plain-count display
+  # so every existing call site keeps rendering exactly as before.
+  def donut_chart(slices, value_format: ->(v) { v.to_s }, total_label: ->(total) { "Total : #{total} deal(s)" })
     total = slices.sum { |s| s[:value] }
     return content_tag(:div, "Aucune donnée pour ce filtre.", class: "empty-state") if total.zero?
 
@@ -110,7 +114,7 @@ module ChartsHelper
       pct = s[:value].to_f / total * 100
       content_tag(:div, style: "display:flex;align-items:center;gap:8px;font-size:13px;") do
         concat content_tag(:span, "", style: "width:12px;height:12px;border-radius:3px;background:#{s[:color]};flex-shrink:0;")
-        concat " #{s[:label]} — #{tag.strong(s[:value])} (#{number_with_precision(pct, precision: 1)}%)".html_safe
+        concat " #{s[:label]} — #{tag.strong(value_format.call(s[:value]))} (#{number_with_precision(pct, precision: 1)}%)".html_safe
       end
     end.join.html_safe
 
@@ -118,8 +122,32 @@ module ChartsHelper
       concat content_tag(:svg, circles, viewBox: "0 0 180 180", width: 180, height: 180)
       concat content_tag(:div, style: "display:flex;flex-direction:column;gap:10px;") {
         concat legend
-        concat content_tag(:div, "Total : #{total} deal(s)", style: "font-size:12px;color:var(--text-muted);margin-top:4px;")
+        concat content_tag(:div, total_label.call(total), style: "font-size:12px;color:var(--text-muted);margin-top:4px;")
       }
+    end
+  end
+
+  # Horizontal bar rows (.bar-row/.bar-track/.bar-fill, already styled for the old per-AM NRR chart) reused
+  # here for any "one row per category, one rate/amount" breakdown — contract-size buckets, churn rate by
+  # segment, the upsell funnel. Bar width is row[:value]/max_value; value_format gets the whole row (not
+  # just :value) so the trailing label can combine several of the row's own fields (e.g. count *and* ARR).
+  def bar_rows(rows, value_format: ->(r) { r[:value].to_s })
+    return content_tag(:div, "Aucune donnée pour ce filtre.", class: "empty-state") if rows.empty?
+
+    max_value = rows.map { |r| r[:value].to_f }.max
+    max_value = 1.0 if max_value.zero?
+
+    content_tag(:div) do
+      rows.each do |r|
+        width = [r[:value].to_f / max_value * 100, 100].min
+        concat(content_tag(:div, class: "bar-row") do
+          concat content_tag(:div, r[:label], class: "bar-label")
+          concat(content_tag(:div, class: "bar-track") do
+            content_tag(:div, "", class: "bar-fill #{r[:status]}", style: "width:#{width}%")
+          end)
+          concat content_tag(:div, value_format.call(r), class: "bar-value")
+        end)
+      end
     end
   end
 end

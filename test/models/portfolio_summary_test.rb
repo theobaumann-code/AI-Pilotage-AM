@@ -177,4 +177,30 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 20_000, summary.churned, 0.01
     assert_in_delta 50_000, summary.churn_subi_amount, 0.01
   end
+
+  NonAccompagne = Struct.new(:arr_non_accompagne, :churn_non_accompagne, :taux_renouvellement_non_accompagne)
+
+  test "non_accompagne: blends the non-accompagné book into arr_initial/churned/renewed_arr like one more deal" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
+    non_accompagne = NonAccompagne.new(50_000, 10_000, 2.0)
+
+    with_na = PortfolioSummary.new(@am.companies.includes(:deals), non_accompagne: non_accompagne)
+
+    # arr_initial: 100_000 (real deal) + 50_000 (non accompagné) = 150_000.
+    assert_in_delta 150_000, with_na.arr_initial, 0.01
+    # churned: 0 (real deal) + 10_000 (non accompagné's own churn) = 10_000.
+    assert_in_delta 10_000, with_na.churned, 0.01
+    # renewed_arr: 100_000 (real deal, taux 0) + (50_000 - 10_000) * 1.02 = 100_000 + 40_800 = 140_800.
+    assert_in_delta 140_800, with_na.renewed_arr, 0.01
+  end
+
+  test "omitting non_accompagne: leaves every figure exactly as before (no accidental default blending)" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
+
+    assert_in_delta 100_000, summary.arr_initial, 0.01
+    assert_in_delta 0, summary.churned, 0.01
+    assert_in_delta 100_000, summary.renewed_arr, 0.01
+  end
 end

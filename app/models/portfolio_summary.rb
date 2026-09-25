@@ -9,16 +9,23 @@ class PortfolioSummary
   CHURN_LIMIT_PCT = 5.5
   RENEWAL_TARGET_PCT = 5.0
 
-  attr_reader :companies, :user
+  attr_reader :companies, :user, :non_accompagne
 
   # `user:` scopes upsold/upsell-related figures to what's actually in that AM's pipeline right now (an
   # upsell explicitly reassigned to them counts here even for a company they don't own; one reassigned away
   # from them doesn't, even though the company is still theirs) — pass it for any single-AM summary. Omit
   # it for a cross-AM aggregate (e.g. Company.all): every upsell belongs to *someone* in that set either
   # way, so company-scoped and effective-ownership-scoped totals are the same sum.
-  def initialize(companies, user: nil)
+  #
+  # `non_accompagne:` optionally blends AppSetting's manually-tracked non-accompagné figures (ARR, churn,
+  # taux de renouvellement) into arr_initial/churned/renewed_arr/renewal_gain below, as if it were one more
+  # aggregate "deal" — see PilotageController, which passes this only for Vue globale's top summary cards,
+  # gated by the Équipe filter's "Non accompagné" option. Every other PortfolioSummary caller (Mon
+  # portefeuille, the AM roster) omits it and is completely unaffected.
+  def initialize(companies, user: nil, non_accompagne: nil)
     @companies = companies.to_a
     @user = user
+    @non_accompagne = non_accompagne
   end
 
   def produit_deals
@@ -42,11 +49,11 @@ class PortfolioSummary
   # every NRR/churn figure below is built on — see ProduitDeal::CHURNED_SUBI. Without this, a liquidated
   # client's original ARR would still drag NRR down even though `arr_final`/`churned` already don't count it.
   def arr_initial
-    produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f }
+    produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_arr
   end
 
   def churned
-    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f }
+    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_churn
   end
 
   # The ARR lost to "subi" churn — shown alongside the Churn card for visibility, but deliberately not
@@ -69,7 +76,7 @@ class PortfolioSummary
   end
 
   def renewed_arr
-    produit_deals.reject(&:churned?).sum(&:final_arr)
+    produit_deals.reject(&:churned?).sum(&:final_arr) + non_accompagne_renewed_contribution
   end
 
   # Behind the "ARR final" card — renewed ARR plus only the upsells actually signed so far.
@@ -104,7 +111,7 @@ class PortfolioSummary
   # non-churned produit deal, i.e. arr × taux/100 summed. Distinct from churn (ARR removed) and upsold
   # (ARR added from upsells): this isolates what the negotiated renewal rates themselves contributed.
   def renewal_gain
-    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 }
+    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 } + non_accompagne_renewal_gain
   end
 
   # Risk-weighted ARR of produits that haven't churned yet (arr × risque_churn/100, summed) — the AM's own
@@ -145,5 +152,33 @@ class PortfolioSummary
   # mark, just expressed directly as a percentage instead of comparing two € figures.
   def renewal_rate
     arr_initial > 0 ? (renewal_gain / arr_initial * 100) : 0
+  end
+
+  private
+
+  def non_accompagne_arr
+    non_accompagne ? non_accompagne.arr_non_accompagne.to_f : 0
+  end
+
+  def non_accompagne_churn
+    non_accompagne ? non_accompagne.churn_non_accompagne.to_f : 0
+  end
+
+  # What's left of the non-accompagné book once its own actual churn comes out — never negative, in case
+  # someone enters a churn figure larger than the ARR it's meant to be a share of.
+  def non_accompagne_active_arr
+    [non_accompagne_arr - non_accompagne_churn, 0].max
+  end
+
+  # Treated like one more aggregate "deal": the still-active share of the non-accompagné book, grown by its
+  # own taux de renouvellement — the same arr × (1 + taux/100) shape as ProduitDeal#final_arr.
+  def non_accompagne_renewed_contribution
+    return 0 unless non_accompagne
+    non_accompagne_active_arr * (1 + non_accompagne.taux_renouvellement_non_accompagne.to_f / 100)
+  end
+
+  def non_accompagne_renewal_gain
+    return 0 unless non_accompagne
+    non_accompagne_active_arr * non_accompagne.taux_renouvellement_non_accompagne.to_f / 100
   end
 end

@@ -5,6 +5,10 @@ class PilotageController < ApplicationController
     @app_setting = AppSetting.instance
     @active_ams = User.active.order(:name)
     @available_roles = ["Admin", "KAM", "AM"]
+    # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/
+    # upsell/risque ones, which are about individual deals) — checking it folds the non-accompagné figures
+    # into the summary cards' totals; see PortfolioSummary#non_accompagne.
+    @available_summary_roles = @available_roles + ["Non accompagné"]
     @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
     @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
@@ -14,9 +18,14 @@ class PilotageController < ApplicationController
     filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
     team_filter_active = @summary_ams.present? || @summary_roles.present?
 
+    # No filter at all → the non-accompagné book counts toward the total by default (that's the point of
+    # this toggle). The moment any Équipe/AM filter narrows the view, it drops out unless "Non accompagné"
+    # is explicitly checked back in — same as narrowing to one AM naturally excludes every other AM's book.
+    include_non_accompagne = @summary_roles.empty? || @summary_roles.include?("Non accompagné")
+
     summary_companies = Company.includes(:produit_deals, :upsell_deals)
     summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
-    @global_summary = PortfolioSummary.new(summary_companies)
+    @global_summary = PortfolioSummary.new(summary_companies, non_accompagne: (include_non_accompagne ? @app_setting : nil))
 
     @risque_q = params[:risque_q].to_s.strip
     @risque_ams = Array(params[:risque_ams]).reject(&:blank?)

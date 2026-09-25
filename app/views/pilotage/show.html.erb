@@ -6,16 +6,17 @@
 <div class="toolbar" style="margin-bottom:14px;">
   <%= form_with url: pilotage_path, method: :get do %>
     <%= preserved_query_fields("summary_ams", "summary_ams_open", "summary_roles", "summary_roles_open") %>
-    <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_roles, selected: @summary_roles, legend: "Équipe" %>
+    <%= render "shared/checklist_filter", param_name: "summary_roles", options: @available_summary_roles, selected: @summary_roles, legend: "Équipe" %>
     <%= render "shared/checklist_filter", param_name: "summary_ams", options: @available_summary_ams, selected: @summary_ams, legend: "AM" %>
   <% end %>
 </div>
 <%= render "shared/summary_cards", summary: @global_summary, dom_id: "global-summary-cards" %>
 
-<%# Small contracts nobody actively manages (no AM, no individual renewal tracking) — SideCare still wants
-    their combined weight visible on Vue globale, but mixing them into the NRR/churn cards above would be
-    meaningless (there's no per-contract renewal data to compute those from). Kept as its own isolated card
-    with three manually-set figures (ARR, churn, taux de renouvellement), editable by admins only. %>
+<%# Small contracts nobody actively manages (no AM, no individual renewal tracking) — always shown here as
+    its own isolated card with three manually-set figures (ARR, churn, taux de renouvellement), editable by
+    admins only. Whether it's *also* blended into the NRR/churn cards above is controlled by the "Non
+    accompagné" option in the Équipe filter (see PortfolioSummary#non_accompagne) — included by default
+    when nothing is filtered, dropped as soon as any specific Équipe/AM filter narrows the view. %>
 <div class="metric-card" style="max-width:520px;margin-bottom:24px;">
   <div class="metric-card-title">Portefeuille non accompagné</div>
   <div class="metric-pair">

@@ -42,4 +42,42 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
     assert_no_match "10,000", global_cards
     assert_no_match "100,000", global_cards
   end
+
+  test "the non-accompagné book counts toward the total by default (no filter at all)" do
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+
+    sign_in @admin
+    get pilotage_path
+    assert_response :success
+    global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
+    assert_match "115,000", global_cards # 10_000 + 100_000 + 5_000
+  end
+
+  test "narrowing to a specific role drops the non-accompagné book unless it's re-checked" do
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+
+    sign_in @admin
+    get pilotage_path, params: { summary_roles: ["AM"] }
+    assert_response :success
+    global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
+    assert_match "110,000", global_cards # both AMs, no non-accompagné
+    assert_no_match "115,000", global_cards
+
+    get pilotage_path, params: { summary_roles: ["AM", "Non accompagné"] }
+    assert_response :success
+    global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
+    assert_match "115,000", global_cards # both AMs plus non-accompagné, explicitly re-checked
+  end
+
+  test "checking only Non accompagné isolates it from every AM's own book" do
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+
+    sign_in @admin
+    get pilotage_path, params: { summary_roles: ["Non accompagné"] }
+    assert_response :success
+    global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
+    assert_match "5,000", global_cards
+    assert_no_match "10,000", global_cards
+    assert_no_match "100,000", global_cards
+  end
 end

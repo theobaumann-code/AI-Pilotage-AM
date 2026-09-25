@@ -32,6 +32,9 @@
       </div>
     </div>
     <div class="metric-card-footnote">Limite : <%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %></div>
+    <% if summary.churn_subi_amount > 0 %>
+      <div class="metric-card-footnote">Dont churn subi (non compté) : <%= number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %></div>
+    <% end %>
   </div>
 
   <div class="metric-card">

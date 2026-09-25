@@ -13,8 +13,8 @@ class YearClosuresController < ApplicationController
       Deal.includes(:company).find_each { |deal| archive_deal(deal, year) }
 
       UpsellDeal.destroy_all
-      ProduitDeal.where(statut_renouvellement: ProduitDeal::CHURNED).destroy_all
-      ProduitDeal.where.not(statut_renouvellement: ProduitDeal::CHURNED).find_each do |deal|
+      ProduitDeal.where(statut_renouvellement: ProduitDeal::CHURNED_STATUSES).destroy_all
+      ProduitDeal.where.not(statut_renouvellement: ProduitDeal::CHURNED_STATUSES).find_each do |deal|
         new_arr = deal.final_arr
         deal.update!(arr: new_arr, taux: 0, statut_renouvellement: "En cours")
       end

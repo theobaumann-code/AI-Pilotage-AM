@@ -9,7 +9,7 @@ class ArchiveEntriesController < ApplicationController
   def update
     entry = ArchiveEntry.find(params[:id])
     entry.assign_attributes(entry_params)
-    entry.taux = 0 if entry.statut_renouvellement == ProduitDeal::CHURNED
+    entry.taux = 0 if ProduitDeal::CHURNED_STATUSES.include?(entry.statut_renouvellement)
     entry.save!
     row = HistoriqueQuery::Row.from_archive_entry(entry)
     respond_to do |format|

@@ -1,4 +1,4 @@
-<tr id="<%= dom_id(deal) %>" class="<%= "churn-yes" if deal.churned? %>">
+<tr id="<%= dom_id(deal) %>" class="<%= churn_row_class(deal) %>">
   <td><%= deal.company.name %></td>
   <td><%= deal.company.user.name %></td>
   <td><%= deal.produit %></td>

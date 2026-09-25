@@ -32,4 +32,17 @@ class CompanyTest < ActiveSupport::TestCase
     assert_enqueued_with(job: GoogleSheetsSyncJob) { @company.reassign_am!(@am2) }
     assert_no_enqueued_jobs(only: GoogleSheetsSyncJob) { @company.touch }
   end
+
+  # Mirrors PortfolioSummary's exclusion: a company liquidated or acquired ("Churné (subi)") must not drag
+  # this company's own evolution_pct down either, so its ARR comes out of arr_initial, not just churned_arr.
+  test "Churné (subi) is excluded from arr_initial and churned_arr" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 50_000, taux: 0, statut_renouvellement: "Churné (subi)")
+
+    assert_in_delta 100_000, @company.arr_initial, 0.01
+    assert_in_delta 0, @company.churned_arr, 0.01
+    assert_in_delta 5.0, @company.evolution_pct, 0.01
+  end
 end

@@ -151,4 +151,30 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 5.0, summary.renewal_rate, 0.01
     assert summary.renewal_target_met?
   end
+
+  # "Subi" churn (company liquidated/acquired) must not move NRR at all — neither help nor hurt it — so it
+  # has to come out of arr_initial (the denominator), not just out of churned/renewed_arr.
+  test "Churné (subi) is excluded from arr_initial, churned and NRR entirely" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 50_000, taux: 0, statut_renouvellement: "Churné (subi)")
+
+    # arr_initial is 100_000 (the liquidated company's 50_000 is excluded), so NRR is computed purely off
+    # the one real, controllable renewal — as if the "subi" deal never existed for this purpose.
+    assert_in_delta 100_000, summary.arr_initial, 0.01
+    assert_in_delta 0, summary.churned, 0.01
+    assert_in_delta 105_000, summary.arr_final_actual, 0.01
+    assert_in_delta 105.0, summary.nrr_actual, 0.01
+  end
+
+  test "churn_subi_amount reports the excluded ARR without folding it into churned" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 20_000, taux: 0, statut_renouvellement: "Churné")
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 50_000, taux: 0, statut_renouvellement: "Churné (subi)")
+
+    assert_in_delta 20_000, summary.churned, 0.01
+    assert_in_delta 50_000, summary.churn_subi_amount, 0.01
+  end
 end

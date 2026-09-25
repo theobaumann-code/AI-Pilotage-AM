@@ -4,7 +4,10 @@ module ApplicationHelper
     "Augmentation particulière" => "statut-signed",
     "En cours" => "statut-inprogress",
     "Nouveau contrat" => "statut-notstarted",
-    "Churné" => "statut-lost"
+    "Churné" => "statut-lost",
+    # Deliberately not "statut-lost" (red) — this churn isn't counted against the AM (see
+    # ProduitDeal::CHURNED_SUBI), so it gets the same neutral treatment as "not started" instead.
+    "Churné (subi)" => "statut-notstarted"
   }.freeze
 
   SIGNATURE_STATUT_CLASS = {
@@ -16,6 +19,12 @@ module ApplicationHelper
 
   def renewal_statut_class(statut)
     RENEWAL_STATUT_CLASS[statut]
+  end
+
+  # Row background for a produit deal or a HistoriqueQuery::Row — both respond to #churned?/#churn_subi?.
+  def churn_row_class(record)
+    return "churn-subi" if record.churn_subi?
+    "churn-yes" if record.churned?
   end
 
   def signature_statut_class(statut)

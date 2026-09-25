@@ -115,6 +115,29 @@ class ProduitDealTest < ActiveSupport::TestCase
     assert_not build_deal(risque_churn: -1).valid?
   end
 
+  test "Churné (subi) counts as churned? just like Churné, and sets churn_subi?" do
+    normal = build_deal(statut_renouvellement: "Churné")
+    subi = build_deal(identifiant: "id-subi", statut_renouvellement: "Churné (subi)")
+
+    assert normal.churned?
+    assert_not normal.churn_subi?
+
+    assert subi.churned?
+    assert subi.churn_subi?
+  end
+
+  test "Churné (subi) also forces taux to 0 and risque_churn to 100" do
+    deal = build_deal(taux: 15, risque_churn: 20, statut_renouvellement: "Churné (subi)")
+    deal.valid?
+    assert_equal 0, deal.taux.to_i
+    assert_equal 100, deal.risque_churn
+  end
+
+  test "final_arr is 0 for Churné (subi) just like ordinary churn" do
+    deal = build_deal(arr: 10_000, taux: 0, statut_renouvellement: "Churné (subi)")
+    assert_equal 0, deal.final_arr
+  end
+
   test "creating, updating or destroying a produit enqueues a Google Sheets sync" do
     deal = nil
     assert_enqueued_with(job: GoogleSheetsSyncJob) { deal = build_deal.tap(&:save!) }

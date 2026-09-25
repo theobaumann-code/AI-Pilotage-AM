@@ -38,12 +38,21 @@ class PortfolioSummary
     produit_deals.size + upsell_deals.size
   end
 
+  # Excludes "subi" churn (company liquidated or acquired, not lost to a competitor) from the denominator
+  # every NRR/churn figure below is built on — see ProduitDeal::CHURNED_SUBI. Without this, a liquidated
+  # client's original ARR would still drag NRR down even though `arr_final`/`churned` already don't count it.
   def arr_initial
-    produit_deals.sum { |d| d.arr.to_f }
+    produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
   def churned
-    produit_deals.select(&:churned?).sum { |d| d.arr.to_f }
+    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f }
+  end
+
+  # The ARR lost to "subi" churn — shown alongside the Churn card for visibility, but deliberately not
+  # folded into `churned`/`arr_initial`/any NRR figure above.
+  def churn_subi_amount
+    produit_deals.select(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
   # Only fully-signed upsells — the confirmed number behind the "Upsell" card. See `upsold` for the

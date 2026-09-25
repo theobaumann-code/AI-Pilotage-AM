@@ -4,8 +4,14 @@ class ProduitDeal < Deal
   # Kept alphabetical (case-insensitive) so every select/filter built from this list reads that way too.
   ASSUREURS = ["AG2R", "Allianz", "Apicil", "Audiens", "AXA", "Gan", "Generali", "Groupama", "Harmonie",
                "Malakoff Humanis", "PanoCare", "Spvie", "Swiss Life", "Uniprévoyance"].freeze
-  STATUTS_RENOUVELLEMENT = ["En cours", "Nouveau contrat", "Augmenté", "Augmentation particulière", "Churné"].freeze
+  STATUTS_RENOUVELLEMENT = ["En cours", "Nouveau contrat", "Augmenté", "Augmentation particulière", "Churné", "Churné (subi)"].freeze
   CHURNED = "Churné"
+  # "Subi" (suffered) churn — the company was liquidated or acquired, not lost to a competitor or
+  # dissatisfaction. Still a real, contract-ending churn (taux/risque_churn are forced the same way — see
+  # apply_business_rules), but excluded from every NRR/churn figure since it isn't a renewal outcome the AM
+  # had any control over (see PortfolioSummary#arr_initial/#churned and Company#arr_initial/#churned_arr).
+  CHURNED_SUBI = "Churné (subi)"
+  CHURNED_STATUSES = [CHURNED, CHURNED_SUBI].freeze
 
   validates :produit, inclusion: { in: PRODUITS }
   validates :college, presence: true, inclusion: { in: COLLEGES }
@@ -25,7 +31,11 @@ class ProduitDeal < Deal
   after_commit :sync_to_google_sheets
 
   def churned?
-    statut_renouvellement == CHURNED
+    CHURNED_STATUSES.include?(statut_renouvellement)
+  end
+
+  def churn_subi?
+    statut_renouvellement == CHURNED_SUBI
   end
 
   # Renewal-only final ARR (no upsell mixed in — upsell revenue lives on separate UpsellDeal rows in this

@@ -7,7 +7,11 @@ class HistoriqueQuery
   Row = Struct.new(:id, :nom, :am, :produit, :identifiant, :assureur, :annee, :arr, :taux,
     :statut_renouvellement, :is_live, keyword_init: true) do
     def churned?
-      statut_renouvellement == ProduitDeal::CHURNED
+      ProduitDeal::CHURNED_STATUSES.include?(statut_renouvellement)
+    end
+
+    def churn_subi?
+      statut_renouvellement == ProduitDeal::CHURNED_SUBI
     end
 
     def arr_renouvele
@@ -30,7 +34,8 @@ class HistoriqueQuery
     "En cours" => "var(--amber)",
     "Augmenté" => "var(--green)",
     "Augmentation particulière" => "var(--burgundy)",
-    "Churné" => "var(--red)"
+    "Churné" => "var(--red)",
+    "Churné (subi)" => "var(--text-muted)"
   }.freeze
 
   def initialize(current_year:, produit: nil, noms: [], statuts: [], ams: [], assureurs: [], years: [])
@@ -56,6 +61,7 @@ class HistoriqueQuery
   def taux_series(years)
     agg = Hash.new { |h, k| h[k] = {} }
     rows.each do |r|
+      next if r.churn_subi?
       a = (agg[r.produit][r.annee] ||= { sum_taux_arr: 0.0, sum_arr: 0.0 })
       a[:sum_taux_arr] += r.taux.to_f * r.arr.to_f
       a[:sum_arr] += r.arr.to_f
@@ -72,6 +78,7 @@ class HistoriqueQuery
   def nrr_series(years)
     agg = Hash.new { |h, k| h[k] = {} }
     rows.each do |r|
+      next if r.churn_subi?
       a = (agg[r.produit][r.annee] ||= { sum_final: 0.0, sum_initial: 0.0 })
       a[:sum_final] += (r.arr_renouvele || 0)
       a[:sum_initial] += r.arr.to_f
@@ -89,6 +96,7 @@ class HistoriqueQuery
     agg = Hash.new { |h, k| h[k] = { sum: 0.0, count: 0 } }
     rows.each do |r|
       next unless ProduitDeal::ASSUREURS.include?(r.assureur)
+      next if r.churn_subi?
       a = agg[r.assureur]
       a[:sum] += r.taux.to_f
       a[:count] += 1

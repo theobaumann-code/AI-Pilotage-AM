@@ -36,12 +36,14 @@ class Company < ApplicationRecord
   # Ported 1:1: produit deals drive arr_initial/churned/renewal math, upsold comes only from SIGNED upsell
   # deals, and avg_increase_pct is ARR-weighted across produit deals only (upsells never contribute a taux).
 
+  # Excludes "subi" churn (company liquidated or acquired) from both this and `churned_arr` — see
+  # PortfolioSummary#arr_initial for why it must come out of the denominator too, not just the churn figure.
   def arr_initial
-    produit_deals.sum(:arr).to_f
+    produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
   def churned_arr
-    produit_deals.select(&:churned?).sum { |d| d.arr.to_f }
+    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
   def upsold_arr

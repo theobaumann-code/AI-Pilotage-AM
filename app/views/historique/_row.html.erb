@@ -1,5 +1,5 @@
 <% editable = !r.is_live && current_user.privileged? %>
-<tr id="<%= r.dom_id %>" class="<%= "churn-yes" if r.churned? %>">
+<tr id="<%= r.dom_id %>" class="<%= churn_row_class(r) %>">
   <td><%= r.nom %></td>
   <td><%= r.am || "—" %></td>
   <td><%= r.produit %></td>

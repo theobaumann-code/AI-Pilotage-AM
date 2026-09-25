@@ -58,11 +58,11 @@
       <nav class="tabs">
         <%= link_to "Mon portefeuille", portfolio_path, class: current_page?(portfolio_path) ? "active" : nil %>
         <%= link_to "Vue globale", pilotage_path, class: current_page?(pilotage_path) ? "active" : nil %>
-        <%= link_to "Autres statistiques", autres_statistiques_path, class: current_page?(autres_statistiques_path) ? "active" : nil %>
         <%= link_to "Historique", historique_path, class: current_page?(historique_path) ? "active" : nil %>
         <% if current_user.privileged? %>
           <%= link_to "Gestion des droits", gestion_droits_path, class: current_page?(gestion_droits_path) ? "active" : nil %>
         <% end %>
+        <%= link_to "Autres statistiques", autres_statistiques_path, class: current_page?(autres_statistiques_path) ? "active" : nil %>
       </nav>
     <% end %>
 

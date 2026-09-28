@@ -22,12 +22,16 @@
     <div class="metric-pair">
       <div class="metric-col">
         <div class="metric-col-label">Actuel</div>
-        <div class="metric-col-value"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %></div>
+        <div class="metric-col-value"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %>
+          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_rate, precision: 1) %>%)</span>
+        </div>
         <span class="badge <%= summary.churn_within_limit? ? "ok" : "ko" %>"><%= summary.churn_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
       <div class="metric-col">
         <div class="metric-col-label">Projeté</div>
-        <div class="metric-col-value"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %></div>
+        <div class="metric-col-value"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %>
+          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_total_rate, precision: 1) %>%)</span>
+        </div>
         <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>"><%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
     </div>

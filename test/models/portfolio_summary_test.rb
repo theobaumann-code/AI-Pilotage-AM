@@ -152,6 +152,23 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert summary.renewal_target_met?
   end
 
+  test "churn_rate and churn_total_rate express churned/churn_total as a % of arr_initial" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 10)
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "Churné")
+
+    # initial = 110_000; churned = 10_000 -> 9.09%; churn_projete = 100_000 * 10% = 10_000,
+    # churn_total = 20_000 -> 18.18%.
+    assert_in_delta 9.09, summary.churn_rate, 0.01
+    assert_in_delta 18.18, summary.churn_total_rate, 0.01
+  end
+
+  test "churn_rate and churn_total_rate are 0 when arr_initial is 0" do
+    assert_equal 0, summary.churn_rate
+    assert_equal 0, summary.churn_total_rate
+  end
+
   # "Subi" churn (company liquidated/acquired) must not move NRR at all — neither help nor hurt it — so it
   # has to come out of arr_initial (the denominator), not just out of churned/renewed_arr.
   test "Churné (subi) is excluded from arr_initial, churned and NRR entirely" do

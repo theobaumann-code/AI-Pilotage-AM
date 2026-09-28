@@ -131,6 +131,16 @@ class PortfolioSummary
     arr_initial * CHURN_LIMIT_PCT / 100
   end
 
+  # churned/churn_total re-expressed as a % of arr_initial, so the Churn cards can show a rate alongside
+  # the raw € amount — same pattern as renewal_rate below.
+  def churn_rate
+    arr_initial > 0 ? (churned / arr_initial * 100) : 0
+  end
+
+  def churn_total_rate
+    arr_initial > 0 ? (churn_total / arr_initial * 100) : 0
+  end
+
   def churn_within_limit?
     churned <= churn_limit
   end

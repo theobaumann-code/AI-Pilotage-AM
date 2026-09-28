@@ -195,6 +195,27 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 50_000, summary.churn_subi_amount, 0.01
   end
 
+  test "churn_with_subi sums churned and churn_subi_amount but never feeds into arr_initial, rate or NRR" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")
+    ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
+      college: "Cadre", assureur: "AXA", arr: 20_000, taux: 0, statut_renouvellement: "Churné")
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "3",
+      college: "Non cadre", assureur: "AXA", arr: 50_000, taux: 0, statut_renouvellement: "Churné (subi)")
+
+    assert_in_delta 70_000, summary.churn_with_subi, 0.01
+
+    # The purely informational total must not leak into any of the figures it's displayed alongside:
+    # arr_initial/churned/churn_rate/churn_within_limit?/nrr_actual are all computed exactly as if
+    # churn_with_subi didn't exist (limit = 120_000 * 5.5% = 6_600, blown past by the 20_000 real churn
+    # alone — the 50_000 "subi" deal must not make it look worse or better).
+    assert_in_delta 120_000, summary.arr_initial, 0.01
+    assert_in_delta 20_000, summary.churned, 0.01
+    assert_in_delta (20_000.0 / 120_000 * 100), summary.churn_rate, 0.01
+    assert_not summary.churn_within_limit?
+    assert_in_delta 87.5, summary.nrr_actual, 0.01
+  end
+
   NonAccompagne = Struct.new(:arr_non_accompagne, :churn_non_accompagne, :churn_projete_non_accompagne,
     :taux_renouvellement_non_accompagne)
 

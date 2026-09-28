@@ -62,6 +62,13 @@ class PortfolioSummary
     produit_deals.select(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
+  # Purely informational total (churned + churn_subi_amount) for AMs who want the full picture of ARR lost
+  # this period regardless of cause. Deliberately not used anywhere else — churn_rate, churn_within_limit?,
+  # arr_initial and every NRR figure must keep excluding "subi" churn, per churn_subi_amount above.
+  def churn_with_subi
+    churned + churn_subi_amount
+  end
+
   # Only fully-signed upsells — the confirmed number behind the "Upsell" card. See `upsold` for the
   # probability-weighted projection behind "Upsell projeté".
   def upsold_actual

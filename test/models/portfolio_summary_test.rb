@@ -178,12 +178,13 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 50_000, summary.churn_subi_amount, 0.01
   end
 
-  NonAccompagne = Struct.new(:arr_non_accompagne, :churn_non_accompagne, :taux_renouvellement_non_accompagne)
+  NonAccompagne = Struct.new(:arr_non_accompagne, :churn_non_accompagne, :churn_projete_non_accompagne,
+    :taux_renouvellement_non_accompagne)
 
   test "non_accompagne: blends the non-accompagné book into arr_initial/churned/renewed_arr like one more deal" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
-    non_accompagne = NonAccompagne.new(50_000, 10_000, 2.0)
+    non_accompagne = NonAccompagne.new(50_000, 10_000, 0, 2.0)
 
     with_na = PortfolioSummary.new(@am.companies.includes(:deals), non_accompagne: non_accompagne)
 
@@ -193,6 +194,20 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 10_000, with_na.churned, 0.01
     # renewed_arr: 100_000 (real deal, taux 0) + (50_000 - 10_000) * 1.02 = 100_000 + 40_800 = 140_800.
     assert_in_delta 140_800, with_na.renewed_arr, 0.01
+  end
+
+  test "non_accompagne: churn_projete_non_accompagne only affects the projected figures, not the actual ones" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
+      college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
+    non_accompagne = NonAccompagne.new(50_000, 0, 8_000, 0)
+
+    with_na = PortfolioSummary.new(@am.companies.includes(:deals), non_accompagne: non_accompagne)
+
+    assert_in_delta 8_000, with_na.churn_projete, 0.01
+    # arr_final_actual (renewed_arr + upsold_actual) never subtracts churn_projete.
+    assert_in_delta 150_000, with_na.arr_final_actual, 0.01
+    # arr_final (projeté) does: 150_000 - 8_000 = 142_000.
+    assert_in_delta 142_000, with_na.arr_final, 0.01
   end
 
   test "omitting non_accompagne: leaves every figure exactly as before (no accidental default blending)" do

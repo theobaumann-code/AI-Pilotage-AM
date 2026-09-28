@@ -18,10 +18,10 @@ class PortfolioSummary
   # way, so company-scoped and effective-ownership-scoped totals are the same sum.
   #
   # `non_accompagne:` optionally blends AppSetting's manually-tracked non-accompagné figures (ARR, churn,
-  # taux de renouvellement) into arr_initial/churned/renewed_arr/renewal_gain below, as if it were one more
-  # aggregate "deal" — see PilotageController, which passes this only for Vue globale's top summary cards,
-  # gated by the Équipe filter's "Non accompagné" option. Every other PortfolioSummary caller (Mon
-  # portefeuille, the AM roster) omits it and is completely unaffected.
+  # churn projeté, taux de renouvellement) into arr_initial/churned/renewed_arr/renewal_gain/churn_projete
+  # below, as if it were one more aggregate "deal" — see PilotageController, which passes this only for Vue
+  # globale's top summary cards, gated by the Équipe filter's "Non accompagné" option. Every other
+  # PortfolioSummary caller (Mon portefeuille, the AM roster) omits it and is completely unaffected.
   def initialize(companies, user: nil, non_accompagne: nil)
     @companies = companies.to_a
     @user = user
@@ -118,7 +118,7 @@ class PortfolioSummary
   # estimate of what's likely to be lost next, distinct from `churned` (already lost). Already-churned
   # produits are excluded here since their loss is counted once, in `churned`, not twice.
   def churn_projete
-    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 }
+    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 } + non_accompagne_churn_projete
   end
 
   # Actual churn plus the projected risk on what's still active — the single figure the 5.5% budget is
@@ -162,6 +162,14 @@ class PortfolioSummary
 
   def non_accompagne_churn
     non_accompagne ? non_accompagne.churn_non_accompagne.to_f : 0
+  end
+
+  # No individual deals behind the non-accompagné book, so there's no risque_churn % to weight — just the
+  # same manually-tracked € figure everything else here uses, added straight into churn_projete (and, via
+  # arr_final = renewed_arr - churn_projete + upsold, into the projected NRR/ARR final cards only — the
+  # "actuel" variants never subtract churn_projete, matching how a real deal's risque_churn works too).
+  def non_accompagne_churn_projete
+    non_accompagne ? non_accompagne.churn_projete_non_accompagne.to_f : 0
   end
 
   # What's left of the non-accompagné book once its own actual churn comes out — never negative, in case

@@ -29,6 +29,10 @@
       <div class="metric-col-value"><%= number_to_currency(@app_setting.churn_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
     </div>
     <div class="metric-col">
+      <div class="metric-col-label">Churn projeté</div>
+      <div class="metric-col-value"><%= number_to_currency(@app_setting.churn_projete_non_accompagne, unit: "€", format: "%n %u", precision: 0) %></div>
+    </div>
+    <div class="metric-col">
       <div class="metric-col-label">Taux de renouvellement</div>
       <div class="metric-col-value"><%= number_with_precision(@app_setting.taux_renouvellement_non_accompagne, precision: 1) %>%</div>
     </div>
@@ -45,6 +49,9 @@
               </label>
               <label>Churn non accompagné (€)
                 <%= number_field_tag :churn_non_accompagne, @app_setting.churn_non_accompagne, step: "0.01", min: 0 %>
+              </label>
+              <label>Churn projeté non accompagné (€)
+                <%= number_field_tag :churn_projete_non_accompagne, @app_setting.churn_projete_non_accompagne, step: "0.01", min: 0 %>
               </label>
               <label>Taux de renouvellement non accompagné (%)
                 <%= number_field_tag :taux_renouvellement_non_accompagne, @app_setting.taux_renouvellement_non_accompagne, step: "0.1" %>

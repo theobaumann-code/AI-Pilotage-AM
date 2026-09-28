@@ -33,21 +33,26 @@ class DealsController < ApplicationController
   # (row_context=global) instead carries the page-wide summary cards, since there's no single "viewed AM".
   # Either way this is the AM's real record being updated, so it's already what they'll see next time they
   # open Mon portefeuille themselves — no separate sync step needed.
-  # A plain redirect (still used for non-Turbo requests) reloads the whole page.
+  # A plain redirect (still used for non-Turbo requests, e.g. Turbo failing to load/intercept the
+  # submission) reloads the whole page. Must land back on whichever page the edit actually came from:
+  # row_context=global/global_produit rows never carry redirect_user_id (there's no single "viewed AM" on
+  # Vue globale), so falling back to portfolio_path(user_id: nil) would silently bounce the admin/KAM to
+  # their OWN "Mon portefeuille" instead of back to Vue globale — indistinguishable, from their side, from
+  # "editing this table just doesn't work".
   def update
     if @deal.update(update_params)
       refresh_upsell_estimate(@deal) if upsell_estimation_input_changed?
       refresh_company_upsells(@deal.company) if @deal.is_a?(ProduitDeal) && @deal.saved_change_to_identifiant?
       respond_to do |format|
         format.turbo_stream { render turbo_stream: update_streams }
-        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: "Modifié." }
+        format.html { redirect_to fallback_redirect_path, notice: "Modifié." }
       end
     else
       error_message = @deal.errors.full_messages.to_sentence
       @deal.reload
       respond_to do |format|
         format.turbo_stream { render turbo_stream: error_streams(error_message), status: :unprocessable_entity }
-        format.html { redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: error_message }
+        format.html { redirect_to fallback_redirect_path, alert: error_message }
       end
     end
   end
@@ -145,6 +150,14 @@ class DealsController < ApplicationController
     when "global" then "pilotage/global_upsell_row"
     when "global_produit" then "pilotage/global_produit_row"
     else @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
+    end
+  end
+
+  def fallback_redirect_path
+    if %w[global global_produit].include?(params[:row_context])
+      pilotage_path
+    else
+      portfolio_path(user_id: params[:redirect_user_id])
     end
   end
 

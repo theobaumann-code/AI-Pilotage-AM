@@ -26,6 +26,16 @@ class GlobalUpsellsEditingTest < ActionDispatch::IntegrationTest
     assert_equal 100, @deal.probabilite_signature
   end
 
+  test "the non-Turbo (plain HTML) fallback redirects back to Vue globale, not to the admin's own portefeuille" do
+    sign_in @admin
+
+    patch deal_path(@deal), params: { deal: { statut_signature: "Signé" }, row_context: "global" }
+    assert_redirected_to pilotage_path
+
+    @deal.reload
+    assert_equal "Signé", @deal.statut_signature
+  end
+
   test "a non-admin cannot edit another AM's upsell via the global-table path" do
     other_regular_am = User.create!(email: "third-gups@example.com", name: "Third AM", admin: false, active: true)
     sign_in other_regular_am

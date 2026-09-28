@@ -52,6 +52,18 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
     assert_equal 60, @deal.risque_churn
   end
 
+  test "the non-Turbo (plain HTML) fallback redirects back to Vue globale, not to the admin's own portefeuille" do
+    sign_in @admin
+
+    # No Accept header for turbo-stream here — simulates a submission Turbo never intercepted (JS didn't
+    # load/run in time, etc.), which falls through to the format.html branch.
+    patch deal_path(@deal), params: { deal: { risque_churn: 60 }, row_context: "global_produit" }
+    assert_redirected_to pilotage_path
+
+    @deal.reload
+    assert_equal 60, @deal.risque_churn
+  end
+
   test "a non-admin cannot edit another AM's produit via the global-table path" do
     other_am = User.create!(email: "other-gprod@example.com", name: "Other Gprod", admin: false, active: true)
     sign_in other_am

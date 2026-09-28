@@ -44,7 +44,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
   end
 
   test "the non-accompagné book counts toward the total by default (no filter at all)" do
-    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, taux_renouvellement_non_accompagne: 0)
 
     sign_in @admin
     get pilotage_path
@@ -54,7 +54,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
   end
 
   test "narrowing to a specific role drops the non-accompagné book unless it's re-checked" do
-    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, taux_renouvellement_non_accompagne: 0)
 
     sign_in @admin
     get pilotage_path, params: { summary_roles: ["AM"] }
@@ -70,7 +70,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
   end
 
   test "checking only Non accompagné isolates it from every AM's own book" do
-    AppSetting.instance.update!(arr_non_accompagne: 5_000, churn_non_accompagne: 0, taux_renouvellement_non_accompagne: 0)
+    AppSetting.instance.update!(arr_non_accompagne: 5_000, taux_renouvellement_non_accompagne: 0)
 
     sign_in @admin
     get pilotage_path, params: { summary_roles: ["Non accompagné"] }

@@ -47,9 +47,6 @@
               <label>ARR non accompagné (€)
                 <%= number_field_tag :arr_non_accompagne, @app_setting.arr_non_accompagne, step: "0.01", min: 0 %>
               </label>
-              <label>Churn non accompagné (€)
-                <%= number_field_tag :churn_non_accompagne, @app_setting.churn_non_accompagne, step: "0.01", min: 0 %>
-              </label>
               <label>Churn projeté non accompagné (€)
                 <%= number_field_tag :churn_projete_non_accompagne, @app_setting.churn_projete_non_accompagne, step: "0.01", min: 0 %>
               </label>
@@ -63,6 +60,40 @@
             <button type="submit" class="button primary">Enregistrer</button>
           </div>
         <% end %>
+      </div>
+    </details>
+    <details style="margin-top:8px;">
+      <summary class="button">Détail du churn non accompagné (<%= @non_accompagne_churn_entries.size %>)</summary>
+      <div class="modal-box" style="margin:12px 0 0;">
+        <div class="modal-body">
+          <% if @non_accompagne_churn_entries.empty? %>
+            <p class="empty-state" style="margin:0;">Aucune entrée.</p>
+          <% else %>
+            <% @non_accompagne_churn_entries.each do |entry| %>
+              <div class="modal-row" style="align-items:center;flex-wrap:nowrap;">
+                <%= form_with model: entry, url: non_accompagne_churn_entry_path(entry), method: :patch,
+                      html: { style: "display:flex;gap:8px;flex:1;" } do |f| %>
+                  <%= f.text_field :company_name, onchange: "this.form.requestSubmit()", style: "flex:1;" %>
+                  <%= f.number_field :amount, step: "0.01", min: 0, onchange: "this.form.requestSubmit()", style: "width:130px;" %>
+                <% end %>
+                <%= button_to "🗑", non_accompagne_churn_entry_path(entry), method: :delete, class: "icon-btn",
+                      form: { data: { turbo_confirm: "Supprimer l'entrée « #{entry.company_name} » ?" }, style: "display:inline-block;" } %>
+              </div>
+            <% end %>
+          <% end %>
+          <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;">
+            <%= form_with model: NonAccompagneChurnEntry.new, url: non_accompagne_churn_entries_path,
+                  html: { style: "display:flex;gap:8px;align-items:flex-end;flex:1;" } do |f| %>
+              <label style="flex:1;">Entreprise (ou « Autre »)
+                <%= f.text_field :company_name, required: true %>
+              </label>
+              <label style="width:130px;">Montant (€)
+                <%= f.number_field :amount, step: "0.01", min: 0, required: true %>
+              </label>
+              <%= f.submit "Ajouter", class: "button primary" %>
+            <% end %>
+          </div>
+        </div>
       </div>
     </details>
   <% end %>

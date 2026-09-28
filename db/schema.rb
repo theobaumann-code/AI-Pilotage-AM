@@ -10,14 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_25_172311) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_28_085427) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "app_settings", force: :cascade do |t|
     t.integer "annee_en_cours", default: 2026, null: false
     t.decimal "arr_non_accompagne", default: "0.0", null: false
-    t.decimal "churn_non_accompagne", default: "0.0", null: false
     t.decimal "churn_projete_non_accompagne", default: "0.0", null: false
     t.datetime "created_at", null: false
     t.decimal "taux_renouvellement_non_accompagne", default: "0.0", null: false
@@ -83,6 +82,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_25_172311) do
     t.index ["company_id"], name: "index_deals_on_company_id"
     t.index ["produit", "identifiant"], name: "index_deals_on_produit_and_identifiant_active", unique: true, where: "(((type)::text = 'ProduitDeal'::text) AND (identifiant IS NOT NULL))"
     t.index ["user_id"], name: "index_deals_on_user_id"
+  end
+
+  create_table "non_accompagne_churn_entries", force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "company_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "trash_batches", force: :cascade do |t|

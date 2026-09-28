@@ -3,6 +3,7 @@ require "csv"
 class PilotageController < ApplicationController
   def show
     @app_setting = AppSetting.instance
+    @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
     @active_ams = User.active.order(:name)
     @available_roles = ["Admin", "KAM", "AM"]
     # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/

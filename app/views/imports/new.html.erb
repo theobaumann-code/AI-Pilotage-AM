@@ -5,6 +5,7 @@
 
 <div class="section-card">
   <%= form_with url: preview_import_path, method: :post, multipart: true, data: { turbo: false } do %>
+    <%= hidden_field_tag :return_to, @return_to if @return_to.present? %>
     <div class="modal-row">
       <label>Type de deal à importer
         <select name="deal_type">
@@ -42,7 +43,7 @@
       <li><strong>Assureur</strong> — facultatif</li>
       <li><strong>AM</strong> — obligatoire, doit correspondre à un AM existant</li>
     </ul>
-    <p style="margin:0 0 6px;">Pour un import <strong>Upsell</strong> : Nom, Produit, Nb salariés, % de chance, Statut, AM (aucun identifiant nécessaire).</p>
+    <p style="margin:0 0 6px;">Pour un import <strong>Upsell</strong> : Nom, Produit, Nb salariés, % de chance, Statut, AM (aucun identifiant nécessaire). Collège facultatif, "<%= ProduitDeal::COLLEGES.first %>" par défaut si absent.</p>
     <p style="margin:0 0 6px;">Les valeurs de Produit / Collège / Assureur / Statut tolèrent aussi le pluriel ("Cadres", "Non Cadres"…).</p>
     <p style="margin:0;">La colonne AM détermine l'AM de chaque ligne — un même fichier peut mélanger plusieurs portefeuilles. Si une entreprise apparaît avec des AM différents, tout le fichier est rejeté. Une ligne dont la clé existe déjà met à jour le deal existant (et réaffecte l'entreprise si l'AM diffère) ; sinon un nouveau deal est créé.</p>
   </div>
@@ -118,6 +119,7 @@
       <%= form_with url: import_path, method: :post, data: { turbo: false } do %>
         <%= hidden_field_tag :deal_type, @deal_type %>
         <%= hidden_field_tag :csv_text, @csv_text %>
+        <%= hidden_field_tag :return_to, @return_to if @return_to.present? %>
         <button type="submit" class="button primary">Confirmer l'import</button>
       <% end %>
     <% end %>

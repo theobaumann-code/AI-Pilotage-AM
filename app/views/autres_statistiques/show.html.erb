@@ -133,8 +133,14 @@
 
 <div class="chart-wrap">
   <h3>Entonnoir des upsells</h3>
-  <p class="section-sub" style="margin-top:-8px;">Nombre d'upsells à chaque étape (montant ARR upsellé entre parenthèses).</p>
-  <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>
+  <p class="section-sub" style="margin-top:-8px;">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
+  <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>
+</div>
+
+<div class="chart-wrap">
+  <h3>Entonnoir des produits à renouveler</h3>
+  <p class="section-sub" style="margin-top:-8px;">Nombre de produits à chaque étape de renouvellement, part du total et ARR entre parenthèses.</p>
+  <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>
 </div>
 
 <div class="chart-wrap">

@@ -5,6 +5,7 @@ class PilotageController < ApplicationController
     @app_setting = AppSetting.instance
     @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
     @active_ams = User.active.order(:name)
+    @selectable_companies = Company.order(:name)
     @available_roles = ["Admin", "KAM", "AM"]
     # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/
     # upsell/risque ones, which are about individual deals) — checking it folds the non-accompagné figures
@@ -82,6 +83,7 @@ class PilotageController < ApplicationController
         nom: ->(d) { TablePager.key(d.company.name) },
         am: ->(d) { TablePager.key(d.effective_user.name) },
         produit: ->(d) { TablePager.key(d.produit) },
+        college: ->(d) { TablePager.key(d.college) },
         nombre_salaries: ->(d) { TablePager.key(d.nombre_salaries) },
         upsell_amount: ->(d) { TablePager.key(d.upsell_amount) },
         probabilite_signature: ->(d) { TablePager.key(d.probabilite_signature) },

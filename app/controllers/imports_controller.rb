@@ -4,6 +4,7 @@ class ImportsController < ApplicationController
   before_action :require_admin!
 
   def new
+    @return_to = params[:return_to]
   end
 
   # Downloadable starting point for each import type, headers matching CsvImport's own column mapping
@@ -22,6 +23,7 @@ class ImportsController < ApplicationController
   def preview
     @deal_type = params[:deal_type]
     @csv_text = import_text
+    @return_to = params[:return_to]
     @result = CsvImport.new(text: @csv_text, deal_type: @deal_type).analyze
     render :new, formats: [:html]
   end
@@ -29,10 +31,12 @@ class ImportsController < ApplicationController
   def create
     @deal_type = params[:deal_type]
     @csv_text = params[:csv_text].to_s
+    @return_to = params[:return_to]
     result = CsvImport.new(text: @csv_text, deal_type: @deal_type).analyze
 
     if result.apply!(admin_user: current_user)
-      redirect_to portfolio_path, notice: "Import terminé : #{result.to_create.size} créé(s), #{result.to_update.size} mis à jour."
+      redirect_to (@return_to == "pilotage" ? pilotage_path : portfolio_path),
+        notice: "Import terminé : #{result.to_create.size} créé(s), #{result.to_update.size} mis à jour."
     else
       @result = result
       flash.now[:alert] = "Import impossible : vérifiez les erreurs ci-dessous."
@@ -61,8 +65,8 @@ class ImportsController < ApplicationController
 
   def upsell_template_csv
     CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "Produit", "Nb salariés", "% de chance", "Statut", "AM"]
-      csv << ["Entreprise Exemple", UpsellDeal::PRODUITS.first, "20", "50", "En cours", "Nom de l'AM"]
+      csv << ["Nom", "Produit", "Collège", "Nb salariés", "% de chance", "Statut", "AM"]
+      csv << ["Entreprise Exemple", UpsellDeal::PRODUITS.first, ProduitDeal::COLLEGES.first, "20", "50", "En cours", "Nom de l'AM"]
     end
   end
 end

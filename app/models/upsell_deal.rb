@@ -4,9 +4,16 @@ class UpsellDeal < Deal
   SIGNE = "Signé"
 
   validates :produit, inclusion: { in: PRODUITS }
+  validates :college, presence: true, inclusion: { in: ProduitDeal::COLLEGES }
   validates :statut_signature, inclusion: { in: STATUTS_SIGNATURE }
   validates :nombre_salaries, numericality: { greater_than_or_equal_to: 0 }
   validates :probabilite_signature, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+
+  # An upsell's collège matters far less than a produit's (no per-collège contract to keep straight), so
+  # unlike ProduitDeal, every UpsellDeal gets a sensible default instead of forcing every caller (forms,
+  # CSV import, tests, the console) to always pass one explicitly. Only fills in when truly unset, so an
+  # explicit value — including one already loaded from the database — is never overwritten.
+  after_initialize { self.college ||= ProduitDeal::COLLEGES.first }
 
   before_validation :apply_business_rules
 

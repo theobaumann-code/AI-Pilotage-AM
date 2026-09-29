@@ -1,5 +1,5 @@
 <div class="modal-box" style="margin:12px 0 0;">
-  <%= form_with url: deals_path(type: "upsell", redirect_user_id: viewed_user.id), method: :post do %>
+  <%= form_with url: deals_path(type: "upsell", redirect_user_id: viewed_user.id, return_to: local_assigns[:return_to]), method: :post do %>
     <div class="modal-body">
       <div class="modal-row">
         <label>Client
@@ -27,6 +27,11 @@
         <label>Produit
           <select name="deal[produit]">
             <% UpsellDeal::PRODUITS.each { |p| %><option value="<%= p %>"><%= p %></option><% } %>
+          </select>
+        </label>
+        <label>Collège
+          <select name="deal[college]">
+            <% ProduitDeal::COLLEGES.each { |c| %><option value="<%= c %>"><%= c %></option><% } %>
           </select>
         </label>
         <label>Nombre de salariés

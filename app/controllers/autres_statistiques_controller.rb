@@ -23,6 +23,7 @@ class AutresStatistiquesController < ApplicationController
     @churn_rate_by_assureur = churn_rate_by(:assureur)
     @churn_rate_by_college = churn_rate_by(:college)
     @upsell_funnel = upsell_funnel
+    @renewal_funnel = renewal_funnel
     @accompagnement_split = accompagnement_split
   end
 
@@ -128,13 +129,29 @@ class AutresStatistiquesController < ApplicationController
     end.sort_by { |r| -r[:value] }
   end
 
-  # Count and montant at each signature stage, in the funnel's natural order — a stalled pipeline (lots of
-  # "En cours", little "Signé") reads very differently from a healthy one even with the same total ARR.
+  # Count, montant and % of every upsell at each signature stage, in the funnel's natural order — a
+  # stalled pipeline (lots of "En cours", little "Signé") reads very differently from a healthy one even
+  # with the same total ARR, and the % share makes that comparison possible independent of book size.
   def upsell_funnel
     deals = UpsellDeal.all.to_a
+    total = deals.size
     UpsellDeal::STATUTS_SIGNATURE.map do |statut|
       matching = deals.select { |d| d.statut_signature == statut }
-      { label: statut, value: matching.size, amount: matching.sum(&:upsell_amount) }
+      { label: statut, value: matching.size, amount: matching.sum(&:upsell_amount),
+        pct: total > 0 ? matching.size.to_f / total * 100 : 0 }
+    end
+  end
+
+  # Same idea as upsell_funnel but for produits à renouveler, grouped by statut_renouvellement — includes
+  # every status (both churn statuses too) rather than @active_deals' churn_subi-excluded scope, since this
+  # is a "where does every deal currently stand" distribution, not an NRR-affecting calculation.
+  def renewal_funnel
+    deals = ProduitDeal.all.to_a
+    total = deals.size
+    ProduitDeal::STATUTS_RENOUVELLEMENT.map do |statut|
+      matching = deals.select { |d| d.statut_renouvellement == statut }
+      { label: statut, value: matching.size, amount: matching.sum { |d| d.arr.to_f },
+        pct: total > 0 ? matching.size.to_f / total * 100 : 0 }
     end
   end
 

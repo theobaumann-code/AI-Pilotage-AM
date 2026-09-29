@@ -10,6 +10,7 @@ class UpsellDealTest < ActiveSupport::TestCase
     UpsellDeal.new({
       company: @company,
       produit: "Mutuelle",
+      college: "Ensemble du personnel",
       nombre_salaries: 10,
       probabilite_signature: 50,
       statut_signature: "En cours"
@@ -18,6 +19,17 @@ class UpsellDealTest < ActiveSupport::TestCase
 
   test "valid with all required fields" do
     assert build_deal.valid?
+  end
+
+  test "college must be one of ProduitDeal's known values" do
+    assert_not build_deal(college: "Bogus").valid?
+    assert build_deal(college: "Cadre").valid?
+  end
+
+  test "college defaults to the same catalog's first entry when left unset, instead of failing presence" do
+    deal = UpsellDeal.new(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 50, statut_signature: "En cours")
+    assert_equal ProduitDeal::COLLEGES.first, deal.college
   end
 
   test "accepts the combined Mutuelle/Prévoyance produit (upsell-only)" do

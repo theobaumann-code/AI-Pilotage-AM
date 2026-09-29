@@ -25,6 +25,7 @@ class CsvImport
     "nom" => :nom, "nomduclient" => :nom, "client" => :nom, "nomclient" => :nom,
     "am" => :am, "amresponsable" => :am,
     "produit" => :produit,
+    "college" => :college,
     "nbsalaries" => :nombre_salaries, "nombresalaries" => :nombre_salaries, "salaries" => :nombre_salaries, "effectif" => :nombre_salaries,
     "pourcentagedechance" => :probabilite_signature, "dechance" => :probabilite_signature,
     "probabilitedesignature" => :probabilite_signature, "probabilitesignature" => :probabilite_signature,
@@ -363,6 +364,15 @@ class CsvImport
         .where(produit: produit_val).first
 
       attrs = { produit: produit_val }
+      raw_college = obj[:college].to_s.strip
+      if raw_college.present?
+        college_val = ProduitDeal::COLLEGES.find { |c| normalize_loose(c) == normalize_loose(raw_college) }
+        if college_val
+          attrs[:college] = college_val
+        else
+          @warnings << "Ligne #{idx + 2} (#{nom_val}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) — valeur ignorée pour cette ligne."
+        end
+      end
       salaries_val = normalize_number(obj[:nombre_salaries])
       attrs[:nombre_salaries] = salaries_val.to_i if salaries_val
       proba_val = normalize_number(obj[:probabilite_signature])
@@ -394,7 +404,8 @@ class CsvImport
       else
         created = PendingCreate.new(
           company_name: nom_val, am_name: row_am,
-          attrs: { nombre_salaries: 0, probabilite_signature: 0, statut_signature: "Non démarré" }.merge(attrs)
+          attrs: { college: ProduitDeal::COLLEGES.first, nombre_salaries: 0, probabilite_signature: 0,
+                   statut_signature: "Non démarré" }.merge(attrs)
         )
         pending_creates_by_key[match_key] = created
         @to_create << created

@@ -52,6 +52,33 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
     assert_equal 60, @deal.risque_churn
   end
 
+  test "an admin can also edit the contract-of-record fields (collège, produit, assureur, ID externe, ARR) from the global table" do
+    sign_in @admin
+
+    patch deal_path(@deal), params: { deal: { college: "Non cadre", produit: "Prévoyance",
+      assureur: "Gan", identifiant: "gprod-1-bis", arr: 25_000 }, row_context: "global_produit" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+
+    @deal.reload
+    assert_equal "Non cadre", @deal.college
+    assert_equal "Prévoyance", @deal.produit
+    assert_equal "Gan", @deal.assureur
+    assert_equal "gprod-1-bis", @deal.identifiant
+    assert_in_delta 25_000, @deal.arr, 0.01
+  end
+
+  test "a non-admin cannot edit the contract-of-record fields via the global-table path either" do
+    other_am = User.create!(email: "other-contract-gprod@example.com", name: "Other Contract Gprod", admin: false, active: true)
+    sign_in other_am
+
+    patch deal_path(@deal), params: { deal: { college: "Non cadre", arr: 99_999 }, row_context: "global_produit" }
+
+    @deal.reload
+    assert_equal "Cadre", @deal.college
+    assert_in_delta 10_000, @deal.arr, 0.01
+  end
+
   test "the non-Turbo (plain HTML) fallback redirects back to Vue globale, not to the admin's own portefeuille" do
     sign_in @admin
 

@@ -26,6 +26,29 @@ class GlobalUpsellsEditingTest < ActionDispatch::IntegrationTest
     assert_equal 100, @deal.probabilite_signature
   end
 
+  test "an admin can also edit collège and % de chance from the global table" do
+    sign_in @admin
+
+    patch deal_path(@deal), params: { deal: { college: "Non cadre", probabilite_signature: 80 }, row_context: "global" },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+
+    @deal.reload
+    assert_equal "Non cadre", @deal.college
+    assert_equal 80, @deal.probabilite_signature
+  end
+
+  test "a non-admin cannot edit collège or % de chance via the global-table path either" do
+    other_regular_am = User.create!(email: "fourth-gups@example.com", name: "Fourth AM", admin: false, active: true)
+    sign_in other_regular_am
+
+    patch deal_path(@deal), params: { deal: { college: "Non cadre", probabilite_signature: 80 }, row_context: "global" }
+
+    @deal.reload
+    assert_equal "Ensemble du personnel", @deal.college
+    assert_equal 50, @deal.probabilite_signature
+  end
+
   test "the non-Turbo (plain HTML) fallback redirects back to Vue globale, not to the admin's own portefeuille" do
     sign_in @admin
 

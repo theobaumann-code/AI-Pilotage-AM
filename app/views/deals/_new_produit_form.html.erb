@@ -1,5 +1,5 @@
 <div class="modal-box" style="margin:12px 0 0;">
-  <%= form_with url: deals_path(type: "produit", redirect_user_id: viewed_user.id), method: :post do %>
+  <%= form_with url: deals_path(type: "produit", redirect_user_id: viewed_user.id, return_to: local_assigns[:return_to]), method: :post do %>
     <div class="modal-body">
       <div class="modal-row">
         <label>Client

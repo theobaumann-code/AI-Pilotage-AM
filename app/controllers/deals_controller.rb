@@ -5,7 +5,7 @@ class DealsController < ApplicationController
   def create
     company = resolve_company
     if company.nil?
-      return redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: "Impossible de déterminer le client."
+      return redirect_to fallback_redirect_path, alert: "Impossible de déterminer le client."
     end
 
     deal = deal_class.new(create_params)
@@ -19,9 +19,9 @@ class DealsController < ApplicationController
       else
         "Produit ajouté."
       end
-      redirect_to portfolio_path(user_id: params[:redirect_user_id]), notice: notice
+      redirect_to fallback_redirect_path, notice: notice
     else
-      redirect_to portfolio_path(user_id: params[:redirect_user_id]), alert: deal.errors.full_messages.to_sentence
+      redirect_to fallback_redirect_path, alert: deal.errors.full_messages.to_sentence
     end
   end
 
@@ -153,8 +153,11 @@ class DealsController < ApplicationController
     end
   end
 
+  # Shared by create (whose "+ Nouveau produit"/"+ Nouvel upsell" forms carry return_to=pilotage when
+  # opened from Vue globale — see pilotage/show.html.erb) and update's row_context=global/global_produit
+  # case above.
   def fallback_redirect_path
-    if %w[global global_produit].include?(params[:row_context])
+    if params[:return_to] == "pilotage" || %w[global global_produit].include?(params[:row_context])
       pilotage_path
     else
       portfolio_path(user_id: params[:redirect_user_id])
@@ -211,12 +214,15 @@ class DealsController < ApplicationController
   end
 
   def upsell_fields
-    [:produit, :nombre_salaries, :probabilite_signature, :statut_signature]
+    [:produit, :college, :nombre_salaries, :probabilite_signature, :statut_signature]
   end
 
   # Contract-of-record fields on a produit deal (identifiant, ARR, and the choices that define the
   # contract itself) stay admin-only; taux/statut_renouvellement/risque_churn remain open to the owning AM.
+  # An upsell isn't a contract of record — it's the owning AM's own pipeline opportunity (see #destroy),
+  # so nothing about it is locked to admins/KAM at this level; Vue globale's own privileged?-gated forms
+  # are the only thing standing between a regular AM and someone else's upsell.
   def admin_only_fields
-    [:produit, :college, :assureur, :arr, :identifiant]
+    @deal.is_a?(UpsellDeal) ? [] : [:produit, :college, :assureur, :arr, :identifiant]
   end
 end

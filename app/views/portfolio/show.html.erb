@@ -147,6 +147,7 @@
           <tr>
             <%= sortable_th(@ups_pager, :nom, "Nom du client", col_class: "col-nom") %>
             <%= sortable_th(@ups_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@ups_pager, :college, "Collège", col_class: "col-college") %>
             <%= sortable_th(@ups_pager, :nombre_salaries, "Nb salariés", col_class: "col-salaries") %>
             <%= sortable_th(@ups_pager, :upsell_amount, "Montant ARR upsellé (€)", col_class: "col-upsell-amount") %>
             <%= sortable_th(@ups_pager, :probabilite_signature, "% de chance", col_class: "col-proba") %>
@@ -157,7 +158,7 @@
         </thead>
         <tbody>
           <% if @ups_pager.records.empty? %>
-            <tr><td colspan="8" class="empty-state">Aucun upsell pour le moment.</td></tr>
+            <tr><td colspan="9" class="empty-state">Aucun upsell pour le moment.</td></tr>
           <% else %>
             <%= render partial: "deals/upsell_row", collection: @ups_pager.records, as: :deal %>
           <% end %>
@@ -165,7 +166,7 @@
         <% if @ups_pager.records.any? %>
           <tfoot>
             <tr class="table-footer-row">
-              <td colspan="5">Total ARR projeté (résultats filtrés)</td>
+              <td colspan="6">Total ARR projeté (résultats filtrés)</td>
               <td><%= number_to_currency(@ups_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
               <td colspan="2"></td>
             </tr>

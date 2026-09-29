@@ -1,13 +1,49 @@
 <tr id="<%= dom_id(deal) %>" class="<%= churn_row_class(deal) %>">
   <td><%= deal.company.name %></td>
   <td><%= deal.company.user.name %></td>
-  <td><%= deal.produit %></td>
-  <td><%= deal.college %></td>
-  <td><%= deal.assureur %></td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.select :produit, ProduitDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.produit %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.select :college, ProduitDeal::COLLEGES, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.college %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.select :assureur, ProduitDeal::ASSUREURS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.assureur %>
+    <% end %>
+  </td>
   <% if current_user.admin? %>
-    <td><%= deal.identifiant %></td>
+    <td>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.text_field :identifiant, **locked_field_attrs("Confirmer la modification de l'ID externe ?") %>
+      <% end %>
+    </td>
   <% end %>
-  <td><%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>
+        <%= f.number_field :arr, step: "0.01", **locked_field_attrs("Confirmer la modification de l'ARR ?") %>
+      <% end %>
+    <% else %>
+      <%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %>
+    <% end %>
+  </td>
   <td>
     <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit"), method: :patch do |f| %>

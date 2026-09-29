@@ -66,14 +66,33 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match(/Gan.*?50\.0%/m, section)
   end
 
-  test "the upsell funnel counts each stage independently" do
+  test "the upsell funnel counts each stage independently and shows its % share of every upsell" do
     company = Company.create!(name: "Client Stats Funnel", user: @am)
     UpsellDeal.create!(company: company, produit: "Mutuelle", nombre_salaries: 10,
       probabilite_signature: 100, statut_signature: "Signé")
+    UpsellDeal.create!(company: company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 30, statut_signature: "En cours")
 
     get autres_statistiques_path
     assert_response :success
-    section = @response.body[/Entonnoir des upsells.*?Portefeuille accompagné/m]
-    assert_match(/Signé[\s\S]*?bar-value">1 /, section)
+    section = @response.body[/Entonnoir des upsells.*?Entonnoir des produits à renouveler/m]
+    # 1 of 2 upsells is "Signé" -> 50.0%
+    assert_match(/Signé[\s\S]*?bar-value">1 · 50\.0%/, section)
+  end
+
+  test "the renewal funnel counts every produit by statut_renouvellement, including both churn statuses, with its % share" do
+    company = Company.create!(name: "Client Stats Renewal Funnel", user: @am)
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rf-1",
+      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours")
+    ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rf-2",
+      college: "Cadre", assureur: "AXA", arr: 5_000, taux: 0, statut_renouvellement: "Churné (subi)")
+
+    get autres_statistiques_path
+    assert_response :success
+    section = @response.body[/Entonnoir des produits à renouveler.*?\z/m]
+    # 1 of 2 produits is "En cours" -> 50.0%; the "subi" one must still show up as its own stage here
+    # (unlike every ARR/NRR-affecting stat elsewhere on this page).
+    assert_match(/En cours[\s\S]*?bar-value">1 · 50\.0%/, section)
+    assert_match(/Churné \(subi\)[\s\S]*?bar-value">1 · 50\.0%/, section)
   end
 end

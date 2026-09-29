@@ -13,6 +13,15 @@
   <td>
     <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+        <%= f.select :college, ProduitDeal::COLLEGES, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.college %>
+    <% end %>
+  </td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
         <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
@@ -22,7 +31,15 @@
   <td title="<%= deal.arr_estimation_reference.presence || "Estimation BO indisponible" %>">
     <%= deal.arr_estimable? ? number_to_currency(deal.upsell_amount, unit: "€", format: "%n %u", precision: 0) : "—" %>
   </td>
-  <td><%= deal.probabilite_signature %>%</td>
+  <td>
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+        <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.signed?, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.probabilite_signature %>%
+    <% end %>
+  </td>
   <td><%= deal.arr_estimable? ? number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) : "—" %></td>
   <td>
     <% if current_user.privileged? %>

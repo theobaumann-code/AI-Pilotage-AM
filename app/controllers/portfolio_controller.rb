@@ -59,6 +59,7 @@ class PortfolioController < ApplicationController
       sort_procs: {
         nom: ->(d) { TablePager.key(d.company.name) },
         produit: ->(d) { TablePager.key(d.produit) },
+        college: ->(d) { TablePager.key(d.college) },
         nombre_salaries: ->(d) { TablePager.key(d.nombre_salaries) },
         probabilite_signature: ->(d) { TablePager.key(d.probabilite_signature) },
         statut_signature: ->(d) { TablePager.key(d.statut_signature) },

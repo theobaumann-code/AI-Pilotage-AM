@@ -11,13 +11,21 @@ class GlobalUpsellsFilterTest < ActionDispatch::IntegrationTest
       probabilite_signature: 50, statut_signature: "En cours")
   end
 
+  # Scoped to the upsells table's own frame, not the whole page — the privileged-only "+ Nouvel upsell"/
+  # "+ Nouveau produit" toolbar (see PilotageToolbarTest) lists every company in its picker regardless of
+  # this table's own AM/rôle filters, so asserting against the raw body would see "Client Gups Filter"
+  # there even when the table itself correctly excludes it.
+  def upsells_table(body)
+    body[/id="gups-table-frame">.*?<\/turbo-frame>/m]
+  end
+
   test "the upsells table is filterable by team (role)" do
     sign_in @admin
     get pilotage_path, params: { upsell_roles: ["Admin"] }
     assert_response :success
-    assert_no_match "Client Gups Filter", @response.body
+    assert_no_match "Client Gups Filter", upsells_table(@response.body)
 
     get pilotage_path, params: { upsell_roles: ["AM"] }
-    assert_match "Client Gups Filter", @response.body
+    assert_match "Client Gups Filter", upsells_table(@response.body)
   end
 end

@@ -24,7 +24,7 @@ Rails.application.routes.draw do
   end
   resource :gestion_droits, only: [:show], controller: "gestion_droits"
   resource :autres_statistiques, only: [:show], controller: "autres_statistiques"
-  resources :companies, only: [:create, :destroy] do
+  resources :companies, only: [:create, :update, :destroy] do
     member { patch :reassign_am }
   end
   resources :deals, only: [:create, :update, :destroy] do

@@ -124,15 +124,20 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("risque_q", "risque_ams", "risque_ams_open", "risque_roles", "risque_roles_open",
-                "risque_produits", "risque_produits_open", "risque_statuts", "risque_statuts_open", "rque_page") %>
+                "risque_produits", "risque_produits_open", "risque_statuts", "risque_statuts_open", "risque_manque_offres", "rque_page") %>
           <%= live_search_field :risque_q, @risque_q %>
           <%= render "shared/checklist_filter", param_name: "risque_roles", options: @available_roles, selected: @risque_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "risque_ams", options: @available_risque_ams, selected: @risque_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "risque_produits", options: ProduitDeal::PRODUITS, selected: @risque_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "risque_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT - ProduitDeal::CHURNED_STATUSES, selected: @risque_statuts, legend: "Statut" %>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+            <%= check_box_tag :risque_manque_offres, "1", @risque_manque_offres, onchange: "this.form.requestSubmit()" %>
+            Manque d'offres
+          </label>
         <% end %>
         <%= link_to "Exporter CSV", export_risque_pilotage_path(risque_q: @risque_q, risque_ams: @risque_ams,
-              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_statuts: @risque_statuts), class: "button", data: { turbo: false } %>
+              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_statuts: @risque_statuts,
+              risque_manque_offres: @risque_manque_offres), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">
@@ -144,12 +149,13 @@
             <%= sortable_th(@rque_pager, :count, "Nb produits à risque") %>
             <%= sortable_th(@rque_pager, :arr_at_risk, "ARR à risque (€)") %>
             <%= sortable_th(@rque_pager, :max_risque, "% risque max") %>
+            <th>Manque d'offres</th>
             <th>Commentaires</th>
           </tr>
         </thead>
         <tbody>
           <% if @rque_pager.records.empty? %>
-            <tr><td colspan="6" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
+            <tr><td colspan="7" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
           <% else %>
             <% @rque_pager.records.each do |r| %>
               <tr id="<%= dom_id(r[:company], :risque) %>">
@@ -158,6 +164,11 @@
                 <td><%= r[:count] %></td>
                 <td style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
                 <td><%= r[:max_risque] %>%</td>
+                <td>
+                  <%= form_with model: r[:company], url: company_path(r[:company], return_to: request.fullpath), method: :patch do |f| %>
+                    <%= f.check_box :risque_manque_offres, onchange: "this.form.requestSubmit()" %>
+                  <% end %>
+                </td>
                 <td><%= render "pilotage/risk_note_panel", company: r[:company] %></td>
               </tr>
             <% end %>

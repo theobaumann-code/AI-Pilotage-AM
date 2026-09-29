@@ -34,6 +34,7 @@ class PilotageController < ApplicationController
     @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+    @risque_manque_offres = params[:risque_manque_offres].present?
     @available_risque_ams = @active_ams.map(&:name)
     @at_risk_companies = filtered_at_risk_companies
     @rque_pager = TablePager.new(@at_risk_companies, params: params, prefix: "rque",
@@ -145,11 +146,13 @@ class PilotageController < ApplicationController
     @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+    @risque_manque_offres = params[:risque_manque_offres].present?
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max"]
+      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres"]
       filtered_at_risk_companies.each do |r|
-        csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque]]
+        csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque],
+                r[:company].risque_manque_offres? ? "Oui" : "Non"]
       end
     end
 
@@ -171,6 +174,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @risque_roles.include?(d.company.user.role_label) } if @risque_roles.present?
     deals = deals.select { |d| @risque_produits.include?(d.produit) } if @risque_produits.present?
     deals = deals.select { |d| @risque_statuts.include?(d.statut_renouvellement) } if @risque_statuts.present?
+    deals = deals.select { |d| d.company.risque_manque_offres? } if @risque_manque_offres
 
     deals.group_by(&:company).map do |company, company_deals|
       {

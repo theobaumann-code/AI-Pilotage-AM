@@ -4,6 +4,7 @@ class Company < ApplicationRecord
   has_many :deals, dependent: :destroy
   has_many :produit_deals, -> { where(type: "ProduitDeal") }, class_name: "ProduitDeal", inverse_of: :company
   has_many :upsell_deals, -> { where(type: "UpsellDeal") }, class_name: "UpsellDeal", inverse_of: :company
+  has_many :risk_notes, dependent: :destroy
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 

@@ -144,11 +144,12 @@
             <%= sortable_th(@rque_pager, :count, "Nb produits à risque") %>
             <%= sortable_th(@rque_pager, :arr_at_risk, "ARR à risque (€)") %>
             <%= sortable_th(@rque_pager, :max_risque, "% risque max") %>
+            <th>Commentaires</th>
           </tr>
         </thead>
         <tbody>
           <% if @rque_pager.records.empty? %>
-            <tr><td colspan="5" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
+            <tr><td colspan="6" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
           <% else %>
             <% @rque_pager.records.each do |r| %>
               <tr id="<%= dom_id(r[:company], :risque) %>">
@@ -157,6 +158,7 @@
                 <td><%= r[:count] %></td>
                 <td style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
                 <td><%= r[:max_risque] %>%</td>
+                <td><%= render "pilotage/risk_note_panel", company: r[:company] %></td>
               </tr>
             <% end %>
           <% end %>

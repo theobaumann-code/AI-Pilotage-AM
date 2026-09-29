@@ -163,7 +163,7 @@ class PilotageController < ApplicationController
   # risque_churn — grouped from the same filtered produit-deal scope filtered_global_produits uses, so the
   # AM/Équipe/Produit/Statut filters behave identically to every other Vue globale table.
   def filtered_at_risk_companies
-    deals = ProduitDeal.includes(company: :user).to_a
+    deals = ProduitDeal.includes(company: [:user, :risk_notes]).to_a
     deals = deals.reject(&:churned?)
     deals = deals.select { |d| d.risque_churn.to_i > 0 }
     deals = deals.select { |d| d.company.name.downcase.include?(@risque_q.downcase) } if @risque_q.present?

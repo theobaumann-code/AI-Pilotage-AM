@@ -39,6 +39,7 @@ Rails.application.routes.draw do
   resource :year_closure, only: [:create], controller: "year_closures"
   resource :app_setting, only: [:update], controller: "app_settings"
   resources :non_accompagne_churn_entries, only: [:create, :update, :destroy]
+  resources :risk_notes, only: [:create, :destroy]
   get "import" => "imports#new", as: :new_import
   get "import/template/:type" => "imports#template", as: :import_template, constraints: { type: /produit|upsell/ }
   post "import/preview" => "imports#preview", as: :preview_import

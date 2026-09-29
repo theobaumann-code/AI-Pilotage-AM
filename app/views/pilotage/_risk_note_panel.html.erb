@@ -1,0 +1,31 @@
+<%# locals: company — the rescue-effort log for one at-risk company, expandable inline in its own <td>.
+    Full-page redirects (see RiskNotesController): occasional note-taking, not a row edited over and over,
+    so this reopens collapsed after a save — same accepted tradeoff as the non-accompagné entries panel. %>
+<details>
+  <summary class="button" style="font-size:12px;padding:4px 8px;">💬 <%= company.risk_notes.size %></summary>
+  <div class="modal-box" style="margin:8px 0 0;max-width:380px;">
+    <div class="modal-body" style="gap:10px;">
+      <% if company.risk_notes.empty? %>
+        <p class="empty-state" style="margin:0;">Aucun commentaire.</p>
+      <% else %>
+        <% company.risk_notes.each do |note| %>
+          <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;gap:8px;">
+              <span><%= note.user.name %> — <%= note.created_at.strftime("%d/%m/%Y %H:%M") %></span>
+              <% if current_user.privileged? || note.user == current_user %>
+                <%= button_to "🗑", risk_note_path(note), method: :delete, class: "icon-btn", style: "font-size:10px;padding:2px 5px;",
+                      form: { data: { turbo_confirm: "Supprimer ce commentaire ?" }, style: "display:inline-block;" } %>
+              <% end %>
+            </div>
+            <p style="margin:4px 0 0;white-space:pre-wrap;"><%= note.content %></p>
+          </div>
+        <% end %>
+      <% end %>
+      <%= form_with url: risk_notes_path, method: :post do %>
+        <%= hidden_field_tag :company_id, company.id %>
+        <textarea name="risk_note[content]" rows="2" placeholder="Nouvelle démarche…" required style="width:100%;"></textarea>
+        <button type="submit" class="button primary" style="margin-top:6px;">Ajouter</button>
+      <% end %>
+    </div>
+  </div>
+</details>

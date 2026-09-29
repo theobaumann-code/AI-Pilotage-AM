@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_28_175948) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_29_084224) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -91,6 +91,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_28_175948) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "risk_notes", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["company_id"], name: "index_risk_notes_on_company_id"
+    t.index ["user_id"], name: "index_risk_notes_on_user_id"
+  end
+
   create_table "trash_batches", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "deleted_at", null: false
@@ -121,5 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_28_175948) do
   add_foreign_key "companies", "users"
   add_foreign_key "deals", "companies"
   add_foreign_key "deals", "users"
+  add_foreign_key "risk_notes", "companies"
+  add_foreign_key "risk_notes", "users"
   add_foreign_key "trash_batches", "users", column: "deleted_by_id"
 end

@@ -65,18 +65,21 @@ class UpsellDealTest < ActiveSupport::TestCase
     assert_equal 40, deal.probabilite_signature
   end
 
-  test "arr is computed as nombre_salaries × rate × commission, per produit" do
+  test "arr is computed as nombre_salaries × rate per produit — mutuelle tax-adjusted and affiliation-weighted, prévoyance affiliation-weighted" do
+    mutuelle_rate = (140.0 / 1.1532) * 0.8
+    prevoyance_rate = 36.0 * 0.95
+
     mutuelle = build_deal(produit: "Mutuelle", nombre_salaries: 10)
     mutuelle.save!
-    assert_in_delta 10 * 140.0 * 0.07, mutuelle.arr, 0.01 # 98.00
+    assert_in_delta 10 * mutuelle_rate, mutuelle.arr, 0.01
 
     prevoyance = build_deal(produit: "Prévoyance", nombre_salaries: 10)
     prevoyance.save!
-    assert_in_delta 10 * 36.0 * 0.07, prevoyance.arr, 0.01 # 25.20
+    assert_in_delta 10 * prevoyance_rate, prevoyance.arr, 0.01
 
     combined = build_deal(produit: "Mutuelle/Prévoyance", nombre_salaries: 10)
     combined.save!
-    assert_in_delta 10 * (140.0 + 36.0) * 0.07, combined.arr, 0.01 # 123.20
+    assert_in_delta 10 * (mutuelle_rate + prevoyance_rate), combined.arr, 0.01
   end
 
   test "a larger headcount always yields a larger arr for the same produit — the whole point of the switch away from Bonus Tracker" do
@@ -89,12 +92,13 @@ class UpsellDealTest < ActiveSupport::TestCase
   end
 
   test "arr recomputes on every save, regardless of statut_signature — every upsell gets a real, comparable figure" do
+    mutuelle_rate = (140.0 / 1.1532) * 0.8
     deal = build_deal(produit: "Mutuelle", nombre_salaries: 10, statut_signature: "Perdu")
     deal.save!
-    assert_in_delta 10 * 140.0 * 0.07, deal.arr, 0.01
+    assert_in_delta 10 * mutuelle_rate, deal.arr, 0.01
 
     deal.update!(nombre_salaries: 20)
-    assert_in_delta 20 * 140.0 * 0.07, deal.arr, 0.01
+    assert_in_delta 20 * mutuelle_rate, deal.arr, 0.01
   end
 
   test "upsell_amount reads the computed arr, and the deal is always arr_estimable? under the new formula" do
@@ -103,7 +107,7 @@ class UpsellDealTest < ActiveSupport::TestCase
     assert_in_delta deal.arr, deal.upsell_amount, 0.01
     assert deal.arr_estimable?
     assert_match "10 salarié(s)", deal.arr_estimation_reference
-    assert_equal "generique-par-salarie-v1", deal.arr_estimation_formula_version
+    assert_equal "generique-par-salarie-v2", deal.arr_estimation_formula_version
   end
 
   test "identifiant uniqueness does not apply to upsells (no identifiant column meaning here)" do

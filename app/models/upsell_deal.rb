@@ -3,17 +3,23 @@ class UpsellDeal < Deal
   STATUTS_SIGNATURE = ["Non démarré", "En cours", "Signé", "Perdu"].freeze
   SIGNE = "Signé"
 
-  # Generic per-employee reference rates (brut/gross annual premium, before the commission conversion
-  # below) — communicated directly by Sarra Bachar on 2026-09-30, replacing the Bonus Tracker BO estimate
-  # for upsells: Bonus Tracker's per-company invoice-based estimate turned out to swing on how much of a
-  # company's headcount happened to have matured, invoiced sub-contracts (e.g. ~78% covered for one client
-  # vs ~8% for another), which could make a smaller company outrank a much larger one on ARR for the same
-  # product — a real inconsistency, not a data-sync issue. This flat, uniform formula trades that
-  # invoice-level precision for a result that's always monotonic in headcount and fully reproducible from
-  # data Pilotage NRR actually has (nombre_salaries, produit) instead of BigQuery-only invoice/DSN detail.
-  RATE_PER_EMPLOYEE_MUTUELLE = 140.0
-  RATE_PER_EMPLOYEE_PREVOYANCE = 36.0
-  COMMISSION_RATE = 0.07
+  # Generic per-employee reference formula — communicated directly by Sarra Bachar on 2026-09-30, replacing
+  # the Bonus Tracker BO estimate for upsells: Bonus Tracker's per-company invoice-based estimate turned out
+  # to swing on how much of a company's headcount happened to have matured, invoiced sub-contracts (e.g.
+  # ~78% covered for one client vs ~8% for another), which could make a smaller company outrank a much
+  # larger one on ARR for the same product — a real inconsistency, not a data-sync issue. This flat, uniform
+  # formula trades that invoice-level precision for a result that's always monotonic in headcount and fully
+  # reproducible from data Pilotage NRR actually has (nombre_salaries, produit).
+  #
+  # Corrected the same day: the mutuelle base rate is tax-adjusted (divided by 1+taxe) and both rates are
+  # weighted by their average affiliation rate (taux d'affiliation moyen — not every signed employee
+  # actually enrolls), and the result IS the final per-employee ARR — no separate commission conversion on
+  # top this time (unlike the first version of this formula).
+  MUTUELLE_RATE_BASE = 140.0
+  MUTUELLE_TAXE = 0.1532
+  MUTUELLE_TAUX_AFFILIATION = 0.8
+  PREVOYANCE_RATE_BASE = 36.0
+  PREVOYANCE_TAUX_AFFILIATION = 0.95
 
   validates :produit, inclusion: { in: PRODUITS }
   validates :college, presence: true, inclusion: { in: ProduitDeal::COLLEGES }
@@ -45,21 +51,28 @@ class UpsellDeal < Deal
   # sync with produit/nombre_salaries, and every upsell always uses today's rates regardless of status
   # (Non démarré/En cours/Signé/Perdu all get a real, comparable ARR, not just active ones).
   def estimate_arr
-    self.arr = (rate_per_employee * nombre_salaries.to_i * COMMISSION_RATE).round(2)
+    self.arr = (rate_per_employee * nombre_salaries.to_i).round(2)
     self.arr_estimation_source = "generique_par_salarie"
-    self.arr_estimation_reference = "#{nombre_salaries.to_i} salarié(s) × #{rate_per_employee.to_i} €/an (#{produit}) " \
-      "× #{(COMMISSION_RATE * 100).to_i}% de commission"
-    self.arr_estimation_formula_version = "generique-par-salarie-v1"
+    self.arr_estimation_reference = "#{nombre_salaries.to_i} salarié(s) × #{rate_per_employee.round(2)} €/an (#{produit})"
+    self.arr_estimation_formula_version = "generique-par-salarie-v2"
     self.arr_estimated_at = Time.current
   end
 
   def rate_per_employee
     case produit
-    when "Mutuelle" then RATE_PER_EMPLOYEE_MUTUELLE
-    when "Prévoyance" then RATE_PER_EMPLOYEE_PREVOYANCE
-    when "Mutuelle/Prévoyance" then RATE_PER_EMPLOYEE_MUTUELLE + RATE_PER_EMPLOYEE_PREVOYANCE
+    when "Mutuelle" then rate_per_employee_mutuelle
+    when "Prévoyance" then rate_per_employee_prevoyance
+    when "Mutuelle/Prévoyance" then rate_per_employee_mutuelle + rate_per_employee_prevoyance
     else 0.0
     end
+  end
+
+  def rate_per_employee_mutuelle
+    (MUTUELLE_RATE_BASE / (1 + MUTUELLE_TAXE)) * MUTUELLE_TAUX_AFFILIATION
+  end
+
+  def rate_per_employee_prevoyance
+    PREVOYANCE_RATE_BASE * PREVOYANCE_TAUX_AFFILIATION
   end
 
   # Rule 5: marking an upsell "Signé" always forces probabilite_signature to 100. Moving back off "Signé"

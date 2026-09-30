@@ -479,7 +479,7 @@ input[type=checkbox]{accent-color:var(--primary);}
 .metric-card:first-child:not(.unmanaged-portfolio-card) .metric-col+.metric-col{border-color:rgba(255,255,255,.18);}
 .metric-card:first-child:not(.unmanaged-portfolio-card) .badge.ok{background:#ebf9f1;color:#196b3b;}
 .metric-card:first-child:not(.unmanaged-portfolio-card) .badge.ko{background:#ffefef;color:#a43b3b;}
-.metric-card--churn{overflow:visible;z-index:1;}
+.metric-card--churn{overflow:visible;z-index:2;}
 .metric-col-heading{display:inline-flex;align-items:center;gap:6px;min-width:0;}
 .metric-info{position:relative;display:inline-flex;align-items:center;}
 button.metric-info-trigger{width:18px;height:18px;min-height:18px;padding:0;border:1px solid var(--border-strong);
@@ -492,13 +492,15 @@ button.metric-info-trigger:focus-visible,.churn-details summary:focus-visible{ou
   text-align:left;text-transform:none;letter-spacing:normal;white-space:normal;}
 .metric-info-tooltip strong{color:#ffeed2;font-weight:800;}
 .metric-info:hover .metric-info-tooltip,.metric-info:focus-within .metric-info-tooltip{display:block;}
-.churn-details{margin-top:auto;padding-top:9px;border-top:1px solid var(--border);}
+.churn-details{position:relative;margin-top:auto;padding-top:9px;border-top:1px solid var(--border);}
 .churn-details summary{display:flex;align-items:center;justify-content:space-between;gap:8px;
   cursor:pointer;list-style:none;color:var(--burgundy);font-size:11px;font-weight:800;line-height:1.4;}
 .churn-details summary::-webkit-details-marker{display:none;}
 .churn-details-chevron{font-size:17px;line-height:1;transition:transform .15s;}
 .churn-details[open] .churn-details-chevron{transform:rotate(180deg);}
-.churn-details-list{display:grid;gap:10px;margin:10px 0 2px;padding-top:10px;border-top:1px solid var(--border);}
+.churn-details-list{position:absolute;top:calc(100% + 10px);left:0;z-index:11;
+  display:grid;gap:10px;width:min(300px,calc(100vw - 48px));margin:0;padding:14px;
+  border:1px solid var(--border-strong);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow-lg);}
 .churn-details-list>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:start;}
 .churn-details-list dt{color:var(--text-muted);font-size:10px;line-height:1.35;}
 .churn-details-list dt small{display:block;font-size:10px;}

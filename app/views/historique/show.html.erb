@@ -1,6 +1,7 @@
 <% content_for :title, "Historique — Pilotage NRR" %>
+<% content_for :page_class, "history-page" %>
 
-<p class="section-title">Historique</p>
+<h1 class="section-title">Historique</h1>
 <p class="section-sub">Taux de renouvellement par contrat client, année après année.</p>
 
 <div class="toolbar">
@@ -103,7 +104,7 @@
 
   <div class="section-card" style="margin-top:20px;">
     <div class="table-toolbar">
-      <h3>Historique par contrat</h3>
+      <h2>Historique par contrat</h2>
     </div>
     <div class="table-scroll">
       <table class="am-table">
@@ -133,19 +134,19 @@
   </div>
 
   <div class="chart-wrap">
-    <h3>Historique du taux de renouvellement</h3>
+    <h2>Historique du taux de renouvellement</h2>
     <%= line_chart(@years.sort, @taux_chart, 0) %>
     <div class="chart-legend">Respecte les filtres ci-dessus. Une courbe par produit, moyenne pondérée par l'ARR (sur tous les contrats concernés — utile si une entreprise a plusieurs contrats du même produit avec des assureurs différents).</div>
   </div>
 
   <div class="chart-wrap">
-    <h3>Historique du NRR par cohorte annuelle</h3>
+    <h2>Historique du NRR par cohorte annuelle</h2>
     <%= line_chart(@years.sort, @nrr_chart, 100) %>
     <div class="chart-legend">Même principe que le graphique ci-dessus, mais pour le NRR de chaque année (ARR renouvelé rapporté à l'ARR initial de cette année) : la ligne noire horizontale représente 100%.</div>
   </div>
 
   <div class="chart-wrap">
-    <h3>Augmentation moyenne par assureur</h3>
+    <h2>Augmentation moyenne par assureur</h2>
     <% if @assureur_chart.none? { |e| e[:count] > 0 } %>
       <div class="empty-state">Aucune donnée pour ce filtre.</div>
     <% else %>
@@ -164,7 +165,7 @@
   </div>
 
   <div class="chart-wrap">
-    <h3>Répartition des produits renouvelés par statut de renouvellement</h3>
+    <h2>Répartition des produits renouvelés par statut de renouvellement</h2>
     <%= donut_chart(@statut_donut) %>
     <div class="chart-legend">Respecte les filtres ci-dessus.</div>
   </div>

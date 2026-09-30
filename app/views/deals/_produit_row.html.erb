@@ -38,7 +38,7 @@
       <% end %>
     </td>
   <% end %>
-  <td>
+  <td class="numeric">
     <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
         <%= f.number_field :arr, step: "0.01", **locked_field_attrs("Confirmer la modification de l'ARR ?") %>
@@ -47,7 +47,7 @@
       <%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %>
     <% end %>
   </td>
-  <td>
+  <td class="numeric">
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
       <%= f.number_field :taux, step: "0.01", disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
     <% end %>
@@ -58,7 +58,7 @@
             class: "statut-select #{renewal_statut_class(deal.statut_renouvellement)}", onchange: "this.form.requestSubmit()" %>
     <% end %>
   </td>
-  <td>
+  <td class="numeric">
     <%= form_with model: deal, scope: :deal, url: deal_path(deal, redirect_user_id: viewed_user.id), method: :patch do |f| %>
       <%= f.number_field :risque_churn, min: 0, max: 100, disabled: deal.churned?, onchange: "this.form.requestSubmit()" %>
     <% end %>

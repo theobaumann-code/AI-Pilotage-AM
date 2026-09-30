@@ -32,3 +32,23 @@ main.auth-shell{max-width:none;margin:0;padding:0;}
 .auth-message-alert{background:#fff2ec;color:#92221d;}
 @media(max-width:960px){.auth-page{grid-template-columns:1fr;}.auth-panel{min-height:52svh;padding:120px 34px 56px;}.auth-brand{top:34px;left:34px;}.auth-content h1{font-size:clamp(52px,9vw,80px);}.auth-signals{display:none;}.auth-sso-side{min-height:48svh;padding:40px 24px;}}
 @media(max-width:480px){.auth-panel{padding:110px 24px 42px;}.auth-brand{top:28px;left:24px;}.auth-content h1{font-size:clamp(43px,11.8vw,57px);}.auth-content>p{font-size:15px;}.auth-sso-side{padding:32px 18px;}.auth-sso-card{padding:32px 22px;}}
+
+/* Signed-out view uses the same SideCare tokens and typography as the workspace. */
+.auth-page{--auth-ink:var(--text);--auth-muted:var(--text-muted);--auth-line:var(--border-strong);background:var(--cream-light);font-family:"Satoshi","Segoe UI",sans-serif;}
+.auth-panel{background:linear-gradient(145deg,#fff3df 0%,#fff8ec 58%,#fff2ec 100%);}
+.auth-panel::after{border-color:rgba(109,9,42,.1);box-shadow:0 0 0 80px rgba(255,255,255,.13),0 0 0 160px rgba(255,255,255,.08);}
+.auth-brand>span{color:var(--burgundy);border-color:#ffd3c1;}
+.auth-eyebrow,.auth-label{color:var(--burgundy);}
+.auth-eyebrow i{background:var(--primary);box-shadow:0 0 0 4px var(--hover-tint);}
+.auth-content h1{font-family:var(--font-fraunces);font-weight:500;color:var(--burgundy);letter-spacing:-.04em;}
+.auth-content h1 em{color:var(--primary-dark);}
+.auth-signals span{border-color:#ffd3c1;background:rgba(255,255,255,.58);color:var(--burgundy);}
+.auth-signals span:nth-child(2){background:var(--primary);border-color:var(--primary);}
+.auth-signals span:nth-child(3){background:var(--burgundy);border-color:var(--burgundy);}
+.auth-sso-side{background:var(--canvas);}
+.auth-sso-card{border-color:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);}
+.auth-mark{background:var(--cream);color:var(--burgundy);font-family:var(--font-fraunces);}
+.auth-sso-card h2{font-family:var(--font-fraunces);font-weight:500;color:var(--text);}
+.auth-google-button{min-height:50px;border-color:var(--border-strong);border-radius:10px;}
+.auth-google-button:hover{background:var(--cream-light);border-color:#ffd3c1;}
+.auth-google-button:focus-visible{outline-color:var(--primary);}

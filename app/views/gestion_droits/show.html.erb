@@ -1,6 +1,6 @@
 <% content_for :title, "Gestion des droits — Pilotage NRR" %>
 
-<p class="section-title">Gestion des droits</p>
+<h1 class="section-title">Gestion des droits</h1>
 <p class="section-sub">Liste des AM et gestion de leurs droits d'accès.</p>
 
 <div class="toolbar">
@@ -36,7 +36,7 @@
 <div class="section-card">
   <%= turbo_frame_tag "am-table-frame" do %>
     <div class="table-toolbar">
-      <h3>AM</h3>
+      <h2>AM</h2>
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("am_q", "am_page") %>
@@ -78,13 +78,13 @@
                         params: { kam: am.kam? ? "0" : "1" }, class: "button ghost-burgundy", style: "font-size:11px;padding:4px 8px;",
                         form: { data: { turbo_confirm: am.kam? ? "Retirer le statut KAM de #{am.name} ?" : "Donner le statut KAM à #{am.name} ?" } } %>
                 </td>
-                <td><%= s.count %></td>
-                <td><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
-                <td class="nrr-cell"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
+                <td class="numeric"><%= s.count %></td>
+                <td class="numeric"><%= number_to_currency(s.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="numeric" style="color:var(--red)"><%= number_to_currency(s.churned, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="numeric" style="color:var(--green)"><%= number_to_currency(s.upsold, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="numeric"><%= number_to_currency(s.renewed_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="numeric"><%= number_to_currency(s.arr_final, unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="nrr-cell numeric"><%= number_with_precision(s.nrr, precision: 1) %>%</td>
                 <td><span class="badge <%= ok ? "ok" : "ko" %>"><%= ok ? "✓ Atteint" : "✗ Non atteint" %></span></td>
                 <td class="rowaction" style="white-space:nowrap;">
                   <button type="button" class="icon-btn" title="Modifier les identifiants de connexion"

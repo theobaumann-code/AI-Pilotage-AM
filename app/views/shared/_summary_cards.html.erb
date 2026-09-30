@@ -1,6 +1,7 @@
 <% nrr_actual_ok = summary.nrr_actual_target_met? %>
 <% nrr_projected_ok = summary.target_met? %>
-<div class="summary-cards" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
+<div class="summary-block" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
+<div class="summary-cards metrics-grid">
   <div class="metric-card">
     <div class="metric-card-title">NRR</div>
     <div class="metric-pair">
@@ -23,23 +24,18 @@
       <div class="metric-col">
         <div class="metric-col-label">Actuel</div>
         <div class="metric-col-value"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %>
-          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_rate, precision: 1) %>%)</span>
+          <span class="metric-value-detail">(<%= number_with_precision(summary.churn_rate, precision: 1) %>%)</span>
         </div>
         <span class="badge <%= summary.churn_within_limit? ? "ok" : "ko" %>"><%= summary.churn_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
       <div class="metric-col">
         <div class="metric-col-label">Projeté</div>
         <div class="metric-col-value"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %>
-          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_total_rate, precision: 1) %>%)</span>
+          <span class="metric-value-detail">(<%= number_with_precision(summary.churn_total_rate, precision: 1) %>%)</span>
         </div>
         <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>"><%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
     </div>
-    <div class="metric-card-footnote">Limite : <%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %></div>
-    <% if summary.churn_subi_amount > 0 %>
-      <div class="metric-card-footnote">Dont churn subi (non compté) : <%= number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %></div>
-      <div class="metric-card-footnote">Churn total avec subi (non pris en compte dans le NRR) : <%= number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %></div>
-    <% end %>
   </div>
 
   <div class="metric-card">
@@ -72,7 +68,20 @@
 
   <div class="metric-card metric-card-single">
     <div class="metric-card-title">Taux de renouvellement</div>
-    <div class="metric-col-value metric-standalone-value"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
-    <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>"><%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%</span>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value metric-standalone-value"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
+        <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>"><%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%</span>
+      </div>
+    </div>
   </div>
+</div>
+<div class="metric-footnotes">
+  <span>Limite de churn : <%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %></span>
+  <% if summary.churn_subi_amount > 0 %>
+    <span>Dont churn subi (non compté) : <%= number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %></span>
+    <span>Churn total avec subi (non pris en compte dans le NRR) : <%= number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %></span>
+  <% end %>
+</div>
 </div>

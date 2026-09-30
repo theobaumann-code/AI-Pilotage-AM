@@ -2,8 +2,10 @@
 # (no before_action here, matching PilotageController's own lack of one), since this is just a different
 # slice of the same reporting data, not a rights-management action.
 class AutresStatistiquesController < ApplicationController
-  PALETTE = ["#ff7b44", "#6d092a", "#1fa25e", "#b8720a", "#7c6b63", "#3b6fb6", "#a63d8f",
-             "#2f9e8f", "#c94f4f", "#8a6bd1", "#d4a017", "#4f8a8b", "#b85c8a", "#5a7d9a"].freeze
+  # The first five colors are SideCare's brand and semantic tokens; the remaining shades extend them
+  # for charts with many categories while keeping enough contrast against a white card.
+  PALETTE = ["#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff", "#99536a", "#e85f2a",
+             "#1f9c53", "#3f3f3f", "#b97829", "#76618f", "#2f9e8f", "#c94f4f", "#5a7d9a"].freeze
 
   def show
     # "Subi" churn (liquidation/rachat) is excluded from every stat below exactly as it is everywhere else

@@ -1,6 +1,6 @@
 <% content_for :title, "Import CSV — Pilotage NRR" %>
 
-<p class="section-title">Import en masse (CSV)</p>
+<h1 class="section-title">Import en masse (CSV)</h1>
 <p class="section-sub">Importez plusieurs contrats en une fois, ou mettez à jour des contrats existants.</p>
 
 <div class="section-card">
@@ -55,7 +55,7 @@
 
 <% if @result %>
   <div class="section-card">
-    <h3>Aperçu de l'import</h3>
+    <h2>Aperçu de l'import</h2>
     <p>
       <%= @result.to_create.size %> nouveau(x) deal(s), <%= @result.to_update.size %> mise(s) à jour<%
         %><% if @result.warnings.any? %>, <%= @result.warnings.size %> avertissement(s)<% end %><%

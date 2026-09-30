@@ -12,13 +12,7 @@ class DealsController < ApplicationController
     deal.company = company
 
     if deal.save
-      estimation = refresh_upsell_estimate(deal)
-      refresh_company_upsells(deal.company) if deal.is_a?(ProduitDeal)
-      notice = if deal.is_a?(UpsellDeal)
-        estimation ? "Upsell ajouté et ARR estimé depuis le BO." : "Upsell ajouté, mais l'ARR n'a pas pu être estimé depuis le BO."
-      else
-        "Produit ajouté."
-      end
+      notice = deal.is_a?(UpsellDeal) ? "Upsell ajouté." : "Produit ajouté."
       redirect_to fallback_redirect_path, notice: notice
     else
       redirect_to fallback_redirect_path, alert: deal.errors.full_messages.to_sentence
@@ -41,8 +35,6 @@ class DealsController < ApplicationController
   # "editing this table just doesn't work".
   def update
     if @deal.update(update_params)
-      refresh_upsell_estimate(@deal) if upsell_estimation_input_changed?
-      refresh_company_upsells(@deal.company) if @deal.is_a?(ProduitDeal) && @deal.saved_change_to_identifiant?
       respond_to do |format|
         format.turbo_stream { render turbo_stream: update_streams }
         format.html { redirect_to fallback_redirect_path, notice: "Modifié." }
@@ -95,20 +87,6 @@ class DealsController < ApplicationController
   end
 
   private
-
-  def refresh_upsell_estimate(deal)
-    return true unless deal.is_a?(UpsellDeal)
-
-    BonusTrackerUpsellEstimator.refresh!(deal)
-  end
-
-  def refresh_company_upsells(company)
-    company.upsell_deals.find_each { |upsell| BonusTrackerUpsellEstimator.refresh!(upsell) }
-  end
-
-  def upsell_estimation_input_changed?
-    @deal.is_a?(UpsellDeal) && (@deal.saved_change_to_produit? || @deal.saved_change_to_nombre_salaries?)
-  end
 
   def set_deal
     @deal = Deal.find(params[:id])

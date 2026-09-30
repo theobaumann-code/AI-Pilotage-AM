@@ -78,14 +78,14 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
   end
 
   test "upsold is the probability-weighted projection across every upsell, not just signed ones" do
-    UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
-      probabilite_signature: 100, statut_signature: "Signé", arr: 1_000)
-    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
-      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+    signed = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 100, statut_signature: "Signé")
+    pipeline = UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours")
 
     # Signed contributes its full amount (probability already forced to 100), the in-pipeline one
     # contributes half its estimate — not $0, the way a signed-only total would.
-    assert_in_delta 1_000 + 1_000, summary.upsold, 0.01
+    assert_in_delta signed.upsell_amount + pipeline.upsell_amount * 0.5, summary.upsold, 0.01
   end
 
   test "churn_projete is the risk-weighted ARR of produits that haven't churned yet" do
@@ -111,25 +111,25 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
   end
 
   test "upsold_actual counts only signed upsells, unlike the probability-weighted upsold" do
-    UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
-      probabilite_signature: 100, statut_signature: "Signé", arr: 1_000)
-    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
-      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+    signed = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 100, statut_signature: "Signé")
+    pipeline = UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours")
 
-    assert_in_delta 1_000, summary.upsold_actual, 0.01
-    assert_in_delta 1_000 + 1_000, summary.upsold, 0.01
+    assert_in_delta signed.upsell_amount, summary.upsold_actual, 0.01
+    assert_in_delta signed.upsell_amount + pipeline.upsell_amount * 0.5, summary.upsold, 0.01
   end
 
   test "arr_final_actual and nrr_actual use only signed upsells; arr_final/nrr use the projection" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours")
-    UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
-      probabilite_signature: 50, statut_signature: "En cours", arr: 2_000)
+    pipeline = UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 50, statut_signature: "En cours")
 
     assert_in_delta 100_000, summary.arr_final_actual, 0.01
     assert_in_delta 100.0, summary.nrr_actual, 0.01
-    assert_in_delta 101_000, summary.arr_final, 0.01
-    assert_in_delta 101.0, summary.nrr, 0.01
+    assert_in_delta 100_000 + pipeline.projection, summary.arr_final, 0.01
+    assert_in_delta (100_000 + pipeline.projection) / 100_000 * 100, summary.nrr, 0.01
   end
 
   test "arr_final/nrr subtract projected churn risk, unlike arr_final_actual/nrr_actual" do

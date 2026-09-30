@@ -3,6 +3,18 @@ class UpsellDeal < Deal
   STATUTS_SIGNATURE = ["Non démarré", "En cours", "Signé", "Perdu"].freeze
   SIGNE = "Signé"
 
+  # Generic per-employee reference rates (brut/gross annual premium, before the commission conversion
+  # below) — communicated directly by Sarra Bachar on 2026-09-30, replacing the Bonus Tracker BO estimate
+  # for upsells: Bonus Tracker's per-company invoice-based estimate turned out to swing on how much of a
+  # company's headcount happened to have matured, invoiced sub-contracts (e.g. ~78% covered for one client
+  # vs ~8% for another), which could make a smaller company outrank a much larger one on ARR for the same
+  # product — a real inconsistency, not a data-sync issue. This flat, uniform formula trades that
+  # invoice-level precision for a result that's always monotonic in headcount and fully reproducible from
+  # data Pilotage NRR actually has (nombre_salaries, produit) instead of BigQuery-only invoice/DSN detail.
+  RATE_PER_EMPLOYEE_MUTUELLE = 140.0
+  RATE_PER_EMPLOYEE_PREVOYANCE = 36.0
+  COMMISSION_RATE = 0.07
+
   validates :produit, inclusion: { in: PRODUITS }
   validates :college, presence: true, inclusion: { in: ProduitDeal::COLLEGES }
   validates :statut_signature, inclusion: { in: STATUTS_SIGNATURE }
@@ -16,6 +28,7 @@ class UpsellDeal < Deal
   after_initialize { self.college ||= ProduitDeal::COLLEGES.first }
 
   before_validation :apply_business_rules
+  before_validation :estimate_arr
 
   def signed?
     statut_signature == SIGNE
@@ -26,6 +39,28 @@ class UpsellDeal < Deal
   end
 
   private
+
+  # Pure arithmetic, so — unlike the old Bonus Tracker refresh, which only ran on specific field changes
+  # to avoid pointless external calls — this simply recomputes on every save. arr can never drift out of
+  # sync with produit/nombre_salaries, and every upsell always uses today's rates regardless of status
+  # (Non démarré/En cours/Signé/Perdu all get a real, comparable ARR, not just active ones).
+  def estimate_arr
+    self.arr = (rate_per_employee * nombre_salaries.to_i * COMMISSION_RATE).round(2)
+    self.arr_estimation_source = "generique_par_salarie"
+    self.arr_estimation_reference = "#{nombre_salaries.to_i} salarié(s) × #{rate_per_employee.to_i} €/an (#{produit}) " \
+      "× #{(COMMISSION_RATE * 100).to_i}% de commission"
+    self.arr_estimation_formula_version = "generique-par-salarie-v1"
+    self.arr_estimated_at = Time.current
+  end
+
+  def rate_per_employee
+    case produit
+    when "Mutuelle" then RATE_PER_EMPLOYEE_MUTUELLE
+    when "Prévoyance" then RATE_PER_EMPLOYEE_PREVOYANCE
+    when "Mutuelle/Prévoyance" then RATE_PER_EMPLOYEE_MUTUELLE + RATE_PER_EMPLOYEE_PREVOYANCE
+    else 0.0
+    end
+  end
 
   # Rule 5: marking an upsell "Signé" always forces probabilite_signature to 100. Moving back off "Signé"
   # must not leave that forced 100 behind — it was never a real probability the AM entered, and leaving it

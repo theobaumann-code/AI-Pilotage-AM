@@ -6,8 +6,8 @@ require "cgi"
 
 # Mirrors every ProduitDeal into a Google Sheet so Sarra has a live, field-by-field export she can keep
 # open outside the app — no gem needed, just a service-account JWT exchanged for a Sheets API access token
-# (same hand-rolled Net::HTTP style as BonusTrackerUpsellEstimator, rather than pulling in the full
-# google-apis-sheets_v4 client for two REST calls).
+# (a hand-rolled Net::HTTP call, rather than pulling in the full google-apis-sheets_v4 client for two REST
+# calls).
 class GoogleSheetsSync
   class SyncError < StandardError; end
 

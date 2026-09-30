@@ -14,7 +14,8 @@
   </td>
   <td class="rowaction">
     <% if current_user.privileged? %>
-      <%= button_to "🗑", company_path(company), method: :delete, class: "icon-btn",
+      <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), company_path(company), method: :delete, class: "icon-btn danger",
+            title: "Supprimer #{company.name}",
             form: { data: { turbo_confirm: "Supprimer #{company.name} et tous ses produits/upsells ?" } } %>
     <% end %>
   </td>

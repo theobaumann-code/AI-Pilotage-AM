@@ -6,17 +6,18 @@
     mirrors every other inline panel on this page (the non-accompagné entries "Modifier", "+ Nouveau
     produit"), instead of the ad hoc layout this started with. %>
 <details>
-  <summary class="button" style="font-size:12px;padding:4px 8px;">💬 <%= company.risk_notes.size %></summary>
+  <summary class="button" style="font-size:12px;padding:4px 10px;"><i class="fa-regular fa-comment"></i> <%= company.risk_notes.size %></summary>
   <div class="modal-box" style="margin:8px 0 0;max-width:380px;">
     <% if company.risk_notes.any? %>
       <div class="modal-body" style="padding-bottom:0;">
         <% company.risk_notes.each do |note| %>
           <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
-            <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;gap:8px;">
+            <div class="subtitle" style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;">
               <span><%= note.user.name %> — <%= note.created_at.strftime("%d/%m/%Y %H:%M") %></span>
               <% if current_user.privileged? || note.user == current_user %>
-                <%= button_to "🗑", risk_note_path(note, return_to: request.fullpath), method: :delete, class: "icon-btn",
-                      style: "font-size:10px;padding:2px 5px;",
+                <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), risk_note_path(note, return_to: request.fullpath), method: :delete, class: "icon-btn danger",
+                      title: "Supprimer ce commentaire",
+                      style: "width:22px;height:22px;font-size:11px;flex-shrink:0;",
                       form: { data: { turbo_confirm: "Supprimer ce commentaire ?" }, style: "display:inline-block;" } %>
               <% end %>
             </div>

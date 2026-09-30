@@ -54,7 +54,7 @@
   <td class="rowaction">
     <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
-        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
+        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')"><i class="fa-solid fa-right-left"></i></button>
     <% end %>
   </td>
 </tr>

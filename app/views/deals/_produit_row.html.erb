@@ -67,8 +67,9 @@
   <td class="rowaction" style="white-space:nowrap;">
     <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
-        onclick="openReassignPanel('reassign-produit-panel', 'reassign-produit-form', 'reassign-produit-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
-      <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
+        onclick="openReassignPanel('reassign-produit-panel', 'reassign-produit-form', 'reassign-produit-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "tous les produits de #{deal.company.name}" %>')"><i class="fa-solid fa-right-left"></i></button>
+      <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn danger",
+            title: "Supprimer ce produit",
             form: { data: { turbo_confirm: "Supprimer ce produit ?" }, style: "display:inline-block;" } %>
     <% end %>
   </td>

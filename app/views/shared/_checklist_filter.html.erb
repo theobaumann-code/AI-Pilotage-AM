@@ -11,7 +11,7 @@
 <details class="checklist-filter" <%= "open" if is_open %>>
   <summary class="checklist-filter-toggle <%= "active" if selected.any? %>">
     <span class="checklist-filter-label"><%= selected.any? ? "#{legend} (#{selected.size})" : legend %></span>
-    <span class="checklist-filter-caret">▾</span>
+    <i class="fa-solid fa-chevron-down checklist-filter-caret"></i>
   </summary>
   <div class="checklist-filter-panel">
     <%= hidden_field_tag open_param, (is_open ? "1" : "0"), id: nil, data: { checklist_open_field: true } %>

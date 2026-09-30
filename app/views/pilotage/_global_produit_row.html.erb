@@ -76,7 +76,7 @@
   <td class="rowaction">
     <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable (tous les produits du client)"
-        onclick="openReassignPanel('reassign-gprod-panel', 'reassign-gprod-form', 'reassign-gprod-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "tous les produits de #{deal.company.name}" %>')">⇄</button>
+        onclick="openReassignPanel('reassign-gprod-panel', 'reassign-gprod-form', 'reassign-gprod-name', '<%= j reassign_am_deal_path(deal) %>', '<%= j "tous les produits de #{deal.company.name}" %>')"><i class="fa-solid fa-right-left"></i></button>
     <% end %>
   </td>
 </tr>

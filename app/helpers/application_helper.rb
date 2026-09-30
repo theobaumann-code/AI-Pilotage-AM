@@ -57,13 +57,17 @@ module ApplicationHelper
   end
 
   # One sortable <th> for a TablePager-backed table: clicking it re-sorts by `field` (flipping direction
-  # if already sorted by it), everything else on the page stays put.
+  # if already sorted by it), everything else on the page stays put. The sort icon (design system's
+  # TableHeading + Link pattern: a right-hand action icon, Font Awesome regular to stay visually secondary)
+  # only appears once actually sorted by this column — it's an active-state indicator, not decoration.
   def sortable_th(pager, field, label, col_class: nil)
     classes = ["sortable", col_class].compact.join(" ")
     path = table_query_path(pager.sort_param => field, pager.dir_param => pager.next_dir(field))
-    arrow = pager.sorted_by?(field) ? (pager.sort_dir == "asc" ? "▲" : "▼") : ""
+    arrow = if pager.sorted_by?(field)
+      content_tag(:i, "", class: "fa-regular #{pager.sort_dir == "asc" ? "fa-arrow-up-short-wide" : "fa-arrow-down-wide-short"} sort-arrow")
+    end
     content_tag(:th, class: classes) do
-      link_to(path) { safe_join([label, content_tag(:span, arrow, class: "sort-arrow")]) }
+      link_to(path) { safe_join([label, arrow]) }
     end
   end
 

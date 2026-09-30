@@ -33,9 +33,10 @@
   <td class="rowaction" style="white-space:nowrap;">
     <% if current_user.privileged? %>
       <button type="button" class="icon-btn" title="Réaffecter le responsable de cet upsell"
-        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')">⇄</button>
+        onclick="openReassignPanel('reassign-upsell-panel', 'reassign-upsell-form', 'reassign-upsell-name', '<%= j reassign_am_deal_path(deal, redirect_user_id: viewed_user.id) %>', '<%= j "l'upsell #{deal.produit} de #{deal.company.name}" %>')"><i class="fa-solid fa-right-left"></i></button>
     <% end %>
-    <%= button_to "🗑", deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn",
+    <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), deal_path(deal, redirect_user_id: viewed_user.id), method: :delete, class: "icon-btn danger",
+          title: "Supprimer cet upsell",
           form: { data: { turbo_confirm: "Supprimer cet upsell ?" }, style: "display:inline-block;" } %>
   </td>
 </tr>

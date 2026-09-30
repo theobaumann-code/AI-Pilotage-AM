@@ -30,10 +30,13 @@
   --info:#3a99ff;
   --info-bg:#ebf4ff;
 
-  /* ---- Neutrals (== tz-dark scale — the design system's borders/text are neutral gray, not warm-tinted) ---- */
+  /* ---- Neutrals (== tz-dark scale — the design system's borders/text are neutral gray, not warm-tinted).
+     Pulled directly from the design system repo's tokens.css now that it's actually readable: --tz-border
+     is dark-05 (very light hairline), --tz-border-strong is dark-10 — previously this used dark-10 for the
+     default border and an invented #d4d4d4 (not a real token at all) for "strong". ---- */
   --surface:#ffffff;
-  --border:#e7e7e7;
-  --border-strong:#d4d4d4;
+  --border:#f3f3f3;
+  --border-strong:#e7e7e7;
   --track-bg:#e7e7e7;
   --text:#0f0f0f;
   --text-muted:#6f6f6f;
@@ -43,9 +46,10 @@
   --radius:14px;
   --radius-lg:22px;
 
-  /* ---- Shadows (== tz-shadow-sm/tz-shadow-lg) ---- */
-  --shadow-sm:0 1px 2px rgba(15,15,15,.06);
-  --shadow-lg:0 24px 60px -20px rgba(15,15,15,.18);
+  /* ---- Shadows (== tz-shadow-sm/tz-shadow-lg — the source token's rgba base is a warm near-black
+     (48,17,17), not neutral gray; matches the warm brand palette instead of a generic drop shadow). ---- */
+  --shadow-sm:0 1px 2px rgba(48,17,17,.06);
+  --shadow-lg:0 24px 60px -20px rgba(48,17,17,.22);
 
   /* Fraunces for titles, Satoshi for everything else — see layout's <head> for the actual font loading. */
   --font-fraunces:"Fraunces","Georgia","Times New Roman",serif;
@@ -232,9 +236,13 @@ td.computed{font-weight:700;white-space:nowrap;}
 tfoot .table-footer-row td{background:var(--cream-light);font-weight:700;padding:10px 12px;border-top:2px solid var(--border);border-bottom:none;color:var(--text);}
 td.rowaction{width:36px;text-align:center;}
 /* TableActions (design system): row-action icons keep a background + hover state by default, so they
-   read as clickable at a glance rather than blending into the row. */
-.icon-btn{border:none;background:var(--track-bg);color:var(--text-muted);font-size:14px;padding:5px 7px;border-radius:var(--radius-sm);line-height:1;}
-.icon-btn:hover{background:var(--red-bg);color:var(--red);}
+   read as clickable at a glance rather than blending into the row — color is neutral on hover for ordinary
+   actions (reassign, restore, comment) and "danger" is reserved for genuinely destructive ones (delete),
+   per the design system's own explicit rule against using danger on a neutral action. */
+.icon-btn{border:none;background:var(--track-bg);color:var(--text-muted);font-size:13px;width:26px;height:26px;
+  padding:0;border-radius:var(--radius-sm);line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+.icon-btn:hover{background:var(--border-strong);color:var(--text);}
+.icon-btn.danger:hover{background:var(--red-bg);color:var(--red);}
 .churn-yes{background:var(--red-bg) !important;}
 /* "Subi" churn (company liquidated/acquired) isn't counted against the AM — neutral gray instead of the
    alarming red of ordinary churn, so the row reads as "ended" rather than "lost". */
@@ -269,9 +277,9 @@ td.rowaction{width:36px;text-align:center;}
 .pagination-bar .page-btn[disabled], .pagination-bar .page-btn.disabled{opacity:.4;pointer-events:none;}
 
 thead th.sortable{cursor:pointer;user-select:none;}
-thead th.sortable a{color:inherit;text-decoration:none;}
+thead th.sortable a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;}
 thead th.sortable:hover{color:var(--primary-dark);}
-thead th.sortable .sort-arrow{margin-left:4px;font-size:9px;opacity:.6;}
+thead th.sortable .sort-arrow{margin-left:8px;font-size:11px;}
 table.deals-table .col-nom{min-width:170px;}
 table.deals-table .col-produit{min-width:160px;}
 table.deals-table .col-identifiant{min-width:150px;}

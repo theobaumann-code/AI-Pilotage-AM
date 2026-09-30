@@ -82,7 +82,7 @@ class RiskNotesTest < ActionDispatch::IntegrationTest
     get pilotage_path
     assert_response :success
     section = @response.body[/id="rque-table-frame">.*?<\/turbo-frame>/m]
-    assert_match "💬 1", section
+    assert_match(/fa-comment[\s\S]*?1<\/summary>/, section)
     assert_match "Rendez-vous prévu la semaine prochaine", section
   end
 

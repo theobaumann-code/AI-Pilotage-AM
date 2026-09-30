@@ -91,7 +91,8 @@
                   <%= f.text_field :company_name, onchange: "this.form.requestSubmit()", style: "flex:1;" %>
                   <%= f.number_field :amount, step: "0.01", min: 0, onchange: "this.form.requestSubmit()", style: "width:130px;" %>
                 <% end %>
-                <%= button_to "🗑", non_accompagne_churn_entry_path(entry), method: :delete, class: "icon-btn",
+                <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), non_accompagne_churn_entry_path(entry), method: :delete, class: "icon-btn danger",
+                      title: "Supprimer l'entrée « #{entry.company_name} »",
                       form: { data: { turbo_confirm: "Supprimer l'entrée « #{entry.company_name} » ?" }, style: "display:inline-block;" } %>
               </div>
             <% end %>

@@ -26,7 +26,7 @@
   <% end %>
 
   <details>
-    <summary class="button ghost-burgundy">🗑 Corbeille<% if @trash_batches.any? %><span class="badge warn" style="margin-left:6px;"><%= @trash_batches.size %></span><% end %></summary>
+    <summary class="button ghost-burgundy"><i class="fa-solid fa-trash-can"></i> Corbeille<% if @trash_batches.any? %><span class="badge warn" style="margin-left:6px;"><%= @trash_batches.size %></span><% end %></summary>
     <div class="modal-box" style="margin:12px 0 0;max-width:520px;">
       <% if current_user.privileged? && @archivable_years.any? %>
         <p style="margin:0 0 8px;font-size:12px;color:var(--text-muted);">Déplacer une année archivée vers la corbeille (réversible) :</p>

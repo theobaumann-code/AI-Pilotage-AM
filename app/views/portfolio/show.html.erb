@@ -1,6 +1,6 @@
 <% content_for :title, "Mon portefeuille — Pilotage NRR" %>
 
-<p class="section-title">Mon portefeuille</p>
+<h1 class="section-title">Mon portefeuille</h1>
 <p class="section-sub">Vue consolidée par client, puis le détail par produit : renouvellement/churn d'un côté, upsells de l'autre.</p>
 
 <div class="toolbar">
@@ -31,7 +31,7 @@
 <div class="section-card">
   <%= turbo_frame_tag "evo-table-frame" do %>
     <div class="table-toolbar">
-      <h3>Évolution de l'ARR par client</h3>
+      <h2>Évolution de l'ARR par client</h2>
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("evo_q", "evo_page") %>
@@ -71,7 +71,7 @@
 <div class="section-card">
   <%= turbo_frame_tag "ren-table-frame" do %>
     <div class="table-toolbar">
-      <h3>Taux de renouvellement et churn</h3>
+      <h2>Taux de renouvellement et churn</h2>
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("ren_q", "ren_produits", "ren_produits_open", "ren_statuts", "ren_statuts_open", "ren_page") %>
@@ -112,7 +112,7 @@
           <tfoot>
             <tr class="table-footer-row">
               <td colspan="<%= current_user.admin? ? 6 : 5 %>">Taux moyen pondéré par l'ARR (résultats filtrés)</td>
-              <td><%= @ren_taux_avg.nil? ? "—" : "#{@ren_taux_avg >= 0 ? "+" : ""}#{number_with_precision(@ren_taux_avg, precision: 1)}%" %></td>
+              <td class="numeric"><%= @ren_taux_avg.nil? ? "—" : "#{@ren_taux_avg >= 0 ? "+" : ""}#{number_with_precision(@ren_taux_avg, precision: 1)}%" %></td>
               <td colspan="4"></td>
             </tr>
           </tfoot>
@@ -131,7 +131,7 @@
 <div class="section-card">
   <%= turbo_frame_tag "ups-table-frame" do %>
     <div class="table-toolbar">
-      <h3>Upsells</h3>
+      <h2>Upsells</h2>
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("ups_q", "ups_produits", "ups_produits_open", "ups_statuts", "ups_statuts_open", "ups_page") %>
@@ -167,7 +167,7 @@
           <tfoot>
             <tr class="table-footer-row">
               <td colspan="6">Total ARR projeté (résultats filtrés)</td>
-              <td><%= number_to_currency(@ups_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td class="numeric"><%= number_to_currency(@ups_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
               <td colspan="2"></td>
             </tr>
           </tfoot>

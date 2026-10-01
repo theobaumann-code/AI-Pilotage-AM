@@ -1,0 +1,38 @@
+<aside class="app-sidebar">
+  <div class="app-sidebar-main">
+    <%= link_to portfolio_path, class: "app-brand", aria: { label: "SideCare — accueil Pilotage AM" } do %>
+      <%= image_tag "sidecare.svg", alt: "SideCare", width: 142, height: 26 %>
+      <span>Pilotage AM</span>
+    <% end %>
+
+    <nav class="app-navigation" aria-label="Navigation principale">
+      <div class="app-nav-group">Espace de travail</div>
+      <%= link_to portfolio_path, class: "app-nav-link #{'active' if current_page?(portfolio_path)}", aria: { current: ("page" if current_page?(portfolio_path)) } do %>
+        <i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>Mon portefeuille</span>
+      <% end %>
+      <%= link_to pilotage_path, class: "app-nav-link #{'active' if current_page?(pilotage_path)}", aria: { current: ("page" if current_page?(pilotage_path)) } do %>
+        <i class="fa-regular fa-chart-bar" aria-hidden="true"></i><span>Vue globale</span>
+      <% end %>
+      <%= link_to historique_path, class: "app-nav-link #{'active' if current_page?(historique_path)}", aria: { current: ("page" if current_page?(historique_path)) } do %>
+        <i class="fa-regular fa-clock" aria-hidden="true"></i><span>Historique</span>
+      <% end %>
+      <%= link_to autres_statistiques_path, class: "app-nav-link #{'active' if current_page?(autres_statistiques_path)}", aria: { current: ("page" if current_page?(autres_statistiques_path)) } do %>
+        <i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Autres statistiques</span>
+      <% end %>
+      <% if current_user.privileged? %>
+        <div class="app-nav-group app-nav-group-secondary">Administration</div>
+        <%= link_to gestion_droits_path, class: "app-nav-link #{'active' if current_page?(gestion_droits_path)}", aria: { current: ("page" if current_page?(gestion_droits_path)) } do %>
+          <i class="fa-regular fa-address-card" aria-hidden="true"></i><span>Gestion des droits</span>
+        <% end %>
+      <% end %>
+    </nav>
+  </div>
+
+  <div class="app-sidebar-account">
+    <span class="app-user-avatar" aria-hidden="true"><%= current_user.name.to_s.first&.upcase %></span>
+    <span class="app-user-details"><strong><%= current_user.name %></strong><small><%= current_user.role_label %></small></span>
+    <%= button_to destroy_user_session_path, method: :delete, class: "app-signout", title: "Se déconnecter", aria: { label: "Se déconnecter" } do %>
+      <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+    <% end %>
+  </div>
+</aside>

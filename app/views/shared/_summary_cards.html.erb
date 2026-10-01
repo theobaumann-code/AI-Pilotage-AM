@@ -1,6 +1,11 @@
 <% nrr_actual_ok = summary.nrr_actual_target_met? %>
 <% nrr_projected_ok = summary.target_met? %>
-<div class="summary-cards" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
+<% churn_limit_label = number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %>
+<% churn_subi_label = number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %>
+<% churn_with_subi_label = number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %>
+<% churn_tooltip_prefix = local_assigns.fetch(:dom_id, "summary") %>
+<div class="summary-block" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
+<div class="summary-cards metrics-grid">
   <div class="metric-card">
     <div class="metric-card-title">NRR</div>
     <div class="metric-pair">
@@ -17,29 +22,52 @@
     </div>
   </div>
 
-  <div class="metric-card">
+  <div class="metric-card metric-card--churn">
     <div class="metric-card-title">Churn</div>
     <div class="metric-pair">
       <div class="metric-col">
-        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-heading">
+          <span class="metric-col-label">Actuel</span>
+          <span class="metric-info">
+            <button type="button" class="metric-info-trigger" aria-label="Informations sur le churn actuel" aria-describedby="<%= churn_tooltip_prefix %>-churn-actual-tooltip">i</button>
+            <span class="metric-info-tooltip" id="<%= churn_tooltip_prefix %>-churn-actual-tooltip" role="tooltip">
+              Churn réalisé à date, hors churn subi. Limite de churn : <strong><%= churn_limit_label %></strong>.
+              <% if summary.churn_subi_amount > 0 %>Churn subi non compté : <strong><%= churn_subi_label %></strong>. Churn total avec subi à date, hors NRR : <strong><%= churn_with_subi_label %></strong>.<% end %>
+            </span>
+          </span>
+        </div>
         <div class="metric-col-value"><%= number_to_currency(summary.churned, unit: "€", format: "%n %u", precision: 0) %>
-          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_rate, precision: 1) %>%)</span>
+          <span class="metric-value-detail">(<%= number_with_precision(summary.churn_rate, precision: 1) %>%)</span>
         </div>
         <span class="badge <%= summary.churn_within_limit? ? "ok" : "ko" %>"><%= summary.churn_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
       <div class="metric-col">
-        <div class="metric-col-label">Projeté</div>
+        <div class="metric-col-heading">
+          <span class="metric-col-label">Projeté</span>
+          <span class="metric-info">
+            <button type="button" class="metric-info-trigger" aria-label="Informations sur le churn projeté" aria-describedby="<%= churn_tooltip_prefix %>-churn-projected-tooltip">i</button>
+            <span class="metric-info-tooltip" id="<%= churn_tooltip_prefix %>-churn-projected-tooltip" role="tooltip">
+              Churn actuel augmenté du risque de churn pondéré des contrats actifs, hors churn subi. Limite de churn : <strong><%= churn_limit_label %></strong>.
+              <% if summary.churn_subi_amount > 0 %>Churn subi non compté : <strong><%= churn_subi_label %></strong>. Churn total avec subi à date, hors NRR : <strong><%= churn_with_subi_label %></strong>.<% end %>
+            </span>
+          </span>
+        </div>
         <div class="metric-col-value"><%= number_to_currency(summary.churn_total, unit: "€", format: "%n %u", precision: 0) %>
-          <span style="font-size:13px;font-weight:600;color:var(--text-muted);">(<%= number_with_precision(summary.churn_total_rate, precision: 1) %>%)</span>
+          <span class="metric-value-detail">(<%= number_with_precision(summary.churn_total_rate, precision: 1) %>%)</span>
         </div>
         <span class="badge <%= summary.churn_total_within_limit? ? "ok" : "ko" %>"><%= summary.churn_total_within_limit? ? "✓" : "✗" %> Limite <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %>%</span>
       </div>
     </div>
-    <div class="metric-card-footnote">Limite : <%= number_to_currency(summary.churn_limit, unit: "€", format: "%n %u", precision: 0) %></div>
-    <% if summary.churn_subi_amount > 0 %>
-      <div class="metric-card-footnote">Dont churn subi (non compté) : <%= number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %></div>
-      <div class="metric-card-footnote">Churn total avec subi (non pris en compte dans le NRR) : <%= number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %></div>
-    <% end %>
+    <details class="churn-details">
+      <summary>Détail du churn <span class="churn-details-chevron" aria-hidden="true">⌄</span></summary>
+      <dl class="churn-details-list">
+        <div><dt>Limite de churn</dt><dd><%= churn_limit_label %></dd></div>
+        <% if summary.churn_subi_amount > 0 %>
+          <div><dt>Dont churn subi <small>(non compté)</small></dt><dd><%= churn_subi_label %></dd></div>
+          <div><dt>Churn total avec subi <small>(à date, non pris en compte dans le NRR)</small></dt><dd><%= churn_with_subi_label %></dd></div>
+        <% end %>
+      </dl>
+    </details>
   </div>
 
   <div class="metric-card">
@@ -72,7 +100,13 @@
 
   <div class="metric-card metric-card-single">
     <div class="metric-card-title">Taux de renouvellement</div>
-    <div class="metric-col-value metric-standalone-value"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
-    <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>"><%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%</span>
+    <div class="metric-pair">
+      <div class="metric-col">
+        <div class="metric-col-label">Actuel</div>
+        <div class="metric-col-value metric-standalone-value"><%= number_with_precision(summary.renewal_rate, precision: 1) %>%</div>
+        <span class="badge <%= summary.renewal_target_met? ? "ok" : "ko" %>"><%= summary.renewal_target_met? ? "✓" : "✗" %> Objectif <%= number_with_precision(PortfolioSummary::RENEWAL_TARGET_PCT, precision: 1) %>%</span>
+      </div>
+    </div>
   </div>
+</div>
 </div>

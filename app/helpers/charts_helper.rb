@@ -1,5 +1,5 @@
 module ChartsHelper
-  LINE_CHART_COLORS = ["#ff7b44", "#6d092a", "#1fa25e", "#b8720a", "#7c6b63"].freeze
+  LINE_CHART_COLORS = ["#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff"].freeze
 
   # Hand-rolled SVG polylines (no charting library) — one line per series, x-axis is the given years.
   # A series stays in the legend even with zero data points, so a produit never silently disappears.
@@ -51,20 +51,20 @@ module ChartsHelper
     end.join
 
     year_labels = years.each_with_index.map { |y, i|
-      %(<text x="#{x_for.call(i)}" y="#{h - 8}" font-size="11" fill="#7c6b63" text-anchor="middle">#{y}</text>)
+      %(<text x="#{x_for.call(i)}" y="#{h - 8}" font-size="11" fill="#6f6f6f" text-anchor="middle">#{y}</text>)
     }.join
     y_ticks = 4
     y_grid = (0..y_ticks).map do |i|
       t = min_t + (max_t - min_t) * i / y_ticks
-      %(<text x="#{ml - 8}" y="#{y_for.call(t) + 4}" font-size="11" fill="#7c6b63" text-anchor="end">#{t.round}%</text>
-        <line x1="#{ml}" y1="#{y_for.call(t)}" x2="#{w - mr}" y2="#{y_for.call(t)}" stroke="#ede0cc" stroke-width="1"/>)
+      %(<text x="#{ml - 8}" y="#{y_for.call(t) + 4}" font-size="11" fill="#6f6f6f" text-anchor="end">#{t.round}%</text>
+        <line x1="#{ml}" y1="#{y_for.call(t)}" x2="#{w - mr}" y2="#{y_for.call(t)}" stroke="#e7e7e7" stroke-width="1"/>)
     end.join
     zero_y = y_for.call(zero_line)
 
     svg = <<~SVG.html_safe
       <svg viewBox="0 0 #{w} #{h}" style="width:100%;max-width:#{w}px;height:auto;">
         #{y_grid}
-        <line x1="#{ml}" y1="#{zero_y}" x2="#{w - mr}" y2="#{zero_y}" stroke="#7c6b63" stroke-width="1.5"/>
+        <line x1="#{ml}" y1="#{zero_y}" x2="#{w - mr}" y2="#{zero_y}" stroke="#6d092a" stroke-width="1.5"/>
         #{lines_html}
         #{year_labels}
       </svg>

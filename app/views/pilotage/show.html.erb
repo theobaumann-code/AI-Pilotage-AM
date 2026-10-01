@@ -1,6 +1,6 @@
 <% content_for :title, "Vue globale — Pilotage NRR" %>
 
-<p class="section-title">Vue globale</p>
+<h1 class="section-title">Vue globale</h1>
 <p class="section-sub">Vue consolidée pour suivre l'atteinte de l'objectif NRR (<%= PortfolioSummary::NRR_TARGET %>%) sur chaque portefeuille.</p>
 
 <% if current_user.privileged? %>
@@ -32,7 +32,7 @@
     admins only. Whether it's *also* blended into the NRR/churn cards above is controlled by the "Non
     accompagné" option in the Équipe filter (see PortfolioSummary#non_accompagne) — included by default
     when nothing is filtered, dropped as soon as any specific Équipe/AM filter narrows the view. %>
-<div class="metric-card" style="max-width:520px;margin-bottom:24px;">
+<div class="metric-card unmanaged-portfolio-card">
   <div class="metric-card-title">Portefeuille non accompagné</div>
   <div class="metric-pair">
     <div class="metric-col">
@@ -53,8 +53,9 @@
     </div>
   </div>
   <% if current_user.admin? %>
+    <div class="metric-card-actions">
     <details>
-      <summary class="button" style="margin-top:10px;">Modifier</summary>
+      <summary class="button">Modifier</summary>
       <div class="modal-box" style="margin:12px 0 0;">
         <%= form_with url: app_setting_path, method: :patch do %>
           <div class="modal-body">
@@ -77,7 +78,7 @@
         <% end %>
       </div>
     </details>
-    <details style="margin-top:8px;">
+    <details>
       <summary class="button">Détail du churn non accompagné (<%= @non_accompagne_churn_entries.size %>)</summary>
       <div class="modal-box" style="margin:12px 0 0;">
         <div class="modal-body">
@@ -112,12 +113,13 @@
         </div>
       </div>
     </details>
+    </div>
   <% end %>
 </div>
 
 <div class="section-card">
   <div class="table-toolbar">
-    <h3>Entreprises à risque</h3>
+    <h2>Entreprises à risque</h2>
   </div>
   <p class="section-sub" style="margin-top:-8px;">Toute entreprise avec au moins un produit à renouveler portant un % de risque de churn.</p>
   <%= turbo_frame_tag "rque-table-frame" do %>
@@ -162,9 +164,9 @@
               <tr id="<%= dom_id(r[:company], :risque) %>">
                 <td><strong><%= r[:company].name %></strong></td>
                 <td><%= r[:am].name %></td>
-                <td><%= r[:count] %></td>
-                <td style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
-                <td><%= r[:max_risque] %>%</td>
+                <td class="numeric"><%= r[:count] %></td>
+                <td class="numeric" style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
+                <td class="numeric"><%= r[:max_risque] %>%</td>
                 <td>
                   <%= form_with model: r[:company], url: company_path(r[:company], return_to: request.fullpath), method: :patch do |f| %>
                     <%= f.check_box :risque_manque_offres, onchange: "this.form.requestSubmit()" %>
@@ -184,7 +186,7 @@
 
 <div class="section-card">
   <div class="table-toolbar">
-    <h3>Produits à renouveler (tous AM)</h3>
+    <h2>Produits à renouveler (tous AM)</h2>
   </div>
   <div class="summary-cards">
     <div class="card"><div class="label">Nb produits</div><div class="value"><%= @global_produits.size %></div></div>
@@ -248,7 +250,7 @@
 
 <div class="section-card">
   <div class="table-toolbar">
-    <h3>Upsells en cours (tous AM)</h3>
+    <h2>Upsells en cours (tous AM)</h2>
   </div>
   <div class="summary-cards">
     <div class="card"><div class="label">Nb upsells</div><div class="value"><%= @global_upsells.size %></div></div>
@@ -299,7 +301,7 @@
           <tfoot>
             <tr class="table-footer-row">
               <td colspan="7">Total ARR projeté (résultats filtrés)</td>
-              <td><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
+              <td class="numeric"><%= number_to_currency(@upsell_projection_total, unit: "€", format: "%n %u", precision: 0) %></td>
               <td colspan="2"></td>
             </tr>
           </tfoot>

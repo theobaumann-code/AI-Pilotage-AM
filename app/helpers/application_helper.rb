@@ -1,4 +1,9 @@
 module ApplicationHelper
+  NUMERIC_SORT_FIELDS = %i[
+    count arr_at_risk max_risque arr_initial churned upsold renewed_arr arr_final nrr
+    arr taux risque_churn final_arr nombre_salaries upsell_amount probabilite_signature
+    projection avg_increase_pct evolution_pct annee arr_renouvele
+  ].freeze
   RENEWAL_STATUT_CLASS = {
     "Augmenté" => "statut-signed",
     "Augmentation particulière" => "statut-signed",
@@ -61,7 +66,7 @@ module ApplicationHelper
   # TableHeading + Link pattern: a right-hand action icon, Font Awesome regular to stay visually secondary)
   # only appears once actually sorted by this column — it's an active-state indicator, not decoration.
   def sortable_th(pager, field, label, col_class: nil)
-    classes = ["sortable", col_class].compact.join(" ")
+    classes = ["sortable", col_class, ("numeric" if NUMERIC_SORT_FIELDS.include?(field))].compact.join(" ")
     path = table_query_path(pager.sort_param => field, pager.dir_param => pager.next_dir(field))
     arrow = if pager.sorted_by?(field)
       content_tag(:i, "", class: "fa-regular #{pager.sort_dir == "asc" ? "fa-arrow-up-short-wide" : "fa-arrow-down-wide-short"} sort-arrow")

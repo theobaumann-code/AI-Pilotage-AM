@@ -2,6 +2,18 @@
 
 Application Rails 8.1 / Ruby 3.3.12 / PostgreSQL.
 
+## Export des augmentations vers Analytics
+
+`GET /api/internal/renewal-uplifts?campaign_year=2026` expose uniquement les
+produits au statut **Augmenté**, avec leur taux négocié en pourcentage et les
+champs de rapprochement entreprise / risque / collège / assureur. La campagne
+doit correspondre à `AppSetting.annee_en_cours` ; les tarifs visent l’année
+suivante. Aucun ARR saisi, compte utilisateur ou autre statut n’est exporté.
+
+La route utilise un jeton dédié `ANALYTICS_RENEWAL_UPLIFTS_TOKEN`, configuré
+uniquement sur Scalingo et transmis par Analytics dans l’en-tête Bearer.
+Sans jeton configuré ou valide, elle répond 401. Elle ne permet aucune écriture.
+
 ## Connexion Google SSO
 
 Le SSO Google utilise Devise et OmniAuth. Il retrouve le compte AM existant par

@@ -28,3 +28,20 @@ document.addEventListener("toggle", (event) => {
   const openField = details.querySelector("[data-checklist-open-field]");
   if (openField) openField.value = details.open ? "1" : "0";
 }, true);
+
+// Turbo caches a snapshot of the page you're leaving before every navigation (not just back/forward), and
+// shows that snapshot instantly as a preview while it fetches the real page — including whatever a filter
+// panel's open/closed state happened to be at that exact moment. Switch tabs right after using a filter
+// (open it, check a box — which reloads with the panel still open, matching what you just did) and the
+// *next* page you visit briefly flashes that same panel open too, even though it has nothing to do with
+// this filter, before the fresh (correctly closed) content replaces it a moment later. Forcing every
+// filter closed right before the snapshot is taken means the cached preview never shows one open out of
+// context — the live page you're navigating away from is about to be replaced anyway, so this has no
+// visible effect there.
+document.addEventListener("turbo:before-cache", () => {
+  document.querySelectorAll(".checklist-filter[open]").forEach((details) => {
+    details.open = false;
+    const openField = details.querySelector("[data-checklist-open-field]");
+    if (openField) openField.value = "0";
+  });
+});

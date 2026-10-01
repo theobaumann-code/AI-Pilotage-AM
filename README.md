@@ -8,7 +8,14 @@ Application Rails 8.1 / Ruby 3.3.12 / PostgreSQL.
 produits au statut **Augmenté**, avec leur taux négocié en pourcentage et les
 champs de rapprochement entreprise / risque / collège / assureur. La campagne
 doit correspondre à `AppSetting.annee_en_cours` ; les tarifs visent l’année
-suivante. Aucun ARR saisi, compte utilisateur ou autre statut n’est exporté.
+suivante. Aucun compte utilisateur ni ARR individuel n’est exporté.
+
+Avec `include_in_progress=true`, les lignes confirmées restent dans `rows` ;
+les produits **En cours** sont exportés séparément dans `inProgressRows` pour
+la projection. `weighting` donne les ARR et gains agrégés par statut du tableau
+NRR non filtré, afin d’expliquer sa moyenne sur une base constante. Les autres
+statuts ne sont jamais exportés sous forme de lignes de contrat. L’export
+sans ce paramètre conserve son format et son périmètre initiaux.
 
 La route utilise un jeton dédié `ANALYTICS_RENEWAL_UPLIFTS_TOKEN`, configuré
 uniquement sur Scalingo et transmis par Analytics dans l’en-tête Bearer.

@@ -164,15 +164,21 @@ class AutresStatistiquesController < ApplicationController
     end
   end
 
-  # Same idea as upsell_funnel but for produits à renouveler, grouped by statut_renouvellement — includes
-  # every status (both churn statuses too) rather than @active_deals' churn_subi-excluded scope, since this
+  RENEWAL_FUNNEL_STAGES = [
+    ["En cours", ["En cours"]],
+    ["Renouvelé", ["Augmenté", "Augmentation particulière", "Nouveau contrat"]],
+    ["Churné", ProduitDeal::CHURNED_STATUSES]
+  ].freeze
+
+  # Same idea as upsell_funnel but for produits à renouveler, rolled up into three stages — every status is
+  # covered (both churn statuses included) rather than @active_deals' churn_subi-excluded scope, since this
   # is a "where does every deal currently stand" distribution, not an NRR-affecting calculation.
   def renewal_funnel
     deals = ProduitDeal.all.to_a
     total = deals.size
-    ProduitDeal::STATUTS_RENOUVELLEMENT.map do |statut|
-      matching = deals.select { |d| d.statut_renouvellement == statut }
-      { label: statut, value: matching.size, amount: matching.sum { |d| d.arr.to_f },
+    RENEWAL_FUNNEL_STAGES.map do |label, statuts|
+      matching = deals.select { |d| statuts.include?(d.statut_renouvellement) }
+      { label: label, value: matching.size, amount: matching.sum { |d| d.arr.to_f },
         pct: total > 0 ? matching.size.to_f / total * 100 : 0 }
     end
   end

@@ -103,19 +103,22 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match(/Signé[\s\S]*?bar-value">1 · 50\.0%/, section)
   end
 
-  test "the renewal funnel counts every produit by statut_renouvellement, including both churn statuses, with its % share" do
+  test "the renewal funnel rolls every produit up into En cours / Renouvelé / Churné, with its % share" do
     company = Company.create!(name: "Client Stats Renewal Funnel", user: @am)
-    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rf-1",
-      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours")
-    ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rf-2",
-      college: "Cadre", assureur: "AXA", arr: 5_000, taux: 0, statut_renouvellement: "Churné (subi)")
+    [["En cours", 1_000], ["Augmenté", 2_000], ["Augmentation particulière", 3_000], ["Nouveau contrat", 4_000],
+     ["Churné", 5_000], ["Churné (subi)", 6_000]].each_with_index do |(statut, arr), i|
+      ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rf-#{i}", college: "Cadre",
+        assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: 0, statut_renouvellement: statut)
+    end
 
     get autres_statistiques_path
     assert_response :success
-    section = @response.body[/Entonnoir des produits à renouveler.*?\z/m]
-    # 1 of 2 produits is "En cours" -> 50.0%; the "subi" one must still show up as its own stage here
-    # (unlike every ARR/NRR-affecting stat elsewhere on this page).
-    assert_match(/En cours[\s\S]*?bar-value">1 · 50\.0%/, section)
-    assert_match(/Churné \(subi\)[\s\S]*?bar-value">1 · 50\.0%/, section)
+    section = @response.body[/Entonnoir des produits à renouveler.*?<h2>Portefeuille accompagné/m]
+    labels = section.scan(/bar-label">([^<]+)</).flatten
+    assert_equal ["En cours", "Renouvelé", "Churné"], labels
+    assert_match(/En cours[\s\S]*?bar-value">1 · 16\.7% \(1,000 €\)/, section)
+    assert_match(/Renouvelé[\s\S]*?bar-value">3 · 50\.0% \(9,000 €\)/, section)
+    # Both churn statuses (subi included) are summed here, unlike every NRR-affecting stat elsewhere.
+    assert_match(/Churné[\s\S]*?bar-value">2 · 33\.3% \(11,000 €\)/, section)
   end
 end

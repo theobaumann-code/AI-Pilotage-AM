@@ -1,6 +1,6 @@
 module Internal
   # Narrow server-to-server export. Session users cannot access it without the
-  # dedicated read token; it cannot update deals or expose other portfolio data.
+  # dedicated read token; it cannot update deals. Cross-sell exposes totals only.
   class RenewalUpliftsController < ActionController::API
     include ActionController::HttpAuthentication::Token::ControllerMethods
     before_action :authenticate_reader!
@@ -34,6 +34,17 @@ module Internal
         }
       end
       render json: data
+    end
+
+    def cross_sell
+      year = AppSetting.first&.annee_en_cours
+      return head :service_unavailable unless year
+      return render json: { error: "campaign_mismatch" }, status: :conflict unless params[:campaign_year].to_s == year.to_s
+
+      summary = PortfolioSummary.new(Company.includes(:upsell_deals))
+      response.headers["Cache-Control"] = "no-store"
+      render json: { schemaVersion: 1, campaignYear: year, fetchedAt: Time.current.iso8601,
+        projectedArr: summary.upsold.to_f, signedArr: summary.upsold_actual.to_f }
     end
 
     private

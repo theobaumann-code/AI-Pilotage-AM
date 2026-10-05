@@ -79,6 +79,35 @@ class RenewalUpliftsExportTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "cross-sell export is authenticated and limited to the current campaign" do
+    get "/api/internal/cross-sell", params: { campaign_year: 2026 }
+    assert_response :unauthorized
+    get "/api/internal/cross-sell", params: { campaign_year: 2026 }, headers: { "Authorization" => "Bearer wrong" }
+    assert_response :unauthorized
+    get "/api/internal/cross-sell", params: { campaign_year: 2027 }, headers: auth
+    assert_response :conflict
+    assert_raises(ActionController::RoutingError) do
+      Rails.application.routes.recognize_path("/api/internal/cross-sell", method: :post)
+    end
+  end
+
+  test "cross-sell export returns numeric signed and probability-weighted projected ARR without changing deals" do
+    @company.upsell_deals.create!(produit: "Prévoyance", nombre_salaries: 100, statut_signature: "Signé", probabilite_signature: 5)
+    @company.upsell_deals.create!(produit: "Prévoyance", nombre_salaries: 200, statut_signature: "En cours", probabilite_signature: 25)
+    @company.upsell_deals.create!(produit: "Prévoyance", nombre_salaries: 300, statut_signature: "Perdu", probabilite_signature: 0)
+    before = UpsellDeal.order(:id).pluck(:id, :arr, :probabilite_signature, :updated_at)
+    get "/api/internal/cross-sell", params: { campaign_year: 2026 }, headers: auth
+    assert_response :success
+    data = response.parsed_body
+    assert_equal 2026, data["campaignYear"]
+    assert_equal 1, data["schemaVersion"]
+    assert_in_delta 3420, data["signedArr"], 0.001
+    assert_in_delta 5130, data["projectedArr"], 0.001
+    assert_equal %w[campaignYear fetchedAt projectedArr schemaVersion signedArr], data.keys.sort
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_equal before, UpsellDeal.order(:id).pluck(:id, :arr, :probabilite_signature, :updated_at)
+  end
+
   private
 
   def auth

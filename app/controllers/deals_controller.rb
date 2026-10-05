@@ -1,4 +1,6 @@
 class DealsController < ApplicationController
+  include ActionView::RecordIdentifier
+
   before_action :require_admin!, only: [:reassign_am]
   before_action :set_deal, only: [:update, :destroy, :reassign_am]
 
@@ -102,6 +104,8 @@ class DealsController < ApplicationController
         turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
           locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" }, method: :morph)
       ]
+    elsif params[:row_context] == "global_churn"
+      [turbo_stream.replace(dom_id(@deal, :churn), partial: "pilotage/churned_produit_row", locals: { deal: @deal }, method: :morph)]
     elsif params[:row_context] == "global_produit"
       [
         turbo_stream.replace(@deal, partial: "pilotage/global_produit_row", locals: { deal: @deal }, method: :morph),
@@ -127,6 +131,7 @@ class DealsController < ApplicationController
     case params[:row_context]
     when "global" then "pilotage/global_upsell_row"
     when "global_produit" then "pilotage/global_produit_row"
+    when "global_churn" then "pilotage/churned_produit_row"
     else @deal.is_a?(UpsellDeal) ? "deals/upsell_row" : "deals/produit_row"
     end
   end
@@ -135,7 +140,7 @@ class DealsController < ApplicationController
   # opened from Vue globale — see pilotage/show.html.erb) and update's row_context=global/global_produit
   # case above.
   def fallback_redirect_path
-    if params[:return_to] == "pilotage" || %w[global global_produit].include?(params[:row_context])
+    if params[:return_to] == "pilotage" || %w[global global_produit global_churn].include?(params[:row_context])
       pilotage_path
     else
       portfolio_path(user_id: params[:redirect_user_id])
@@ -144,7 +149,8 @@ class DealsController < ApplicationController
 
   def error_streams(message)
     [
-      turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }, method: :morph),
+      turbo_stream.replace(params[:row_context] == "global_churn" ? dom_id(@deal, :churn) : @deal,
+        partial: row_partial, locals: { deal: @deal }, method: :morph),
       turbo_stream.replace("flash", partial: "shared/flash", locals: { notice: nil, alert: message })
     ]
   end
@@ -188,7 +194,8 @@ class DealsController < ApplicationController
   end
 
   def produit_fields
-    [:produit, :college, :assureur, :arr, :taux, :identifiant, :statut_renouvellement, :risque_churn]
+    [:produit, :college, :assureur, :arr, :taux, :identifiant, :statut_renouvellement, :risque_churn,
+     :churn_reason, :churn_comment]
   end
 
   def upsell_fields

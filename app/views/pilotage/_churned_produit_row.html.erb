@@ -1,0 +1,33 @@
+<%# Distinct DOM id (:churn) — the same deal also renders in "Produits à renouveler (tous AM)" on this page. %>
+<% editable = current_user.privileged? || deal.company.user_id == current_user.id %>
+<tr id="<%= dom_id(deal, :churn) %>" class="churn-yes">
+  <td><strong><%= deal.company.name %></strong></td>
+  <td><%= deal.company.user.name %></td>
+  <td><%= deal.produit %></td>
+  <td><%= deal.college %></td>
+  <td><%= deal.assureur %></td>
+  <% if current_user.admin? %>
+    <td><%= deal.identifiant %></td>
+  <% end %>
+  <td class="numeric"><%= number_to_currency(deal.arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td>
+    <% if editable %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_churn"), method: :patch do |f| %>
+        <%= f.select :churn_reason, ProduitDeal::CHURN_REASONS, { include_blank: PilotageController::NOT_QUALIFIED },
+              onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= deal.churn_reason.presence || PilotageController::NOT_QUALIFIED %>
+    <% end %>
+  </td>
+  <td>
+    <% if editable %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_churn"), method: :patch do |f| %>
+        <%= f.text_area :churn_comment, rows: 2, placeholder: "Commentaire…", style: "width:100%;min-width:220px;",
+              onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <span style="white-space:pre-wrap;"><%= deal.churn_comment %></span>
+    <% end %>
+  </td>
+</tr>

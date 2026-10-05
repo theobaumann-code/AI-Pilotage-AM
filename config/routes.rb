@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     get :export_upsells
     get :export_produits
     get :export_risque
+    get :export_churn
   end
   resource :gestion_droits, only: [:show], controller: "gestion_droits"
   resource :autres_statistiques, only: [:show], controller: "autres_statistiques"

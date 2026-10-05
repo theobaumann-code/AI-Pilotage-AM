@@ -1,6 +1,8 @@
 require "csv"
 
 class PilotageController < ApplicationController
+  NOT_QUALIFIED = "À qualifier"
+
   def show
     @app_setting = AppSetting.instance
     @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
@@ -67,6 +69,22 @@ class PilotageController < ApplicationController
         statut_renouvellement: ->(d) { TablePager.key(d.statut_renouvellement) },
         risque_churn: ->(d) { TablePager.key(d.risque_churn) },
         final_arr: ->(d) { TablePager.key(d.final_arr) }
+      }, default_sort: :nom)
+
+    load_churn_filters
+    @available_churn_ams = @active_ams.map(&:name)
+    @global_churned = filtered_global_churned
+    @churn_arr_total = @global_churned.sum { |d| d.arr.to_f }
+    @gchurn_pager = TablePager.new(@global_churned, params: params, prefix: "gchurn",
+      sort_procs: {
+        nom: ->(d) { TablePager.key(d.company.name) },
+        am: ->(d) { TablePager.key(d.company.user.name) },
+        produit: ->(d) { TablePager.key(d.produit) },
+        college: ->(d) { TablePager.key(d.college) },
+        assureur: ->(d) { TablePager.key(d.assureur) },
+        identifiant: ->(d) { TablePager.key(d.identifiant) },
+        arr: ->(d) { TablePager.key(d.arr.to_f) },
+        churn_reason: ->(d) { TablePager.key(d.churn_reason.to_s) }
       }, default_sort: :nom)
 
     @upsell_q = params[:upsell_q].to_s.strip
@@ -139,6 +157,27 @@ class PilotageController < ApplicationController
       type: "text/csv; charset=utf-8"
   end
 
+  # Mirrors "Produits churnés (tous AM)" exactly (same filters, unpaginated), across every AM.
+  def export_churn
+    load_churn_filters
+
+    csv = CSV.generate(col_sep: ";") do |csv|
+      header = ["Nom", "AM", "Produit", "Collège", "Assureur"]
+      header << "ID externe" if current_user.admin?
+      header.concat(["ARR churné (€)", "Raison du churn", "Commentaire"])
+      csv << header
+      filtered_global_churned.each do |d|
+        row = [d.company.name, d.company.user.name, d.produit, d.college, d.assureur]
+        row << d.identifiant if current_user.admin?
+        row.concat([d.arr, d.churn_reason, d.churn_comment])
+        csv << row
+      end
+    end
+
+    send_data "\xEF\xBB\xBF" + csv, filename: "produits-churnes-#{Date.current.iso8601}.csv",
+      type: "text/csv; charset=utf-8"
+  end
+
   # Mirrors "Entreprises à risque" exactly (same filters, unpaginated), across every AM.
   def export_risque
     @risque_q = params[:risque_q].to_s.strip
@@ -185,6 +224,26 @@ class PilotageController < ApplicationController
         max_risque: company_deals.map(&:risque_churn).max
       }
     end
+  end
+
+  def load_churn_filters
+    @churn_q = params[:churn_q].to_s.strip
+    @churn_ams = Array(params[:churn_ams]).reject(&:blank?)
+    @churn_roles = Array(params[:churn_roles]).reject(&:blank?)
+    @churn_produits = Array(params[:churn_produits]).reject(&:blank?)
+    @churn_raisons = Array(params[:churn_raisons]).reject(&:blank?)
+  end
+
+  # Only "Churné" (a lost contract the AM had a hand in) — not "Churné (subi)", which is liquidation/
+  # acquisition and carries no reason worth qualifying.
+  def filtered_global_churned
+    deals = ProduitDeal.includes(company: :user).where(statut_renouvellement: ProduitDeal::CHURNED).to_a
+    deals = deals.select { |d| d.company.name.downcase.include?(@churn_q.downcase) } if @churn_q.present?
+    deals = deals.select { |d| @churn_ams.include?(d.company.user.name) } if @churn_ams.present?
+    deals = deals.select { |d| @churn_roles.include?(d.company.user.role_label) } if @churn_roles.present?
+    deals = deals.select { |d| @churn_produits.include?(d.produit) } if @churn_produits.present?
+    deals = deals.select { |d| @churn_raisons.include?(d.churn_reason.presence || NOT_QUALIFIED) } if @churn_raisons.present?
+    deals.sort_by { |d| d.company.name }
   end
 
   def filtered_global_upsells

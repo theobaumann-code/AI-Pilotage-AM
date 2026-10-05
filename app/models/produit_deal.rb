@@ -12,11 +12,16 @@ class ProduitDeal < Deal
   # had any control over (see PortfolioSummary#arr_initial/#churned and Company#arr_initial/#churned_arr).
   CHURNED_SUBI = "Churné (subi)"
   CHURNED_STATUSES = [CHURNED, CHURNED_SUBI].freeze
+  # Why a churned produit was lost (blank = not qualified yet) — filled in from Vue globale's "Produits
+  # churnés" table, alongside a free-text churn_comment.
+  CHURN_REASONS = ["Tarif / hausse de prix", "Offre concurrente", "Insatisfaction (service, gestion)",
+                   "Offre inadaptée", "Cessation d'activité / fusion", "Autre"].freeze
 
   validates :produit, inclusion: { in: PRODUITS }
   validates :college, presence: true, inclusion: { in: COLLEGES }
   validates :assureur, presence: true, inclusion: { in: ASSUREURS }
   validates :statut_renouvellement, inclusion: { in: STATUTS_RENOUVELLEMENT }
+  validates :churn_reason, inclusion: { in: CHURN_REASONS }, allow_blank: true
   validates :risque_churn, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   # Rule 1 (model-level mirror of the DB partial index): uniqueness scoped to produit, and — since
   # ArchiveEntry is a completely separate table/model, never a Deal — this can never see archived years,

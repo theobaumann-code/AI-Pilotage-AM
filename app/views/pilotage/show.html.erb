@@ -316,3 +316,59 @@
     <%= page_size_select(@ups_pager) %>
   <% end %>
 </div>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h2>Produits churnés (tous AM)</h2>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">Chaque produit au statut « Churné » : qualifie la raison du churn et ajoute un commentaire.</p>
+  <div class="summary-cards">
+    <div class="card"><div class="label">Nb produits churnés</div><div class="value"><%= @global_churned.size %></div></div>
+    <div class="card"><div class="label">ARR churné</div><div class="value" style="color:var(--red)"><%= number_to_currency(@churn_arr_total, unit: "€", format: "%n %u", precision: 0) %></div></div>
+  </div>
+  <%= turbo_frame_tag "gchurn-table-frame" do %>
+    <div class="table-toolbar">
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("churn_q", "churn_ams", "churn_ams_open", "churn_roles", "churn_roles_open",
+                "churn_produits", "churn_produits_open", "churn_raisons", "churn_raisons_open", "gchurn_page") %>
+          <%= live_search_field :churn_q, @churn_q %>
+          <%= render "shared/checklist_filter", param_name: "churn_roles", options: @available_roles, selected: @churn_roles, legend: "Équipe" %>
+          <%= render "shared/checklist_filter", param_name: "churn_ams", options: @available_churn_ams, selected: @churn_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "churn_produits", options: ProduitDeal::PRODUITS, selected: @churn_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "churn_raisons", options: [PilotageController::NOT_QUALIFIED] + ProduitDeal::CHURN_REASONS, selected: @churn_raisons, legend: "Raison" %>
+        <% end %>
+        <%= link_to "Exporter CSV", export_churn_pilotage_path(churn_q: @churn_q, churn_ams: @churn_ams,
+              churn_roles: @churn_roles, churn_produits: @churn_produits, churn_raisons: @churn_raisons), class: "button", data: { turbo: false } %>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table renewal-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@gchurn_pager, :nom, "Nom du client", col_class: "col-nom") %>
+            <%= sortable_th(@gchurn_pager, :am, "AM") %>
+            <%= sortable_th(@gchurn_pager, :produit, "Produit", col_class: "col-produit") %>
+            <%= sortable_th(@gchurn_pager, :college, "Collège", col_class: "col-college") %>
+            <%= sortable_th(@gchurn_pager, :assureur, "Assureur", col_class: "col-assureur") %>
+            <% if current_user.admin? %>
+              <%= sortable_th(@gchurn_pager, :identifiant, "ID externe", col_class: "col-identifiant") %>
+            <% end %>
+            <%= sortable_th(@gchurn_pager, :arr, "ARR churné (€)", col_class: "col-arr") %>
+            <%= sortable_th(@gchurn_pager, :churn_reason, "Raison du churn") %>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @gchurn_pager.records.empty? %>
+            <tr><td colspan="<%= current_user.admin? ? 9 : 8 %>" class="empty-state">Aucun produit churné pour ce filtre.</td></tr>
+          <% else %>
+            <%= render partial: "pilotage/churned_produit_row", collection: @gchurn_pager.records, as: :deal %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@gchurn_pager) %>
+    <%= page_size_select(@gchurn_pager) %>
+  <% end %>
+</div>

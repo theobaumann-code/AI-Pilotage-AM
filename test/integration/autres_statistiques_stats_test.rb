@@ -26,6 +26,29 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_no_match "45,000", section
   end
 
+  test "churn reasons are split per produit, weighted by churned ARR, with blanks as À qualifier" do
+    company = Company.create!(name: "Client Raisons", user: @am)
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rs-1", college: "Cadre", assureur: "AXA",
+      arr: 7_000, statut_renouvellement: "Churné", churn_reason: "Offre concurrente")
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rs-2", college: "Non cadre", assureur: "AXA",
+      arr: 3_000, statut_renouvellement: "Churné")
+    ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rs-3", college: "Cadre", assureur: "AXA",
+      arr: 4_000, statut_renouvellement: "Churné", churn_reason: "Tarif / hausse de prix")
+    ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rs-4", college: "Non cadre", assureur: "AXA",
+      arr: 8_000, statut_renouvellement: "Churné (subi)", churn_reason: "Autre")
+
+    get autres_statistiques_path
+    assert_response :success
+    slices = @controller.instance_variable_get(:@churn_reasons_by_produit)
+    mutuelle, prevoyance = slices.values_at("Mutuelle", "Prévoyance")
+    assert_equal 7_000, mutuelle.find { |s| s[:label] == "Offre concurrente (1)" }[:value]
+    assert_equal 3_000, mutuelle.find { |s| s[:label] == "À qualifier (1)" }[:value]
+    assert_equal 4_000, prevoyance.find { |s| s[:label] == "Tarif / hausse de prix (1)" }[:value]
+    assert_nil prevoyance.find { |s| s[:label].start_with?("Autre") }, "churn subi and empty reasons are left out"
+    section = @response.body[/Raisons de churn par produit.*?Entonnoir des upsells/m]
+    assert_match "Offre concurrente (1)", section
+  end
+
   test "portfolio concentration ranks by current ARR and reports the top-10 share" do
     big = Company.create!(name: "Client Concentration Gros", user: @am)
     ProduitDeal.create!(company: big, produit: "Mutuelle", identifiant: "conc-1",

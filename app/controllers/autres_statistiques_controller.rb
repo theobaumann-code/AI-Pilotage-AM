@@ -24,6 +24,7 @@ class AutresStatistiquesController < ApplicationController
     @churn_by_year = churn_by_year
     @churn_rate_by_assureur = churn_rate_by(:assureur)
     @churn_rate_by_college = churn_rate_by(:college)
+    @churn_reasons_by_produit = churn_reasons_by_produit
     @upsell_funnel = upsell_funnel
     @renewal_funnel = renewal_funnel
     @accompagnement_split = accompagnement_split
@@ -129,6 +130,25 @@ class AutresStatistiquesController < ApplicationController
       churned = deals.select(&:churned?).sum { |d| d.arr.to_f }
       { label: key, value: (churned / total * 100), status: churned > 0 ? "ko" : "ok" }
     end.sort_by { |r| -r[:value] }
+  end
+
+  # Why churned produits were lost (the raison filled in on Vue globale's "Produits churnés" table), one
+  # slice list per produit, weighted by churned ARR — blank reasons show up as "À qualifier" so an
+  # unqualified backlog is visible rather than silently missing from the chart.
+  def churn_reasons_by_produit
+    churned = @active_deals.select { |d| d.statut_renouvellement == ProduitDeal::CHURNED }
+    reasons = [PilotageController::NOT_QUALIFIED] + ProduitDeal::CHURN_REASONS
+    colors = { PilotageController::NOT_QUALIFIED => "#c9c9c9" }
+    ProduitDeal::CHURN_REASONS.each_with_index { |reason, i| colors[reason] = PALETTE[i % PALETTE.size] }
+
+    ProduitDeal::PRODUITS.index_with do |produit|
+      deals = churned.select { |d| d.produit == produit }
+      reasons.filter_map do |reason|
+        matching = deals.select { |d| (d.churn_reason.presence || PilotageController::NOT_QUALIFIED) == reason }
+        next if matching.empty?
+        { label: "#{reason} (#{matching.size})", value: matching.sum { |d| d.arr.to_f }, color: colors[reason] }
+      end
+    end
   end
 
   # Count, montant and % of every upsell at each signature stage, in the funnel's natural order — a

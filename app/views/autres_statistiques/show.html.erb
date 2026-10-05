@@ -133,6 +133,20 @@
 </div>
 
 <div class="chart-wrap">
+  <h2>Raisons de churn par produit</h2>
+  <p class="section-sub" style="margin-top:-8px;">ARR churné par raison (nombre de produits entre parenthèses), d'après les raisons saisies dans « Produits churnés » de Vue globale (hors churn subi).</p>
+  <div style="display:flex;gap:48px;flex-wrap:wrap;">
+    <% @churn_reasons_by_produit.each do |produit, slices| %>
+      <div>
+        <h3 style="font-size:14px;margin:0 0 10px;"><%= produit %></h3>
+        <%= donut_chart(slices, value_format: ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) },
+              total_label: ->(t) { "Total : #{number_to_currency(t, unit: "€", format: "%n %u", precision: 0)}" }) %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="chart-wrap">
   <h2>Entonnoir des upsells</h2>
   <p class="section-sub" style="margin-top:-8px;">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
   <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>

@@ -30,6 +30,8 @@
   --amber-bg:#fff6ee;
   --info:#3a99ff;
   --info-bg:#ebf4ff;
+  --violet:#7c4dff;
+  --violet-bg:#f2edff;
 
   /* ---- Neutrals (== tz-dark scale — the design system's borders/text are neutral gray, not warm-tinted).
      Pulled directly from the design system repo's tokens.css now that it's actually readable: --tz-border
@@ -275,6 +277,7 @@ td.rowaction form{display:inline-flex;vertical-align:middle;}
 .statut-select.statut-inprogress{background:var(--amber-bg);color:var(--amber);border-color:var(--amber);}
 .statut-select.statut-lost{background:var(--red-bg);color:var(--red);border-color:var(--red);}
 .statut-select.statut-notstarted{background:var(--track-bg);color:var(--text-muted);}
+.statut-select.statut-newcontract{background:var(--violet-bg);color:var(--violet);border-color:var(--violet);}
 
 .am-table td.nrr-cell{font-weight:700;}
 .am-table tr.below td.nrr-cell{color:var(--red);}

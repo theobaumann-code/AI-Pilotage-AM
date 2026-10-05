@@ -8,7 +8,7 @@ module ApplicationHelper
     "Augmenté" => "statut-signed",
     "Augmentation particulière" => "statut-signed",
     "En cours" => "statut-inprogress",
-    "Nouveau contrat" => "statut-notstarted",
+    "Nouveau contrat" => "statut-newcontract",
     "Churné" => "statut-lost",
     # Deliberately not "statut-lost" (red) — this churn isn't counted against the AM (see
     # ProduitDeal::CHURNED_SUBI), so it gets the same neutral treatment as "not started" instead.

@@ -127,11 +127,12 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("risque_q", "risque_ams", "risque_ams_open", "risque_roles", "risque_roles_open",
-                "risque_produits", "risque_produits_open", "risque_statuts", "risque_statuts_open", "risque_manque_offres", "rque_page") %>
+                "risque_produits", "risque_produits_open", "risque_assureurs", "risque_assureurs_open", "risque_statuts", "risque_statuts_open", "risque_manque_offres", "rque_page") %>
           <%= live_search_field :risque_q, @risque_q %>
           <%= render "shared/checklist_filter", param_name: "risque_roles", options: @available_roles, selected: @risque_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "risque_ams", options: @available_risque_ams, selected: @risque_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "risque_produits", options: ProduitDeal::PRODUITS, selected: @risque_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "risque_assureurs", options: ProduitDeal::ASSUREURS, selected: @risque_assureurs, legend: "Assureur" %>
           <%= render "shared/checklist_filter", param_name: "risque_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT - ProduitDeal::CHURNED_STATUSES, selected: @risque_statuts, legend: "Statut" %>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
             <%= check_box_tag :risque_manque_offres, "1", @risque_manque_offres, onchange: "this.form.requestSubmit()" %>
@@ -139,7 +140,7 @@
           </label>
         <% end %>
         <%= link_to "Exporter CSV", export_risque_pilotage_path(risque_q: @risque_q, risque_ams: @risque_ams,
-              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_statuts: @risque_statuts,
+              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_assureurs: @risque_assureurs, risque_statuts: @risque_statuts,
               risque_manque_offres: @risque_manque_offres), class: "button", data: { turbo: false } %>
       </div>
     </div>
@@ -199,15 +200,16 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("produit_q", "produit_ams", "produit_ams_open", "produit_roles", "produit_roles_open",
-                "produit_produits", "produit_produits_open", "produit_statuts", "produit_statuts_open", "gprod_page") %>
+                "produit_produits", "produit_produits_open", "produit_assureurs", "produit_assureurs_open", "produit_statuts", "produit_statuts_open", "gprod_page") %>
           <%= live_search_field :produit_q, @produit_q %>
           <%= render "shared/checklist_filter", param_name: "produit_roles", options: @available_roles, selected: @produit_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "produit_ams", options: @available_produit_ams, selected: @produit_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "produit_produits", options: ProduitDeal::PRODUITS, selected: @produit_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "produit_assureurs", options: ProduitDeal::ASSUREURS, selected: @produit_assureurs, legend: "Assureur" %>
           <%= render "shared/checklist_filter", param_name: "produit_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @produit_statuts, legend: "Statut" %>
         <% end %>
         <%= link_to "Exporter CSV", export_produits_pilotage_path(produit_q: @produit_q, produit_ams: @produit_ams,
-              produit_roles: @produit_roles, produit_produits: @produit_produits, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
+              produit_roles: @produit_roles, produit_produits: @produit_produits, produit_assureurs: @produit_assureurs, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">
@@ -331,15 +333,16 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("churn_q", "churn_ams", "churn_ams_open", "churn_roles", "churn_roles_open",
-                "churn_produits", "churn_produits_open", "churn_raisons", "churn_raisons_open", "gchurn_page") %>
+                "churn_produits", "churn_produits_open", "churn_assureurs", "churn_assureurs_open", "churn_raisons", "churn_raisons_open", "gchurn_page") %>
           <%= live_search_field :churn_q, @churn_q %>
           <%= render "shared/checklist_filter", param_name: "churn_roles", options: @available_roles, selected: @churn_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "churn_ams", options: @available_churn_ams, selected: @churn_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "churn_produits", options: ProduitDeal::PRODUITS, selected: @churn_produits, legend: "Produit" %>
+          <%= render "shared/checklist_filter", param_name: "churn_assureurs", options: ProduitDeal::ASSUREURS, selected: @churn_assureurs, legend: "Assureur" %>
           <%= render "shared/checklist_filter", param_name: "churn_raisons", options: [PilotageController::NOT_QUALIFIED] + ProduitDeal::CHURN_REASONS, selected: @churn_raisons, legend: "Raison" %>
         <% end %>
         <%= link_to "Exporter CSV", export_churn_pilotage_path(churn_q: @churn_q, churn_ams: @churn_ams,
-              churn_roles: @churn_roles, churn_produits: @churn_produits, churn_raisons: @churn_raisons), class: "button", data: { turbo: false } %>
+              churn_roles: @churn_roles, churn_produits: @churn_produits, churn_assureurs: @churn_assureurs, churn_raisons: @churn_raisons), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">

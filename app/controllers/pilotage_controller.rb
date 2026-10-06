@@ -35,6 +35,7 @@ class PilotageController < ApplicationController
     @risque_ams = Array(params[:risque_ams]).reject(&:blank?)
     @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
+    @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
     @risque_manque_offres = params[:risque_manque_offres].present?
     @available_risque_ams = @active_ams.map(&:name)
@@ -52,6 +53,7 @@ class PilotageController < ApplicationController
     @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
     @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
+    @produit_assureurs = Array(params[:produit_assureurs]).reject(&:blank?)
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
     @available_produit_ams = @active_ams.map(&:name)
     @global_produits = filtered_global_produits
@@ -138,6 +140,7 @@ class PilotageController < ApplicationController
     @produit_ams = Array(params[:produit_ams]).reject(&:blank?)
     @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
+    @produit_assureurs = Array(params[:produit_assureurs]).reject(&:blank?)
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
@@ -184,6 +187,7 @@ class PilotageController < ApplicationController
     @risque_ams = Array(params[:risque_ams]).reject(&:blank?)
     @risque_roles = Array(params[:risque_roles]).reject(&:blank?)
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
+    @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
     @risque_manque_offres = params[:risque_manque_offres].present?
 
@@ -212,6 +216,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @risque_ams.include?(d.company.user.name) } if @risque_ams.present?
     deals = deals.select { |d| @risque_roles.include?(d.company.user.role_label) } if @risque_roles.present?
     deals = deals.select { |d| @risque_produits.include?(d.produit) } if @risque_produits.present?
+    deals = deals.select { |d| @risque_assureurs.include?(d.assureur) } if @risque_assureurs.present?
     deals = deals.select { |d| @risque_statuts.include?(d.statut_renouvellement) } if @risque_statuts.present?
     deals = deals.select { |d| d.company.risque_manque_offres? } if @risque_manque_offres
 
@@ -231,6 +236,7 @@ class PilotageController < ApplicationController
     @churn_ams = Array(params[:churn_ams]).reject(&:blank?)
     @churn_roles = Array(params[:churn_roles]).reject(&:blank?)
     @churn_produits = Array(params[:churn_produits]).reject(&:blank?)
+    @churn_assureurs = Array(params[:churn_assureurs]).reject(&:blank?)
     @churn_raisons = Array(params[:churn_raisons]).reject(&:blank?)
   end
 
@@ -242,6 +248,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @churn_ams.include?(d.company.user.name) } if @churn_ams.present?
     deals = deals.select { |d| @churn_roles.include?(d.company.user.role_label) } if @churn_roles.present?
     deals = deals.select { |d| @churn_produits.include?(d.produit) } if @churn_produits.present?
+    deals = deals.select { |d| @churn_assureurs.include?(d.assureur) } if @churn_assureurs.present?
     deals = deals.select { |d| @churn_raisons.include?(d.churn_reason.presence || NOT_QUALIFIED) } if @churn_raisons.present?
     deals.sort_by { |d| d.company.name }
   end
@@ -262,6 +269,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @produit_ams.include?(d.company.user.name) } if @produit_ams.present?
     deals = deals.select { |d| @produit_roles.include?(d.company.user.role_label) } if @produit_roles.present?
     deals = deals.select { |d| @produit_produits.include?(d.produit) } if @produit_produits.present?
+    deals = deals.select { |d| @produit_assureurs.include?(d.assureur) } if @produit_assureurs.present?
     deals = deals.select { |d| @produit_statuts.include?(d.statut_renouvellement) } if @produit_statuts.present?
     deals.sort_by { |d| d.company.name }
   end

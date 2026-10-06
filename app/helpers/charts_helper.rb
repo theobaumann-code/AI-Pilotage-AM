@@ -127,6 +127,42 @@ module ChartsHelper
     end
   end
 
+  # One row per AM with two thin bars (projeté above, actuel below) on a shared scale that doesn't start at
+  # zero — NRR values all sit near 100%, so a zero-based bar would make every AM look identical. A vertical
+  # tick marks the target; the projeté bar is green/red against it, the actuel bar stays neutral.
+  def nrr_by_am_chart(rows, target)
+    return content_tag(:div, "Aucune donnée.", class: "empty-state") if rows.empty?
+
+    values = rows.flat_map { |r| [r[:nrr], r[:nrr_actual]] } + [target]
+    lo = ((values.min - 5) / 5.0).floor * 5
+    hi = ((values.max + 5) / 5.0).ceil * 5
+    pos = ->(v) { ((v - lo).to_f / (hi - lo) * 100).clamp(0, 100) }
+    track = lambda do |value, color|
+      content_tag(:div, class: "bar-track", style: "height:12px;margin:2px 0;") do
+        concat content_tag(:div, "", class: "bar-fill", style: "width:#{pos.call(value)}%;background:#{color};")
+        concat content_tag(:div, "", style: "position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--burgundy);left:#{pos.call(target)}%;")
+      end
+    end
+
+    content_tag(:div) do
+      concat content_tag(:div, "Échelle de #{lo} % à #{hi} % — le trait bordeaux marque l'objectif (#{target} %). Barre du haut : projeté, barre du bas : actuel.",
+        style: "font-size:12px;color:var(--text-muted);margin-bottom:12px;")
+      rows.each do |r|
+        concat(content_tag(:div, class: "bar-row") do
+          concat content_tag(:div, r[:am], class: "bar-label")
+          concat(content_tag(:div, style: "flex:1;") do
+            concat track.call(r[:nrr], r[:nrr] >= target ? "var(--green)" : "var(--red)")
+            concat track.call(r[:nrr_actual], "var(--text-muted)")
+          end)
+          concat(content_tag(:div, class: "bar-value", style: "min-width:120px;") do
+            concat content_tag(:div, "Projeté #{number_with_precision(r[:nrr], precision: 1)} %")
+            concat content_tag(:div, "Actuel #{number_with_precision(r[:nrr_actual], precision: 1)} %", style: "font-weight:400;color:var(--text-muted);")
+          end)
+        end)
+      end
+    end
+  end
+
   # Horizontal bar rows (.bar-row/.bar-track/.bar-fill, already styled for the old per-AM NRR chart) reused
   # here for any "one row per category, one rate/amount" breakdown — contract-size buckets, churn rate by
   # segment, the upsell funnel. Bar width is row[:value]/max_value; value_format gets the whole row (not

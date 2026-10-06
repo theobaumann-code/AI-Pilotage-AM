@@ -87,6 +87,12 @@
   <%= line_chart(@nrr_by_year[:years], [{ label: "NRR", points: @nrr_by_year[:points] }], 100) %>
 </div>
 
+<div class="chart-wrap">
+  <h2>NRR par AM</h2>
+  <p class="section-sub" style="margin-top:-8px;">NRR actuel et projeté de chaque AM, calculés comme dans « Mon portefeuille » (objectif <%= PortfolioSummary::NRR_TARGET %> %).</p>
+  <%= nrr_by_am_chart(@nrr_by_am, PortfolioSummary::NRR_TARGET) %>
+</div>
+
 <div class="section-card">
   <div class="table-toolbar">
     <h2>Évolution du churn subi vs churn classique</h2>
@@ -124,12 +130,6 @@
   <h2>Taux de churn par assureur</h2>
   <p class="section-sub" style="margin-top:-8px;">ARR churné ÷ ARR total, par assureur (hors churn subi).</p>
   <%= bar_rows(@churn_rate_by_assureur, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
-</div>
-
-<div class="chart-wrap">
-  <h2>Taux de churn par collège</h2>
-  <p class="section-sub" style="margin-top:-8px;">ARR churné ÷ ARR total, par collège (hors churn subi).</p>
-  <%= bar_rows(@churn_rate_by_college, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
 </div>
 
 <div class="chart-wrap">

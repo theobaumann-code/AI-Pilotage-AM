@@ -49,6 +49,30 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match "Offre concurrente (1)", section
   end
 
+  test "NRR par AM matches each AM's own portfolio summary, and the college churn chart is gone" do
+    other = User.create!(email: "other-nrr@example.com", name: "Autre AM NRR", admin: false, active: true)
+    mine = Company.create!(name: "Client NRR Mien", user: @am)
+    ProduitDeal.create!(company: mine, produit: "Mutuelle", identifiant: "nrr-1", college: "Cadre", assureur: "AXA",
+      arr: 10_000, taux: 5, statut_renouvellement: "Augmenté")
+    theirs = Company.create!(name: "Client NRR Autre", user: other)
+    ProduitDeal.create!(company: theirs, produit: "Mutuelle", identifiant: "nrr-2", college: "Cadre", assureur: "AXA",
+      arr: 10_000, taux: 0, statut_renouvellement: "Churné")
+    Company.create!(name: "Client sans produit", user: User.create!(email: "none-nrr@example.com", name: "Sans ARR NRR", admin: false, active: true))
+
+    get autres_statistiques_path
+    assert_response :success
+    rows = @controller.instance_variable_get(:@nrr_by_am)
+    mine_row = rows.find { |r| r[:am] == "AM Stats" }
+    expected = PortfolioSummary.new(@am.companies.includes(:produit_deals), user: @am)
+    assert_in_delta expected.nrr, mine_row[:nrr], 0.001
+    assert_in_delta 105.0, mine_row[:nrr_actual], 0.001
+    assert_in_delta 0.0, rows.find { |r| r[:am] == "Autre AM NRR" }[:nrr], 0.001
+    assert_nil rows.find { |r| r[:am] == "Sans ARR NRR" }, "AMs without initial ARR are left out"
+    assert_equal rows.map { |r| r[:nrr] }.sort.reverse, rows.map { |r| r[:nrr] }
+    assert_match "NRR par AM", @response.body
+    assert_no_match "Taux de churn par collège", @response.body
+  end
+
   test "portfolio concentration ranks by current ARR and reports the top-10 share" do
     big = Company.create!(name: "Client Concentration Gros", user: @am)
     ProduitDeal.create!(company: big, produit: "Mutuelle", identifiant: "conc-1",
@@ -85,7 +109,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
     get autres_statistiques_path
     assert_response :success
-    section = @response.body[/Taux de churn par assureur.*?Taux de churn par collège/m]
+    section = @response.body[/Taux de churn par assureur.*?Raisons de churn par produit/m]
     assert_match(/Gan.*?50\.0%/m, section)
   end
 

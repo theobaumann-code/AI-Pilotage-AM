@@ -23,7 +23,7 @@ class AutresStatistiquesController < ApplicationController
     @nrr_by_year = nrr_by_year
     @churn_by_year = churn_by_year
     @churn_rate_by_assureur = churn_rate_by(:assureur)
-    @churn_rate_by_college = churn_rate_by(:college)
+    @nrr_by_am = nrr_by_am
     @churn_reasons_by_produit = churn_reasons_by_produit
     @upsell_funnel = upsell_funnel
     @renewal_funnel = renewal_funnel
@@ -120,8 +120,20 @@ class AutresStatistiquesController < ApplicationController
     end
   end
 
-  # Churn rate (churned ARR ÷ total ARR) per assureur or collège — spots whether losses concentrate on a
-  # particular insurer or population segment rather than spreading evenly across the book.
+  # Each active AM's own NRR (actuel and projeté), built exactly like Mon portefeuille's summary cards
+  # (PortfolioSummary scoped to the AM) so the figures match what that AM sees. AMs with no initial ARR have
+  # no meaningful NRR and are left out.
+  def nrr_by_am
+    companies_by_user = Company.includes(:produit_deals).group_by(&:user_id)
+    User.active.order(:name).filter_map do |am|
+      summary = PortfolioSummary.new(companies_by_user[am.id] || [], user: am)
+      next if summary.arr_initial <= 0
+      { am: am.name, nrr: summary.nrr, nrr_actual: summary.nrr_actual }
+    end.sort_by { |r| -r[:nrr] }
+  end
+
+  # Churn rate (churned ARR ÷ total ARR) per assureur — spots whether losses concentrate on a particular
+  # insurer rather than spreading evenly across the book.
   def churn_rate_by(field)
     @active_deals.group_by { |d| d.public_send(field) }.filter_map do |key, deals|
       next if key.blank?

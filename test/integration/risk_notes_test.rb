@@ -86,6 +86,29 @@ class RiskNotesTest < ActionDispatch::IntegrationTest
     assert_match "Rendez-vous prévu la semaine prochaine", section
   end
 
+  test "the risk table shows the date of each company's most recent comment, or a dash without any, and exports it" do
+    ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "risknote-3",
+      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 20)
+    RiskNote.create!(company: @company, user: @am, content: "Ancien", created_at: Time.utc(2026, 9, 3, 10))
+    RiskNote.create!(company: @company, user: @am, content: "Récent", created_at: Time.utc(2026, 9, 20, 10))
+    silent = Company.create!(name: "Client Sans Note", user: @am)
+    ProduitDeal.create!(company: silent, produit: "Mutuelle", identifiant: "risknote-4",
+      college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 20)
+
+    sign_in @admin
+    get pilotage_path
+    assert_response :success
+    section = @response.body[/id="rque-table-frame">.*?<\/turbo-frame>/m]
+    assert_match "Dernier commentaire", section
+    assert_match(/Client RiskNotes[\s\S]*?<td>20\/09\/2026<\/td>/, section)
+    assert_no_match "03/09/2026</td>", section
+    assert_match(/Client Sans Note[\s\S]*?<td>—<\/td>/, section)
+
+    get export_risque_pilotage_path
+    assert_match "Date du dernier commentaire", @response.body
+    assert_match(/Client RiskNotes;.*;20\/09\/2026/, @response.body)
+  end
+
   test "the panel has a cancel button and carries the current URL as return_to" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "risknote-2",
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 20)

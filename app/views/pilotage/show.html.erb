@@ -154,12 +154,13 @@
             <%= sortable_th(@rque_pager, :arr_at_risk, "ARR à risque (€)") %>
             <%= sortable_th(@rque_pager, :max_risque, "% risque max") %>
             <th>Manque d'offres</th>
+            <%= sortable_th(@rque_pager, :last_note_at, "Dernier commentaire") %>
             <th>Commentaires</th>
           </tr>
         </thead>
         <tbody>
           <% if @rque_pager.records.empty? %>
-            <tr><td colspan="7" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
+            <tr><td colspan="8" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
           <% else %>
             <% @rque_pager.records.each do |r| %>
               <tr id="<%= dom_id(r[:company], :risque) %>">
@@ -173,6 +174,7 @@
                     <%= f.check_box :risque_manque_offres, onchange: "this.form.requestSubmit()" %>
                   <% end %>
                 </td>
+                <td><%= r[:last_note_at] ? l(r[:last_note_at].to_date, format: "%d/%m/%Y") : "—" %></td>
                 <td><%= render "pilotage/risk_note_panel", company: r[:company] %></td>
               </tr>
             <% end %>

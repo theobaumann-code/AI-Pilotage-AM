@@ -46,7 +46,8 @@ class PilotageController < ApplicationController
         am: ->(r) { TablePager.key(r[:am].name) },
         count: ->(r) { TablePager.key(r[:count]) },
         arr_at_risk: ->(r) { TablePager.key(r[:arr_at_risk]) },
-        max_risque: ->(r) { TablePager.key(r[:max_risque]) }
+        max_risque: ->(r) { TablePager.key(r[:max_risque]) },
+        last_note_at: ->(r) { TablePager.key(r[:last_note_at]) }
       }, default_sort: :arr_at_risk, default_dir: "desc")
 
     @produit_q = params[:produit_q].to_s.strip
@@ -192,10 +193,11 @@ class PilotageController < ApplicationController
     @risque_manque_offres = params[:risque_manque_offres].present?
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres"]
+      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres",
+              "Date du dernier commentaire"]
       filtered_at_risk_companies.each do |r|
         csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque],
-                r[:company].risque_manque_offres? ? "Oui" : "Non"]
+                r[:company].risque_manque_offres? ? "Oui" : "Non", r[:last_note_at]&.strftime("%d/%m/%Y")]
       end
     end
 
@@ -226,7 +228,8 @@ class PilotageController < ApplicationController
         am: company.user,
         count: company_deals.size,
         arr_at_risk: company_deals.sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 },
-        max_risque: company_deals.map(&:risque_churn).max
+        max_risque: company_deals.map(&:risque_churn).max,
+        last_note_at: company.risk_notes.map(&:created_at).max
       }
     end
   end

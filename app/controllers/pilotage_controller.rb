@@ -2,6 +2,7 @@ require "csv"
 
 class PilotageController < ApplicationController
   NOT_QUALIFIED = "À qualifier"
+  NO_REFERENT = "Non attribué"
 
   def show
     @app_setting = AppSetting.instance
@@ -37,8 +38,11 @@ class PilotageController < ApplicationController
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
     @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+    @risque_referents = Array(params[:risque_referents]).reject(&:blank?)
     @risque_manque_offres = params[:risque_manque_offres].present?
     @available_risque_ams = @active_ams.map(&:name)
+    @referent_candidates = User.active.managers.order(:name).to_a
+    @available_referents = [NO_REFERENT] + @referent_candidates.map(&:name)
     @at_risk_companies = filtered_at_risk_companies
     @rque_pager = TablePager.new(@at_risk_companies, params: params, prefix: "rque",
       sort_procs: {
@@ -47,7 +51,8 @@ class PilotageController < ApplicationController
         count: ->(r) { TablePager.key(r[:count]) },
         arr_at_risk: ->(r) { TablePager.key(r[:arr_at_risk]) },
         max_risque: ->(r) { TablePager.key(r[:max_risque]) },
-        last_note_at: ->(r) { TablePager.key(r[:last_note_at]) }
+        last_note_at: ->(r) { TablePager.key(r[:last_note_at]) },
+        referent: ->(r) { TablePager.key(r[:company].referent&.name) }
       }, default_sort: :arr_at_risk, default_dir: "desc")
 
     @produit_q = params[:produit_q].to_s.strip
@@ -194,14 +199,16 @@ class PilotageController < ApplicationController
     @risque_produits = Array(params[:risque_produits]).reject(&:blank?)
     @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
     @risque_statuts = Array(params[:risque_statuts]).reject(&:blank?)
+    @risque_referents = Array(params[:risque_referents]).reject(&:blank?)
     @risque_manque_offres = params[:risque_manque_offres].present?
 
     csv = CSV.generate(col_sep: ";") do |csv|
       csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres",
-              "Date du dernier commentaire"]
+              "Date du dernier commentaire", "Référent"]
       filtered_at_risk_companies.each do |r|
         csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque],
-                r[:company].risque_manque_offres? ? "Oui" : "Non", r[:last_note_at]&.strftime("%d/%m/%Y")]
+                r[:company].risque_manque_offres? ? "Oui" : "Non", r[:last_note_at]&.strftime("%d/%m/%Y"),
+                r[:company].referent&.name]
       end
     end
 
@@ -215,7 +222,7 @@ class PilotageController < ApplicationController
   # risque_churn — grouped from the same filtered produit-deal scope filtered_global_produits uses, so the
   # AM/Équipe/Produit/Statut filters behave identically to every other Vue globale table.
   def filtered_at_risk_companies
-    deals = ProduitDeal.includes(company: [:user, :risk_notes]).to_a
+    deals = ProduitDeal.includes(company: [:user, :referent, :risk_notes]).to_a
     deals = deals.reject(&:churned?)
     deals = deals.select { |d| d.risque_churn.to_i > 0 }
     deals = deals.select { |d| d.company.name.downcase.include?(@risque_q.downcase) } if @risque_q.present?
@@ -225,6 +232,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @risque_assureurs.include?(d.assureur) } if @risque_assureurs.present?
     deals = deals.select { |d| @risque_statuts.include?(d.statut_renouvellement) } if @risque_statuts.present?
     deals = deals.select { |d| d.company.risque_manque_offres? } if @risque_manque_offres
+    deals = deals.select { |d| @risque_referents.include?(d.company.referent&.name || NO_REFERENT) } if @risque_referents.present?
 
     deals.group_by(&:company).map do |company, company_deals|
       {

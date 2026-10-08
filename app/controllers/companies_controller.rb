@@ -1,15 +1,20 @@
 class CompaniesController < ApplicationController
   before_action :require_admin!, only: [:destroy, :reassign_am]
 
-  # Scoped to exactly one flag on purpose (see risque_manque_offres on Company): "Entreprises à risque"
-  # (Vue globale) lets any signed-in user mark a company as at-risk for lack of offers, the same
-  # collaborative-record-keeping spirit as that table's risk notes — not a general company-edit endpoint.
+  # Scoped to "Entreprises à risque" (Vue globale) on purpose, not a general company-edit endpoint: any
+  # signed-in user may flag a company as at-risk for lack of offers (risque_manque_offres), the same
+  # collaborative-record-keeping spirit as that table's risk notes; naming its référent (the manager
+  # following the deal) is a workload-distribution decision, so it stays with admins/KAMs.
   def update
     company = Company.find(params[:id])
-    company.update!(params.require(:company).permit(:risque_manque_offres))
+    permitted = [:risque_manque_offres]
+    permitted << :referent_id if current_user.privileged?
+    company.update!(params.require(:company).permit(*permitted))
     redirect_to return_path, notice: "Mis à jour."
   rescue ActiveRecord::RecordNotFound
     redirect_to return_path, alert: "Client introuvable."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to return_path, alert: e.record.errors.full_messages.to_sentence
   end
 
   def destroy

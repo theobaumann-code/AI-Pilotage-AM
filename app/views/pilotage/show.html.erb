@@ -127,12 +127,13 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("risque_q", "risque_ams", "risque_ams_open", "risque_roles", "risque_roles_open",
-                "risque_produits", "risque_produits_open", "risque_assureurs", "risque_assureurs_open", "risque_statuts", "risque_statuts_open", "risque_manque_offres", "rque_page") %>
+                "risque_produits", "risque_produits_open", "risque_assureurs", "risque_assureurs_open", "risque_referents", "risque_referents_open", "risque_statuts", "risque_statuts_open", "risque_manque_offres", "rque_page") %>
           <%= live_search_field :risque_q, @risque_q %>
           <%= render "shared/checklist_filter", param_name: "risque_roles", options: @available_roles, selected: @risque_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "risque_ams", options: @available_risque_ams, selected: @risque_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "risque_produits", options: ProduitDeal::PRODUITS, selected: @risque_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "risque_assureurs", options: ProduitDeal::ASSUREURS, selected: @risque_assureurs, legend: "Assureur" %>
+          <%= render "shared/checklist_filter", param_name: "risque_referents", options: @available_referents, selected: @risque_referents, legend: "Référent" %>
           <%= render "shared/checklist_filter", param_name: "risque_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT - ProduitDeal::CHURNED_STATUSES, selected: @risque_statuts, legend: "Statut" %>
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
             <%= check_box_tag :risque_manque_offres, "1", @risque_manque_offres, onchange: "this.form.requestSubmit()" %>
@@ -140,7 +141,7 @@
           </label>
         <% end %>
         <%= link_to "Exporter CSV", export_risque_pilotage_path(risque_q: @risque_q, risque_ams: @risque_ams,
-              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_assureurs: @risque_assureurs, risque_statuts: @risque_statuts,
+              risque_roles: @risque_roles, risque_produits: @risque_produits, risque_assureurs: @risque_assureurs, risque_referents: @risque_referents, risque_statuts: @risque_statuts,
               risque_manque_offres: @risque_manque_offres), class: "button", data: { turbo: false } %>
       </div>
     </div>
@@ -150,6 +151,7 @@
           <tr>
             <%= sortable_th(@rque_pager, :nom, "Nom du client", col_class: "col-nom") %>
             <%= sortable_th(@rque_pager, :am, "AM") %>
+            <%= sortable_th(@rque_pager, :referent, "Référent") %>
             <%= sortable_th(@rque_pager, :count, "Nb produits à risque") %>
             <%= sortable_th(@rque_pager, :arr_at_risk, "ARR à risque (€)") %>
             <%= sortable_th(@rque_pager, :max_risque, "% risque max") %>
@@ -160,12 +162,24 @@
         </thead>
         <tbody>
           <% if @rque_pager.records.empty? %>
-            <tr><td colspan="8" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
+            <tr><td colspan="9" class="empty-state">Aucune entreprise à risque pour ce filtre.</td></tr>
           <% else %>
             <% @rque_pager.records.each do |r| %>
               <tr id="<%= dom_id(r[:company], :risque) %>">
                 <td><strong><%= r[:company].name %></strong></td>
                 <td><%= r[:am].name %></td>
+                <td>
+                  <% if current_user.privileged? %>
+                    <% current_referent = r[:company].referent %>
+                    <% referent_choices = (@referent_candidates + [current_referent]).compact.uniq.sort_by(&:name) %>
+                    <%= form_with model: r[:company], url: company_path(r[:company], return_to: request.fullpath), method: :patch do |f| %>
+                      <%= f.select :referent_id, options_from_collection_for_select(referent_choices, :id, :name, r[:company].referent_id),
+                            { include_blank: PilotageController::NO_REFERENT }, onchange: "this.form.requestSubmit()" %>
+                    <% end %>
+                  <% else %>
+                    <%= r[:company].referent&.name || "—" %>
+                  <% end %>
+                </td>
                 <td class="numeric"><%= r[:count] %></td>
                 <td class="numeric" style="color:var(--red)"><%= number_to_currency(r[:arr_at_risk], unit: "€", format: "%n %u", precision: 0) %></td>
                 <td class="numeric"><%= r[:max_risque] %>%</td>

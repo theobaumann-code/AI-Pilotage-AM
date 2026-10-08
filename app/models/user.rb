@@ -25,6 +25,8 @@ class User < ApplicationRecord
   # portfolio can't simply be deleted (unlike the original's blind wipe); reassign or deactivate instead.
 
   scope :active, -> { where(active: true) }
+  # Admins and KAMs — the managers who can be named "référent" on an at-risk company.
+  scope :managers, -> { where(admin: true).or(where(kam: true)) }
 
   def active_for_authentication?
     super && active?

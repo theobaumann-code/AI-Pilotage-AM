@@ -1,5 +1,10 @@
 class Company < ApplicationRecord
   belongs_to :user
+  # The manager (admin/KAM) following this company's at-risk deals — set from Vue globale's "Entreprises à
+  # risque" to spread that follow-up across managers. Independent of the AM (user), who owns the portfolio.
+  belongs_to :referent, class_name: "User", optional: true
+
+  validate :referent_must_be_privileged, if: :referent_id_changed?
 
   has_many :deals, dependent: :destroy
   has_many :produit_deals, -> { where(type: "ProduitDeal") }, class_name: "ProduitDeal", inverse_of: :company
@@ -14,6 +19,11 @@ class Company < ApplicationRecord
 
   def sync_to_google_sheets
     GoogleSheetsSyncJob.enqueue
+  end
+
+  def referent_must_be_privileged
+    return if referent.nil? || (referent.active? && referent.privileged?)
+    errors.add(:referent, "doit être un admin ou un KAM actif")
   end
 
   # A plain find_or_create_by!(name: ...) looks up by an exact, case-sensitive match — given the model's

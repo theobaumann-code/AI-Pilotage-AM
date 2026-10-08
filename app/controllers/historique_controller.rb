@@ -6,10 +6,13 @@ class HistoriqueController < ApplicationController
     @statuts = Array(params[:statuts])
     @ams = Array(params[:ams])
     @assureurs = Array(params[:assureurs])
+    @taux_min = numeric_param(params[:taux_min])
+    @taux_max = numeric_param(params[:taux_max])
     @years = params[:years].present? ? Array(params[:years]).map(&:to_i) : [@current_year]
 
     @query = HistoriqueQuery.new(current_year: @current_year, produit: @produit, noms: @noms,
-      statuts: @statuts, ams: @ams, assureurs: @assureurs, years: @years)
+      statuts: @statuts, ams: @ams, assureurs: @assureurs, years: @years,
+      taux_min: @taux_min, taux_max: @taux_max)
     @rows = @query.rows.sort_by { |r| [r.nom, r.produit, r.annee] }
     @hist_pager = TablePager.new(@rows, params: params, prefix: "hist",
       sort_procs: {

@@ -55,6 +55,8 @@ class PilotageController < ApplicationController
     @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
     @produit_assureurs = Array(params[:produit_assureurs]).reject(&:blank?)
+    @produit_taux_min = numeric_param(params[:produit_taux_min])
+    @produit_taux_max = numeric_param(params[:produit_taux_max])
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
     @available_produit_ams = @active_ams.map(&:name)
     @global_produits = filtered_global_produits
@@ -142,6 +144,8 @@ class PilotageController < ApplicationController
     @produit_roles = Array(params[:produit_roles]).reject(&:blank?)
     @produit_produits = Array(params[:produit_produits]).reject(&:blank?)
     @produit_assureurs = Array(params[:produit_assureurs]).reject(&:blank?)
+    @produit_taux_min = numeric_param(params[:produit_taux_min])
+    @produit_taux_max = numeric_param(params[:produit_taux_max])
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
@@ -273,6 +277,8 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| @produit_roles.include?(d.company.user.role_label) } if @produit_roles.present?
     deals = deals.select { |d| @produit_produits.include?(d.produit) } if @produit_produits.present?
     deals = deals.select { |d| @produit_assureurs.include?(d.assureur) } if @produit_assureurs.present?
+    deals = deals.select { |d| d.taux.to_f >= @produit_taux_min } if @produit_taux_min
+    deals = deals.select { |d| d.taux.to_f <= @produit_taux_max } if @produit_taux_max
     deals = deals.select { |d| @produit_statuts.include?(d.statut_renouvellement) } if @produit_statuts.present?
     deals.sort_by { |d| d.company.name }
   end

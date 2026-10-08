@@ -88,6 +88,9 @@
       <label>Assureur :
         <%= render "shared/checklist_filter", param_name: "assureurs", options: ProduitDeal::ASSUREURS, selected: @assureurs, legend: "Tous les assureurs" %>
       </label>
+      <label>Taux de renouvellement :
+        <%= render "shared/range_filter", min_name: "taux_min", max_name: "taux_max", min: @taux_min, max: @taux_max, legend: "Taux (%)" %>
+      </label>
     </div>
 
     <div class="year-filter" style="margin:14px 0;">

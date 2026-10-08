@@ -38,8 +38,11 @@ class HistoriqueQuery
     "Churné (subi)" => "var(--text-muted)"
   }.freeze
 
-  def initialize(current_year:, produit: nil, noms: [], statuts: [], ams: [], assureurs: [], years: [])
+  def initialize(current_year:, produit: nil, noms: [], statuts: [], ams: [], assureurs: [], years: [],
+                 taux_min: nil, taux_max: nil)
     @current_year = current_year
+    @taux_min = taux_min
+    @taux_max = taux_max
     @produit = produit.presence
     @noms = Array(noms).reject(&:blank?)
     @statuts = Array(statuts).reject(&:blank?)
@@ -123,6 +126,8 @@ class HistoriqueQuery
     scope = scope.where(statut_renouvellement: @statuts) if @statuts.any?
     scope = scope.where(am_name: @ams) if @ams.any?
     scope = scope.where(assureur: @assureurs) if @assureurs.any?
+    scope = scope.where("taux >= ?", @taux_min) if @taux_min
+    scope = scope.where("taux <= ?", @taux_max) if @taux_max
     scope.map { |a| Row.from_archive_entry(a) }
   end
 
@@ -135,6 +140,8 @@ class HistoriqueQuery
       next if @noms.any? && !@noms.include?(d.company.name)
       next if @ams.any? && !@ams.include?(d.company.user.name)
       next if @assureurs.any? && !@assureurs.include?(d.assureur)
+      next if @taux_min && d.taux.to_f < @taux_min
+      next if @taux_max && d.taux.to_f > @taux_max
       Row.new(id: d.id, nom: d.company.name, am: d.company.user.name, produit: d.produit,
         identifiant: d.identifiant, assureur: d.assureur, annee: @current_year, arr: d.arr, taux: d.taux,
         statut_renouvellement: d.statut_renouvellement, is_live: true)

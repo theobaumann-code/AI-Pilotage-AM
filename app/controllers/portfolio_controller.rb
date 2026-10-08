@@ -30,6 +30,8 @@ class PortfolioController < ApplicationController
     @ren_q = params[:ren_q].to_s.strip
     @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
     @ren_assureurs = Array(params[:ren_assureurs]).reject(&:blank?)
+    @ren_taux_min = numeric_param(params[:ren_taux_min])
+    @ren_taux_max = numeric_param(params[:ren_taux_max])
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
     ren_rows = filtered_produit_deals
     # ARR-weighted like Company#avg_increase_pct, over every filtered row (not just the current page) so
@@ -76,6 +78,8 @@ class PortfolioController < ApplicationController
     @ren_q = params[:ren_q].to_s.strip
     @ren_produits = Array(params[:ren_produits]).reject(&:blank?)
     @ren_assureurs = Array(params[:ren_assureurs]).reject(&:blank?)
+    @ren_taux_min = numeric_param(params[:ren_taux_min])
+    @ren_taux_max = numeric_param(params[:ren_taux_max])
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
@@ -104,6 +108,8 @@ class PortfolioController < ApplicationController
     rows = filter_by_name(@produit_deals, @ren_q) { |d| d.company.name }
     rows = rows.select { |d| @ren_produits.include?(d.produit) } if @ren_produits.present?
     rows = rows.select { |d| @ren_assureurs.include?(d.assureur) } if @ren_assureurs.present?
+    rows = rows.select { |d| d.taux.to_f >= @ren_taux_min } if @ren_taux_min
+    rows = rows.select { |d| d.taux.to_f <= @ren_taux_max } if @ren_taux_max
     rows = rows.select { |d| @ren_statuts.include?(d.statut_renouvellement) } if @ren_statuts.present?
     rows
   end

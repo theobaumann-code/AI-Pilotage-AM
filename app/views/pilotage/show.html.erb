@@ -202,16 +202,17 @@
       <div class="table-toolbar-controls">
         <%= form_with url: request.path, method: :get do %>
           <%= preserved_query_fields("produit_q", "produit_ams", "produit_ams_open", "produit_roles", "produit_roles_open",
-                "produit_produits", "produit_produits_open", "produit_assureurs", "produit_assureurs_open", "produit_statuts", "produit_statuts_open", "gprod_page") %>
+                "produit_produits", "produit_produits_open", "produit_assureurs", "produit_assureurs_open", "produit_taux_min", "produit_taux_max", "produit_statuts", "produit_statuts_open", "gprod_page") %>
           <%= live_search_field :produit_q, @produit_q %>
           <%= render "shared/checklist_filter", param_name: "produit_roles", options: @available_roles, selected: @produit_roles, legend: "Équipe" %>
           <%= render "shared/checklist_filter", param_name: "produit_ams", options: @available_produit_ams, selected: @produit_ams, legend: "AM" %>
           <%= render "shared/checklist_filter", param_name: "produit_produits", options: ProduitDeal::PRODUITS, selected: @produit_produits, legend: "Produit" %>
           <%= render "shared/checklist_filter", param_name: "produit_assureurs", options: ProduitDeal::ASSUREURS, selected: @produit_assureurs, legend: "Assureur" %>
+          <%= render "shared/range_filter", min_name: "produit_taux_min", max_name: "produit_taux_max", min: @produit_taux_min, max: @produit_taux_max, legend: "Taux (%)" %>
           <%= render "shared/checklist_filter", param_name: "produit_statuts", options: ProduitDeal::STATUTS_RENOUVELLEMENT, selected: @produit_statuts, legend: "Statut" %>
         <% end %>
         <%= link_to "Exporter CSV", export_produits_pilotage_path(produit_q: @produit_q, produit_ams: @produit_ams,
-              produit_roles: @produit_roles, produit_produits: @produit_produits, produit_assureurs: @produit_assureurs, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
+              produit_roles: @produit_roles, produit_produits: @produit_produits, produit_assureurs: @produit_assureurs, produit_taux_min: @produit_taux_min, produit_taux_max: @produit_taux_max, produit_statuts: @produit_statuts), class: "button", data: { turbo: false } %>
       </div>
     </div>
     <div class="table-scroll">

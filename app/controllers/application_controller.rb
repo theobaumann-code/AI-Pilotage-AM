@@ -38,6 +38,14 @@ class ApplicationController < ActionController::Base
   end
   helper_method :viewed_user
 
+  # A numeric filter bound from the query string — nil when blank or not a number, so a typo never raises
+  # and simply leaves that side of the range open. Accepts a comma as decimal separator.
+  def numeric_param(value)
+    Float(value.to_s.strip.tr(",", "."))
+  rescue ArgumentError
+    nil
+  end
+
   # A non-admin AM must always be restricted to their own companies, even for actions that aren't
   # admin-gated in the original (e.g. deleting an upsell) — the original never needed this because it had
   # no real multi-user isolation at all; this is a deliberate strengthening, not a behavior port.

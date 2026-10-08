@@ -1,0 +1,11 @@
+<%# locals: min_name, max_name, min, max (Float or nil), legend — a numeric min/max pair that submits its
+    surrounding GET form on change, like the checklist filters next to it. Either side may be left empty. %>
+<% display = ->(v) { v.nil? ? nil : (v % 1 == 0 ? v.to_i : v) } %>
+<div class="range-filter <%= "active" if min || max %>">
+  <span class="range-filter-label"><%= legend %></span>
+  <%= number_field_tag min_name, display.call(min), step: "any", placeholder: "min", id: nil,
+        "aria-label": "#{legend} minimum", onchange: "this.form.requestSubmit()" %>
+  <span aria-hidden="true">–</span>
+  <%= number_field_tag max_name, display.call(max), step: "any", placeholder: "max", id: nil,
+        "aria-label": "#{legend} maximum", onchange: "this.form.requestSubmit()" %>
+</div>

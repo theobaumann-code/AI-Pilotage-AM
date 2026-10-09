@@ -185,7 +185,7 @@
                 <td class="numeric"><%= r[:max_risque] %>%</td>
                 <td>
                   <%= form_with model: r[:company], url: company_path(r[:company], return_to: request.fullpath), method: :patch do |f| %>
-                    <%= f.check_box :risque_manque_offres, onchange: "this.form.requestSubmit()" %>
+                    <%= f.check_box :risque_manque_offres, disabled: current_user.read_only?, onchange: "this.form.requestSubmit()" %>
                   <% end %>
                 </td>
                 <td><%= r[:last_note_at] ? l(r[:last_note_at].to_date, format: "%d/%m/%Y") : "—" %></td>

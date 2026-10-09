@@ -27,6 +27,14 @@ class User < ApplicationRecord
   scope :active, -> { where(active: true) }
   # Admins and KAMs — the managers who can be named "référent" on an at-risk company.
   scope :managers, -> { where(admin: true).or(where(kam: true)) }
+  # Everyone who can own a portfolio or be picked in a table filter/select: active users minus "lecteurs",
+  # who only sign in to consult and would just make those lists longer.
+  scope :assignable, -> { active.where(reader: false) }
+
+  # Admin/KAM always win over a stale reader flag (e.g. promoting a lecteur through the admin/KAM toggle
+  # buttons, which only set their own flag) — a lecteur is by definition neither.
+  before_save { self.reader = false if admin? || kam? }
+  validate :reader_owns_no_company, if: :read_only?
 
   def active_for_authentication?
     super && active?
@@ -41,19 +49,27 @@ class User < ApplicationRecord
   def role
     return :admin if admin?
     return :kam if kam?
+    return :reader if reader?
     :am
   end
 
   def role_label
-    { admin: "Admin", kam: "KAM", am: "AM" }.fetch(role)
+    { admin: "Admin", kam: "KAM", reader: "Lecteur", am: "AM" }.fetch(role)
   end
 
-  # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin) instead of
-  # two independent checkboxes — assignable like any other attribute (user.update(role: "KAM")). Any value
-  # other than the three known labels is treated as "AM", the safe default.
+  # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin/Lecteur)
+  # instead of independent checkboxes — assignable like any other attribute (user.update(role: "KAM")). Any
+  # value other than the known labels is treated as "AM", the safe default.
   def role=(label)
     self.admin = (label.to_s == "Admin")
     self.kam = (label.to_s == "KAM")
+    self.reader = (label.to_s == "Lecteur")
+  end
+
+  # A "lecteur" can sign in and look at everything but change nothing — enforced server-side for every
+  # non-GET request (see ApplicationController#block_read_only_users!), not just by hiding buttons.
+  def read_only?
+    role == :reader
   end
 
   # KAM has the same rights as admin everywhere in the app (see ApplicationController#require_admin! and
@@ -62,5 +78,12 @@ class User < ApplicationRecord
   # "is a real administrator" for the last-admin safeguard and the role badge.
   def privileged?
     admin? || kam?
+  end
+
+  private
+
+  def reader_owns_no_company
+    return unless companies.exists?
+    errors.add(:base, "Un lecteur ne peut pas avoir de clients : réassignez d'abord les clients de #{name}.")
   end
 end

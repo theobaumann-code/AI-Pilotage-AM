@@ -36,7 +36,7 @@ module ApplicationHelper
     SIGNATURE_STATUT_CLASS[statut]
   end
 
-  ROLE_BADGE_CLASS = { admin: "ok", kam: "kam", am: "warn" }.freeze
+  ROLE_BADGE_CLASS = { admin: "ok", kam: "kam", reader: "reader", am: "warn" }.freeze
 
   def role_badge_class(user)
     ROLE_BADGE_CLASS[user.role]

@@ -30,16 +30,22 @@
         <p class="empty-state" style="margin:0;">Aucun commentaire.</p>
       </div>
     <% end %>
-    <%= form_with url: risk_notes_path, method: :post do %>
-      <%= hidden_field_tag :company_id, company.id %>
-      <%= hidden_field_tag :return_to, request.fullpath %>
-      <div class="modal-body">
-        <textarea name="risk_note[content]" rows="2" placeholder="Nouvelle démarche…" required style="width:100%;"></textarea>
-      </div>
+    <% if current_user.read_only? %>
       <div class="modal-footer">
-        <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
-        <button type="submit" class="button primary">Ajouter</button>
+        <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Fermer</button>
       </div>
+    <% else %>
+      <%= form_with url: risk_notes_path, method: :post do %>
+        <%= hidden_field_tag :company_id, company.id %>
+        <%= hidden_field_tag :return_to, request.fullpath %>
+        <div class="modal-body">
+          <textarea name="risk_note[content]" rows="2" placeholder="Nouvelle démarche…" required style="width:100%;"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="button ghost-burgundy" onclick="this.closest('details').removeAttribute('open')">Annuler</button>
+          <button type="submit" class="button primary">Ajouter</button>
+        </div>
+      <% end %>
     <% end %>
   </div>
 </details>

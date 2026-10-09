@@ -5,6 +5,7 @@ class Company < ApplicationRecord
   belongs_to :referent, class_name: "User", optional: true
 
   validate :referent_must_be_privileged, if: :referent_id_changed?
+  validate :owner_must_not_be_reader, if: :user_id_changed?
 
   has_many :deals, dependent: :destroy
   has_many :produit_deals, -> { where(type: "ProduitDeal") }, class_name: "ProduitDeal", inverse_of: :company
@@ -19,6 +20,10 @@ class Company < ApplicationRecord
 
   def sync_to_google_sheets
     GoogleSheetsSyncJob.enqueue
+  end
+
+  def owner_must_not_be_reader
+    errors.add(:user, "ne peut pas être un lecteur") if user&.read_only?
   end
 
   def referent_must_be_privileged

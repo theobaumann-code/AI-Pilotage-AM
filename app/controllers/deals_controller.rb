@@ -59,7 +59,7 @@ class DealsController < ApplicationController
   # not a routine field edit — a full-page redirect (like the admin-toggle/deactivate buttons) is simpler
   # and more correct here than trying to enumerate every row a reassignment could affect via turbo_stream.
   def reassign_am
-    new_user = User.active.find(params[:user_id])
+    new_user = User.assignable.find(params[:user_id])
 
     if @deal.is_a?(ProduitDeal)
       @deal.company.reassign_am!(new_user)
@@ -170,7 +170,7 @@ class DealsController < ApplicationController
       scoped_company(params[:company_id])
     elsif params[:new_company_name].present?
       owner = if current_user.privileged? && params[:new_company_user_id].present?
-        User.active.find(params[:new_company_user_id])
+        User.assignable.find(params[:new_company_user_id])
       else
         current_user
       end

@@ -27,7 +27,7 @@ class CompaniesController < ApplicationController
 
   def reassign_am
     company = Company.find(params[:id])
-    new_user = User.active.find(params[:user_id])
+    new_user = User.assignable.find(params[:user_id])
     company.reassign_am!(new_user)
     redirect_to portfolio_path, notice: "#{company.name} réassigné à #{new_user.name}."
   rescue ActiveRecord::RecordNotFound

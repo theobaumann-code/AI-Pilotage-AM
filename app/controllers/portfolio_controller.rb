@@ -2,6 +2,9 @@ require "csv"
 
 class PortfolioController < ApplicationController
   def show
+    # A lecteur owns no portfolio — Mon portefeuille would just be an empty page, so Vue globale is their home.
+    return redirect_to pilotage_path if current_user.read_only?
+
     # produit_deals/upsell_deals are separate has_many associations from :deals (each scoped by `type`), so
     # `includes(:deals)` wouldn't preload them — Company's own arr_initial/churned_arr/upsold_arr/final_arr
     # (used per row below) and @produit_deals all call them directly, one query per company otherwise.
@@ -12,7 +15,7 @@ class PortfolioController < ApplicationController
     # here even for a company they don't otherwise own, and one reassigned away from them doesn't, even for
     # one of their own companies. See Deal#effective_user / PortfolioSummary.
     @upsell_deals = @summary.upsell_deals.sort_by { |d| d.company.name }
-    @viewable_ams = current_user.privileged? ? User.active.order(:name) : nil
+    @viewable_ams = current_user.privileged? ? User.assignable.order(:name) : nil
     @selectable_companies = current_user.privileged? ? Company.order(:name) : current_user.companies.order(:name)
 
     @evo_q = params[:evo_q].to_s.strip

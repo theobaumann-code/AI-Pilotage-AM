@@ -232,6 +232,7 @@ select:focus, input[type=text]:focus, input[type=number]:focus, input[type=email
 .badge.ko{background:var(--red-bg);color:var(--red);}
 .badge.warn{background:var(--amber-bg);color:var(--amber);}
 .badge.kam{background:var(--cream);color:var(--burgundy);}
+.badge.reader{background:var(--track-bg);color:var(--text-muted);}
 
 .progress-track{margin-top:8px;height:6px;background:var(--track-bg);border-radius:999px;overflow:hidden;}
 .progress-fill{height:100%;border-radius:999px;background:var(--primary);}

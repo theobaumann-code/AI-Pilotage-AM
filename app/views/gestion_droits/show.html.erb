@@ -20,7 +20,7 @@
           </div>
           <div class="modal-row">
             <label>Équipe
-              <%= f.select :role, ["AM", "KAM", "Admin"], selected: "AM" %>
+              <%= f.select :role, ["AM", "KAM", "Admin", "Lecteur"], selected: "AM" %>
             </label>
           </div>
         </div>
@@ -122,7 +122,7 @@
           </div>
           <div class="modal-row">
             <label>Équipe
-              <%= select_tag "user[role]", options_for_select(["AM", "KAM", "Admin"]), id: "edit-am-role" %>
+              <%= select_tag "user[role]", options_for_select(["AM", "KAM", "Admin", "Lecteur"]), id: "edit-am-role" %>
             </label>
           </div>
         </div>

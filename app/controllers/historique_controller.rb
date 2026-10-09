@@ -34,7 +34,7 @@ class HistoriqueController < ApplicationController
     live_noms = Company.joins(:deals).where(deals: { type: "ProduitDeal" }).distinct.pluck(:name)
     @available_noms = (archived_noms + live_noms).uniq.sort
 
-    @available_ams = User.active.order(:name).pluck(:name)
+    @available_ams = User.assignable.order(:name).pluck(:name)
 
     sorted_years = @years.sort
     @taux_chart = @query.taux_series(sorted_years)

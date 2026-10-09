@@ -9,7 +9,7 @@
   <div class="toolbar" style="margin-bottom:14px;">
     <%= form_with url: autres_statistiques_path, method: :get do %>
       <label>AM :
-        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.active.order(:name), :id, :name, @renewal_am_id),
+        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.assignable.order(:name), :id, :name, @renewal_am_id),
               include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
       </label>
       <label>Produit :

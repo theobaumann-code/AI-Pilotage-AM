@@ -125,7 +125,7 @@ class AutresStatistiquesController < ApplicationController
   # no meaningful NRR and are left out.
   def nrr_by_am
     companies_by_user = Company.includes(:produit_deals).group_by(&:user_id)
-    User.active.order(:name).filter_map do |am|
+    User.assignable.order(:name).filter_map do |am|
       summary = PortfolioSummary.new(companies_by_user[am.id] || [], user: am)
       next if summary.arr_initial <= 0
       { am: am.name, nrr: summary.nrr, nrr_actual: summary.nrr_actual }

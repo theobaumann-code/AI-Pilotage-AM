@@ -78,7 +78,7 @@ class CsvImport
         raise ApplyError, "#{u.company_name} : #{e.message}"
       end
       to_create.each do |c|
-        am = User.active.find_by(name: c.am_name)
+        am = User.assignable.find_by(name: c.am_name)
         company = Company.find_or_create_by_name!(c.company_name, user: am)
         reassign_company(company, c.am_name) if company.user.name != c.am_name
         klass = deal_type == "upsell" ? UpsellDeal : ProduitDeal
@@ -96,7 +96,7 @@ class CsvImport
   private
 
   def reassign_company(company, am_name)
-    am = User.active.find_by(name: am_name)
+    am = User.assignable.find_by(name: am_name)
     company.reassign_am!(am) if am
   end
 
@@ -189,7 +189,7 @@ class CsvImport
       @errors << "Ligne #{idx + 2} (#{row_label}) : AM manquant — ligne ignorée."
       return nil
     end
-    matched = @active_am_names ||= User.active.pluck(:name)
+    matched = @active_am_names ||= User.assignable.pluck(:name)
     found = matched.find { |am| normalize_loose(am) == normalize_loose(raw) }
     unless found
       @errors << "Ligne #{idx + 2} (#{row_label}) : AM \"#{raw}\" non reconnu (attendu : #{matched.join(" / ")}). Ligne ignorée."

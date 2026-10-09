@@ -6,9 +6,21 @@ class ApplicationController < ActionController::Base
   stale_when_importmap_changes
 
   before_action :authenticate_user!
+  before_action :block_read_only_users!
 
   private
 
+  # "Lecteurs" can look at everything but change nothing: every request that isn't a plain read (anything
+  # other than GET/HEAD — inline edits, form posts, deletes, imports) is refused here, before any action
+  # runs, so no individual controller has to remember to check. Signing out (a DELETE on a Devise
+  # controller) stays allowed, otherwise a lecteur couldn't leave.
+  def block_read_only_users!
+    return if devise_controller? || request.get? || request.head?
+    return unless current_user&.read_only?
+
+    redirect_back fallback_location: pilotage_path, alert: "Accès en lecture seule : modification impossible.",
+      status: :see_other
+  end
   # Shared gate for the ~15 admin-only actions from the original app (add/delete AM, add/delete produit
   # deal, identifiant/arr fields, CSV import, year close, trash restore/purge, archived-row editing...).
   # KAM has the exact same rights as admin (User#privileged?) — only the NRR/portfolio math stays identical

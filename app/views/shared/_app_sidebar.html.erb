@@ -7,8 +7,10 @@
 
     <nav class="app-navigation" aria-label="Navigation principale">
       <div class="app-nav-group">Espace de travail</div>
-      <%= link_to portfolio_path, class: "app-nav-link #{'active' if current_page?(portfolio_path)}", aria: { current: ("page" if current_page?(portfolio_path)) } do %>
-        <i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>Mon portefeuille</span>
+      <% unless current_user.read_only? %>
+        <%= link_to portfolio_path, class: "app-nav-link #{'active' if current_page?(portfolio_path)}", aria: { current: ("page" if current_page?(portfolio_path)) } do %>
+          <i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>Mon portefeuille</span>
+        <% end %>
       <% end %>
       <%= link_to pilotage_path, class: "app-nav-link #{'active' if current_page?(pilotage_path)}", aria: { current: ("page" if current_page?(pilotage_path)) } do %>
         <i class="fa-regular fa-chart-bar" aria-hidden="true"></i><span>Vue globale</span>

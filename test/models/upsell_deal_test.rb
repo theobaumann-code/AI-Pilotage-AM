@@ -57,6 +57,31 @@ class UpsellDealTest < ActiveSupport::TestCase
     assert_equal 0, deal.probabilite_signature
   end
 
+  test "marking Perdu forces probabilite_signature to 0, so a lost deal contributes nothing to the projection" do
+    deal = build_deal(probabilite_signature: 70, statut_signature: "En cours")
+    deal.save!
+    assert_operator deal.projection, :>, 0
+
+    deal.update!(statut_signature: "Perdu")
+    assert_equal 0, deal.probabilite_signature
+    assert_equal 0, deal.projection
+    assert deal.lost?
+    assert deal.decided?
+  end
+
+  test "a lost deal stays at 0 even if a probability is submitted with it, and nothing is restored when reopened" do
+    deal = build_deal(probabilite_signature: 70, statut_signature: "Perdu")
+    deal.save!
+    assert_equal 0, deal.probabilite_signature
+
+    deal.update!(probabilite_signature: 55)
+    assert_equal 0, deal.probabilite_signature
+
+    deal.update!(statut_signature: "En cours")
+    assert_equal 0, deal.probabilite_signature
+    assert_not deal.decided?
+  end
+
   test "editing another field on an already-non-signed upsell does not touch probabilite_signature" do
     deal = build_deal(probabilite_signature: 40, statut_signature: "En cours")
     deal.save!

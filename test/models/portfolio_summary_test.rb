@@ -88,6 +88,17 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta signed.upsell_amount + pipeline.upsell_amount * 0.5, summary.upsold, 0.01
   end
 
+  test "a lost upsell no longer counts in the projected upsell, even if it had a high chance before the decision" do
+    kept = UpsellDeal.create!(company: @company, produit: "Mutuelle", nombre_salaries: 10,
+      probabilite_signature: 50, statut_signature: "En cours")
+    lost = UpsellDeal.create!(company: @company, produit: "Prévoyance", nombre_salaries: 5,
+      probabilite_signature: 80, statut_signature: "En cours")
+    assert_in_delta kept.upsell_amount * 0.5 + lost.upsell_amount * 0.8, summary.upsold, 0.01
+
+    lost.update!(statut_signature: "Perdu")
+    assert_in_delta kept.upsell_amount * 0.5, summary.upsold, 0.01
+  end
+
   test "churn_projete is the risk-weighted ARR of produits that haven't churned yet" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 20)

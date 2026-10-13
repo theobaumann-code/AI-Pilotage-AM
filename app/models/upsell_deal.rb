@@ -2,6 +2,7 @@ class UpsellDeal < Deal
   PRODUITS = (ProduitDeal::PRODUITS + ["Mutuelle/Prévoyance"]).freeze
   STATUTS_SIGNATURE = ["Non démarré", "En cours", "Signé", "Perdu"].freeze
   SIGNE = "Signé"
+  PERDU = "Perdu"
 
   # Generic per-employee reference formula — communicated directly by Sarra Bachar on 2026-09-30, replacing
   # the Bonus Tracker BO estimate for upsells: Bonus Tracker's per-company invoice-based estimate turned out
@@ -38,6 +39,16 @@ class UpsellDeal < Deal
 
   def signed?
     statut_signature == SIGNE
+  end
+
+  def lost?
+    statut_signature == PERDU
+  end
+
+  # Signed or lost: the client has decided, so the "% de chance" no longer is an estimate to edit — it's
+  # forced to 100 / 0 (see apply_business_rules).
+  def decided?
+    signed? || lost?
   end
 
   def arr_estimable?
@@ -83,6 +94,10 @@ class UpsellDeal < Deal
   def apply_business_rules
     if signed?
       self.probabilite_signature = 100
+    elsif lost?
+      # A lost deal is a certainty, not an estimate: left alone, it kept contributing its pre-decision
+      # probability-weighted ARR to every projection (Upsell/ARR final projeté, NRR projeté).
+      self.probabilite_signature = 0
     elsif statut_signature_changed? && statut_signature_was == SIGNE
       self.probabilite_signature = 0
     end

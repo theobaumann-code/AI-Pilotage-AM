@@ -34,7 +34,7 @@
   <td class="numeric">
     <% if current_user.privileged? %>
       <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
-        <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.signed?, onchange: "this.form.requestSubmit()" %>
+        <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.decided?, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
       <%= deal.probabilite_signature %>%

@@ -1,165 +1,188 @@
 <% content_for :title, "Autres statistiques — Pilotage NRR" %>
 <% content_for :page_class, "statistics-page" %>
+<% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
+<% pct = ->(v) { "#{number_with_precision(v, precision: 1)} %" } %>
 
 <h1 class="section-title">Autres statistiques</h1>
-<p class="section-sub">Statistiques complémentaires, séparées de Vue globale.</p>
+<p class="section-sub">Statistiques complémentaires, séparées de Vue globale. Les filtres ci-dessous s'appliquent à tous les rapports de la page.</p>
 
-<div class="chart-wrap">
-  <h2>Renouvellements : nouveau contrat vs augmentation</h2>
-  <div class="toolbar" style="margin-bottom:14px;">
-    <%= form_with url: autres_statistiques_path, method: :get do %>
-      <label>AM :
-        <%= select_tag :renewal_am_id, options_from_collection_for_select(User.assignable.order(:name), :id, :name, @renewal_am_id),
-              include_blank: "Tous les AM", onchange: "this.form.requestSubmit()" %>
-      </label>
-      <label>Produit :
-        <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
-              include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
-      </label>
+<div class="toolbar stats-filters">
+  <%= form_with url: autres_statistiques_path, method: :get do %>
+    <%= preserved_query_fields("roles", "roles_open", "ams", "ams_open") %>
+    <%= render "shared/checklist_filter", param_name: "roles", options: @available_roles, selected: @roles, legend: "Équipe" %>
+    <%= render "shared/checklist_filter", param_name: "ams", options: @available_ams, selected: @ams, legend: "AM" %>
+    <% if @filter_active %>
+      <%= link_to "Réinitialiser", autres_statistiques_path(renewal_produit: @renewal_produit.presence), class: "button ghost-burgundy" %>
+      <span class="stats-filters-note"><%= @scoped_ams.size %> AM dans le périmètre</span>
     <% end %>
-  </div>
-  <%= donut_chart(@renewal_donut) %>
+  <% end %>
 </div>
 
-<div class="chart-wrap">
-  <h2>Répartition de l'ARR par produit</h2>
-  <p class="section-sub" style="margin-top:-8px;">Portefeuille actif actuel (hors churn, hors churn subi).</p>
-  <%= donut_chart(@arr_by_produit, value_format: ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) },
-        total_label: ->(t) { "Total : #{number_to_currency(t, unit: "€", format: "%n %u", precision: 0)}" }) %>
-</div>
-
-<div class="chart-wrap">
-  <h2>Répartition de l'ARR par assureur</h2>
-  <p class="section-sub" style="margin-top:-8px;">Portefeuille actif actuel (hors churn, hors churn subi).</p>
-  <%= donut_chart(@arr_by_assureur, value_format: ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) },
-        total_label: ->(t) { "Total : #{number_to_currency(t, unit: "€", format: "%n %u", precision: 0)}" }) %>
-</div>
-
-<div class="section-card">
-  <div class="table-toolbar">
-    <h2>Concentration du portefeuille</h2>
-  </div>
-  <p class="section-sub" style="margin-top:-8px;">
-    Les 10 plus gros clients représentent <strong><%= number_with_precision(@concentration[:top10_pct], precision: 1) %>%</strong>
-    de l'ARR actif total (<%= number_to_currency(@concentration[:total], unit: "€", format: "%n %u", precision: 0) %>).
-  </p>
-  <div class="table-scroll">
-    <table class="deals-table">
-      <thead>
-        <tr>
-          <th class="numeric">#</th>
-          <th>Client</th>
-          <th>AM</th>
-          <th class="numeric">ARR</th>
-          <th class="numeric">% du portefeuille</th>
-          <th class="numeric">% cumulé</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @concentration[:rows].empty? %>
-          <tr><td colspan="6" class="empty-state">Aucune donnée.</td></tr>
-        <% else %>
-          <% @concentration[:rows].each_with_index do |r, i| %>
+<section class="stats-section">
+  <h2 class="stats-section-title">Performance des AM</h2>
+  <div class="section-card">
+    <div class="table-toolbar">
+      <h3>NRR, upsell, renouvellement et churn par AM</h3>
+    </div>
+    <% if @am_performance.empty? %>
+      <div class="empty-state">Aucune donnée pour ce filtre.</div>
+    <% else %>
+      <% scale = nrr_scale(@am_performance, PortfolioSummary::NRR_TARGET) %>
+      <p class="section-sub" style="margin:4px 0 14px;">
+        Chiffres calculés comme dans « Mon portefeuille ». NRR : barre du haut = projeté, barre du bas = actuel (échelle de <%= scale[0] %> % à <%= scale[1] %> %),
+        le trait bordeaux marque l'objectif de <%= PortfolioSummary::NRR_TARGET %> %. Le % de produits renouvelés compte les produits (Augmenté, Augmentation particulière, Nouveau contrat) hors churn subi.
+      </p>
+      <div class="table-scroll">
+        <table class="deals-table am-performance-table">
+          <thead>
             <tr>
-              <td class="numeric"><%= i + 1 %></td>
-              <td><strong><%= r[:name] %></strong></td>
-              <td><%= r[:am] %></td>
-              <td class="numeric"><%= number_to_currency(r[:arr], unit: "€", format: "%n %u", precision: 0) %></td>
-              <td class="numeric"><%= number_with_precision(r[:pct], precision: 1) %>%</td>
-              <td class="numeric"><%= number_with_precision(r[:cumulative_pct], precision: 1) %>%</td>
+              <th>AM</th>
+              <th class="nrr-col">NRR projeté</th>
+              <th class="numeric">Upsell projeté</th>
+              <th class="numeric">Upsell signé</th>
+              <th class="numeric">Taux de renouvellement moyen</th>
+              <th class="numeric">Taux de churn</th>
+              <th class="numeric">% de produits renouvelés</th>
             </tr>
-          <% end %>
-        <% end %>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="chart-wrap">
-  <h2>Distribution de la taille des contrats</h2>
-  <p class="section-sub" style="margin-top:-8px;">Portefeuille actif actuel, par tranche d'ARR.</p>
-  <%= bar_rows(@contract_size_buckets, value_format: ->(r) { "#{r[:count]} (#{number_to_currency(r[:value], unit: "€", format: "%n %u", precision: 0)})" }) %>
-</div>
-
-<div class="chart-wrap">
-  <h2>Évolution du NRR global</h2>
-  <p class="section-sub" style="margin-top:-8px;">Tous produits et AM confondus, année après année (archives + année en cours).</p>
-  <%= line_chart(@nrr_by_year[:years], [{ label: "NRR", points: @nrr_by_year[:points] }], 100) %>
-</div>
-
-<div class="chart-wrap">
-  <h2>NRR par AM</h2>
-  <p class="section-sub" style="margin-top:-8px;">NRR actuel et projeté de chaque AM, calculés comme dans « Mon portefeuille » (objectif <%= PortfolioSummary::NRR_TARGET %> %).</p>
-  <%= nrr_by_am_chart(@nrr_by_am, PortfolioSummary::NRR_TARGET) %>
-</div>
-
-<div class="section-card">
-  <div class="table-toolbar">
-    <h2>Évolution du churn subi vs churn classique</h2>
-  </div>
-  <p class="section-sub" style="margin-top:-8px;">Le churn subi (liquidation/rachat) n'est pas compté dans le NRR — voir s'il prend une part croissante reste un signal utile.</p>
-  <div class="table-scroll">
-    <table class="deals-table">
-      <thead>
-        <tr>
-          <th class="numeric">Année</th>
-          <th class="numeric">Churn classique</th>
-          <th class="numeric">Churn subi</th>
-          <th class="numeric">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @churn_by_year.empty? %>
-          <tr><td colspan="4" class="empty-state">Aucune donnée.</td></tr>
-        <% else %>
-          <% @churn_by_year.each do |r| %>
-            <tr>
-              <td class="numeric"><strong><%= r[:year] %></strong></td>
-              <td class="numeric" style="color:var(--red)"><%= number_to_currency(r[:classique], unit: "€", format: "%n %u", precision: 0) %></td>
-              <td class="numeric"><%= number_to_currency(r[:subi], unit: "€", format: "%n %u", precision: 0) %></td>
-              <td class="numeric"><%= number_to_currency(r[:classique] + r[:subi], unit: "€", format: "%n %u", precision: 0) %></td>
-            </tr>
-          <% end %>
-        <% end %>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="chart-wrap">
-  <h2>Taux de churn par assureur</h2>
-  <p class="section-sub" style="margin-top:-8px;">ARR churné ÷ ARR total, par assureur (hors churn subi).</p>
-  <%= bar_rows(@churn_rate_by_assureur, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
-</div>
-
-<div class="chart-wrap">
-  <h2>Raisons de churn par produit</h2>
-  <p class="section-sub" style="margin-top:-8px;">ARR churné par raison (nombre de produits entre parenthèses), d'après les raisons saisies dans « Produits churnés » de Vue globale (hors churn subi).</p>
-  <div style="display:flex;gap:48px;flex-wrap:wrap;">
-    <% @churn_reasons_by_produit.each do |produit, slices| %>
-      <div>
-        <h3 style="font-size:14px;margin:0 0 10px;"><%= produit %></h3>
-        <%= donut_chart(slices, value_format: ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) },
-              total_label: ->(t) { "Total : #{number_to_currency(t, unit: "€", format: "%n %u", precision: 0)}" }) %>
+          </thead>
+          <tbody>
+            <% @am_performance.each do |r| %>
+              <tr>
+                <td><strong><%= r[:am] %></strong></td>
+                <td class="nrr-col"><%= nrr_bar_cell(r, scale, PortfolioSummary::NRR_TARGET) %></td>
+                <td class="numeric"><%= eur.call(r[:upsold]) %></td>
+                <td class="numeric" style="color:var(--green)"><%= eur.call(r[:upsold_actual]) %></td>
+                <td class="numeric"><%= pct.call(r[:renewal_rate]) %></td>
+                <td class="numeric" style="color:<%= r[:churn_rate] > PortfolioSummary::CHURN_LIMIT_PCT ? "var(--red)" : "inherit" %>"><%= pct.call(r[:churn_rate]) %></td>
+                <td class="numeric"><%= pct.call(r[:renewed_pct]) %> <span class="muted-count">(<%= r[:renewed_count] %>/<%= r[:produits_count] %>)</span></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
     <% end %>
   </div>
-</div>
+</section>
 
-<div class="chart-wrap">
-  <h2>Entonnoir des upsells</h2>
-  <p class="section-sub" style="margin-top:-8px;">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
-  <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>
-</div>
+<section class="stats-section">
+  <h2 class="stats-section-title">Portefeuille</h2>
+  <div class="stats-grid">
+    <div class="chart-wrap">
+      <h2>Répartition de l'ARR par produit</h2>
+      <p class="section-sub">Portefeuille actif actuel (hors churn, hors churn subi).</p>
+      <%= donut_chart(@arr_by_produit, value_format: eur, total_label: ->(t) { "Total : #{eur.call(t)}" }) %>
+    </div>
 
-<div class="chart-wrap">
-  <h2>Entonnoir des produits à renouveler</h2>
-  <p class="section-sub" style="margin-top:-8px;">Nombre de produits à chaque étape de renouvellement, part du total et ARR entre parenthèses.</p>
-  <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{number_to_currency(r[:amount], unit: "€", format: "%n %u", precision: 0)})" }) %>
-</div>
+    <div class="chart-wrap">
+      <h2>Distribution des entreprises</h2>
+      <p class="section-sub">Nombre d'entreprises par tranche d'ARR actif total (tous contrats confondus) et ARR correspondant.</p>
+      <%= bar_rows(@company_distribution, value_format: ->(r) { "#{r[:value]} · #{eur.call(r[:arr])}" }) %>
+    </div>
 
-<div class="chart-wrap">
-  <h2>Portefeuille accompagné vs non accompagné</h2>
-  <%= donut_chart(@accompagnement_split, value_format: ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) },
-        total_label: ->(t) { "Total : #{number_to_currency(t, unit: "€", format: "%n %u", precision: 0)}" }) %>
-</div>
+    <div class="chart-wrap">
+      <h2>Répartition de l'ARR par assureur</h2>
+      <p class="section-sub">Portefeuille actif actuel (hors churn, hors churn subi), assureurs sans ARR masqués.</p>
+      <%= donut_chart(@arr_by_assureur, value_format: eur, total_label: ->(t) { "Total : #{eur.call(t)}" }) %>
+    </div>
+
+    <div class="chart-wrap">
+      <h2>Portefeuille accompagné vs non accompagné</h2>
+      <% if @filter_active %>
+        <p class="section-sub">Le portefeuille non accompagné n'est rattaché à aucun AM : il est exclu dès qu'un filtre est actif.</p>
+      <% else %>
+        <p class="section-sub">ARR actif suivi par un AM face à l'ARR non accompagné saisi à la main.</p>
+      <% end %>
+      <%= donut_chart(@accompagnement_split, value_format: eur, total_label: ->(t) { "Total : #{eur.call(t)}" }) %>
+    </div>
+
+    <div class="section-card span-2">
+      <div class="table-toolbar">
+        <h2>Concentration du portefeuille</h2>
+      </div>
+      <p class="section-sub" style="margin-top:-8px;">
+        Les 10 plus gros clients représentent <strong><%= number_with_precision(@concentration[:top10_pct], precision: 1) %>%</strong>
+        de l'ARR actif total (<%= eur.call(@concentration[:total]) %>).
+      </p>
+      <div class="table-scroll">
+        <table class="deals-table">
+          <thead>
+            <tr>
+              <th class="numeric">#</th>
+              <th>Client</th>
+              <th>AM</th>
+              <th class="numeric">ARR</th>
+              <th class="numeric">% du portefeuille</th>
+              <th class="numeric">% cumulé</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @concentration[:rows].empty? %>
+              <tr><td colspan="6" class="empty-state">Aucune donnée.</td></tr>
+            <% else %>
+              <% @concentration[:rows].each_with_index do |r, i| %>
+                <tr>
+                  <td class="numeric"><%= i + 1 %></td>
+                  <td><strong><%= r[:name] %></strong></td>
+                  <td><%= r[:am] %></td>
+                  <td class="numeric"><%= eur.call(r[:arr]) %></td>
+                  <td class="numeric"><%= number_with_precision(r[:pct], precision: 1) %>%</td>
+                  <td class="numeric"><%= number_with_precision(r[:cumulative_pct], precision: 1) %>%</td>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats-section">
+  <h2 class="stats-section-title">Renouvellements, churn et upsells</h2>
+  <div class="stats-grid">
+    <div class="chart-wrap">
+      <h2>Renouvellements : nouveau contrat vs augmentation</h2>
+      <div class="toolbar" style="margin-bottom:14px;">
+        <%= form_with url: autres_statistiques_path, method: :get do %>
+          <%= preserved_query_fields("renewal_produit") %>
+          <label>Produit :
+            <%= select_tag :renewal_produit, options_for_select(ProduitDeal::PRODUITS, @renewal_produit),
+                  include_blank: "Tous les produits", onchange: "this.form.requestSubmit()" %>
+          </label>
+        <% end %>
+      </div>
+      <%= donut_chart(@renewal_donut) %>
+    </div>
+
+    <div class="chart-wrap">
+      <h2>Taux de churn par assureur</h2>
+      <p class="section-sub">ARR churné ÷ ARR total, par assureur (hors churn subi).</p>
+      <%= bar_rows(@churn_rate_by_assureur, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
+    </div>
+
+    <div class="chart-wrap">
+      <h2>Entonnoir des produits à renouveler</h2>
+      <p class="section-sub">Nombre de produits à chaque étape de renouvellement, part du total et ARR entre parenthèses.</p>
+      <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
+    </div>
+
+    <div class="chart-wrap">
+      <h2>Entonnoir des upsells</h2>
+      <p class="section-sub">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
+      <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
+    </div>
+
+    <div class="chart-wrap span-2">
+      <h2>Raisons de churn par produit</h2>
+      <p class="section-sub">ARR churné par raison (nombre de produits entre parenthèses), d'après les raisons saisies dans « Produits churnés » de Vue globale (hors churn subi).</p>
+      <div class="stats-donut-pair">
+        <% @churn_reasons_by_produit.each do |produit, slices| %>
+          <div>
+            <h3 style="font-size:14px;margin:0 0 10px;"><%= produit %></h3>
+            <%= donut_chart(slices, value_format: eur, total_label: ->(t) { "Total : #{eur.call(t)}" }) %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</section>

@@ -5,6 +5,8 @@ class ProduitDeal < Deal
   ASSUREURS = ["AG2R", "Allianz", "Apicil", "Audiens", "AXA", "Gan", "Generali", "Groupama", "Harmonie",
                "Malakoff Humanis", "PanoCare", "Spvie", "Swiss Life", "Uniprévoyance"].freeze
   STATUTS_RENOUVELLEMENT = ["En cours", "Nouveau contrat", "Augmenté", "Augmentation particulière", "Churné", "Churné (subi)"].freeze
+  # A produit that came out of its renewal alive (new contract, or renewed at a higher rate).
+  RENEWED_STATUSES = ["Augmenté", "Augmentation particulière", "Nouveau contrat"].freeze
   CHURNED = "Churné"
   # "Subi" (suffered) churn — the company was liquidated or acquired, not lost to a competitor or
   # dissatisfaction. Still a real, contract-ending churn (taux/risque_churn are forced the same way — see

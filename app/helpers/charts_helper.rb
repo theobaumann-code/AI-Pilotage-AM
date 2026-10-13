@@ -130,36 +130,32 @@ module ChartsHelper
   # One row per AM with two thin bars (projeté above, actuel below) on a shared scale that doesn't start at
   # zero — NRR values all sit near 100%, so a zero-based bar would make every AM look identical. A vertical
   # tick marks the target; the projeté bar is green/red against it, the actuel bar stays neutral.
-  def nrr_by_am_chart(rows, target)
-    return content_tag(:div, "Aucune donnée.", class: "empty-state") if rows.empty?
-
+  def nrr_scale(rows, target)
     values = rows.flat_map { |r| [r[:nrr], r[:nrr_actual]] } + [target]
-    lo = ((values.min - 5) / 5.0).floor * 5
-    hi = ((values.max + 5) / 5.0).ceil * 5
+    [((values.min - 5) / 5.0).floor * 5, ((values.max + 5) / 5.0).ceil * 5]
+  end
+
+  # The NRR cell of the "Performance par AM" table: the two thin bars on the shared `scale`, with the
+  # figures beside them.
+  def nrr_bar_cell(row, scale, target)
+    lo, hi = scale
     pos = ->(v) { ((v - lo).to_f / (hi - lo) * 100).clamp(0, 100) }
     track = lambda do |value, color|
-      content_tag(:div, class: "bar-track", style: "height:12px;margin:2px 0;") do
+      content_tag(:div, class: "bar-track", style: "height:10px;margin:2px 0;") do
         concat content_tag(:div, "", class: "bar-fill", style: "width:#{pos.call(value)}%;background:#{color};")
         concat content_tag(:div, "", style: "position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--burgundy);left:#{pos.call(target)}%;")
       end
     end
 
-    content_tag(:div) do
-      concat content_tag(:div, "Échelle de #{lo} % à #{hi} % — le trait bordeaux marque l'objectif (#{target} %). Barre du haut : projeté, barre du bas : actuel.",
-        style: "font-size:12px;color:var(--text-muted);margin-bottom:12px;")
-      rows.each do |r|
-        concat(content_tag(:div, class: "bar-row") do
-          concat content_tag(:div, r[:am], class: "bar-label")
-          concat(content_tag(:div, style: "flex:1;") do
-            concat track.call(r[:nrr], r[:nrr] >= target ? "var(--green)" : "var(--red)")
-            concat track.call(r[:nrr_actual], "var(--text-muted)")
-          end)
-          concat(content_tag(:div, class: "bar-value", style: "min-width:120px;") do
-            concat content_tag(:div, "Projeté #{number_with_precision(r[:nrr], precision: 1)} %")
-            concat content_tag(:div, "Actuel #{number_with_precision(r[:nrr_actual], precision: 1)} %", style: "font-weight:400;color:var(--text-muted);")
-          end)
-        end)
-      end
+    content_tag(:div, class: "nrr-cell-bars") do
+      concat(content_tag(:div, class: "nrr-cell-tracks") do
+        concat track.call(row[:nrr], row[:nrr] >= target ? "var(--green)" : "var(--red)")
+        concat track.call(row[:nrr_actual], "var(--text-muted)")
+      end)
+      concat(content_tag(:div, class: "nrr-cell-values") do
+        concat content_tag(:strong, "#{number_with_precision(row[:nrr], precision: 1)} %")
+        concat content_tag(:span, "actuel #{number_with_precision(row[:nrr_actual], precision: 1)} %")
+      end)
     end
   end
 

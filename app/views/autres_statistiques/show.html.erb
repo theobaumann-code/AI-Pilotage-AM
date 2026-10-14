@@ -62,6 +62,15 @@
       </div>
     <% end %>
   </div>
+
+  <div class="chart-wrap" style="margin-top:20px;">
+    <h2>Prévisions de renouvellement non mises à jour</h2>
+    <p class="section-sub">
+      Part des produits de chaque AM encore au statut « En cours » avec un taux de renouvellement à 0 % (hors churn subi), avec le nombre de produits
+      et l'ARR concernés. Plus la part est haute, plus les prévisions de l'AM restent à renseigner (rouge à partir de 50 %, vert à 0 %).
+    </p>
+    <%= bar_rows(@pending_forecasts, max: 100, value_format: ->(r) { "#{pct.call(r[:value])} · #{r[:count]}/#{r[:total]} produits · #{eur.call(r[:arr])}" }) %>
+  </div>
 </section>
 
 <section class="stats-section">

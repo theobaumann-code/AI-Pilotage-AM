@@ -154,6 +154,45 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match "% de produits renouvelés", @response.body
   end
 
+  test "pending forecasts: per AM, the share of produits still En cours at 0%, worst first, suffered churn set aside" do
+    lazy = User.create!(email: "lazy-fc@example.com", name: "AM Prévisions Vides", active: true)
+    diligent = User.create!(email: "diligent-fc@example.com", name: "AM Prévisions Faites", active: true)
+    empty = User.create!(email: "empty-fc@example.com", name: "AM Sans Produit", active: true)
+    lazy_co = Company.create!(name: "Client Vide", user: lazy)
+    done_co = Company.create!(name: "Client Fait", user: diligent)
+    Company.create!(name: "Client Sans Produit FC", user: empty)
+    # lazy: 3 of 4 produits untouched (En cours, 0%); the 4th is En cours but has a rate -> not pending
+    [["fc-1", "En cours", 0, 1_000], ["fc-2", "En cours", 0, 2_000], ["fc-3", "En cours", 0, 3_000], ["fc-4", "En cours", 3.5, 4_000],
+     ["fc-5", "Churné (subi)", 0, 9_000]].each_with_index do |(id, statut, taux, arr), i|
+      ProduitDeal.create!(company: lazy_co, produit: "Mutuelle", identifiant: id, college: "Cadre",
+        assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
+    end
+    # diligent: rate set, renewed, and a 0% that is already decided (Churné / Nouveau contrat) -> none pending
+    [["fc-6", "En cours", 2, 1_000], ["fc-7", "Nouveau contrat", 0, 1_000], ["fc-8", "Churné", 0, 1_000]].each_with_index do |(id, statut, taux, arr), i|
+      ProduitDeal.create!(company: done_co, produit: "Prévoyance", identifiant: id, college: "Cadre",
+        assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
+    end
+
+    get autres_statistiques_path
+    assert_response :success
+    rows = @controller.instance_variable_get(:@pending_forecasts)
+    lazy_row = rows.find { |r| r[:label] == "AM Prévisions Vides" }
+    assert_equal [3, 4], [lazy_row[:count], lazy_row[:total]], "the subi-churned produit is left out of the base"
+    assert_in_delta 75.0, lazy_row[:value], 0.001
+    assert_equal 6_000, lazy_row[:arr]
+    assert_equal "ko", lazy_row[:status]
+    done_row = rows.find { |r| r[:label] == "AM Prévisions Faites" }
+    assert_equal [0, 3], [done_row[:count], done_row[:total]]
+    assert_equal "ok", done_row[:status]
+    assert_nil rows.find { |r| r[:label] == "AM Sans Produit" }, "an AM with no produit has nothing to update"
+    assert_operator rows.index(lazy_row), :<, rows.index(done_row), "worst first"
+    assert_match "Prévisions de renouvellement non mises à jour", @response.body
+    assert_match "75.0 % · 3/4 produits", @response.body
+
+    get autres_statistiques_path, params: { ams: ["AM Prévisions Faites"] }
+    assert_equal ["AM Prévisions Faites"], @controller.instance_variable_get(:@pending_forecasts).map { |r| r[:label] }
+  end
+
   test "the Équipe and AM filters narrow every report to the chosen AMs" do
     admin = User.create!(email: "admin-filter-stats@example.com", name: "Admin Filtre", admin: true, active: true)
     mine = Company.create!(name: "Client Filtre Mien", user: @am)

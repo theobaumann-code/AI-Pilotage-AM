@@ -5,6 +5,13 @@ class ProduitDeal < Deal
   ASSUREURS = ["AG2R", "Allianz", "Apicil", "Audiens", "AXA", "Gan", "Generali", "Groupama", "Harmonie",
                "Malakoff Humanis", "PanoCare", "Spvie", "Swiss Life", "Uniprévoyance"].freeze
   STATUTS_RENOUVELLEMENT = ["En cours", "Nouveau contrat", "Augmenté", "Augmentation particulière", "Churné", "Churné (subi)"].freeze
+  EN_COURS = "En cours"
+
+  # A produit whose forecast hasn't been touched yet: still "En cours" with the default 0% renewal rate.
+  def forecast_pending?
+    statut_renouvellement == EN_COURS && taux.to_f.zero?
+  end
+
   # A produit that came out of its renewal alive (new contract, or renewed at a higher rate).
   RENEWED_STATUSES = ["Augmenté", "Augmentation particulière", "Nouveau contrat"].freeze
   CHURNED = "Churné"

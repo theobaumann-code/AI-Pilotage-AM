@@ -25,6 +25,7 @@ class AutresStatistiquesController < ApplicationController
     @concentration = portfolio_concentration
     @company_distribution = company_distribution
     @am_performance = am_performance
+    @pending_forecasts = pending_forecasts
     @churn_rate_by_assureur = churn_rate_by(:assureur)
     @churn_reasons_by_produit = churn_reasons_by_produit
     @upsell_funnel = upsell_funnel
@@ -130,6 +131,24 @@ class AutresStatistiquesController < ApplicationController
         renewed_pct: produits.empty? ? 0 : renewed.to_f / produits.size * 100,
         renewed_count: renewed, produits_count: produits.size }
     end.sort_by { |r| -r[:nrr] }
+  end
+
+  # Per AM, the share of their produits still "En cours" at a 0% renewal rate — i.e. whose forecast hasn't
+  # been updated yet — to spot who hasn't filled in their predictions. Share of produits (suffered churn set
+  # aside, like "% de produits renouvelés"), with the ARR those produits carry alongside. Worst first; AMs
+  # with no produit at all have nothing to update and are left out.
+  def pending_forecasts
+    deals_by_user = ProduitDeal.where(company_id: @company_ids).includes(:company).reject(&:churn_subi?)
+      .group_by { |d| d.company.user_id }
+    @scoped_ams.filter_map do |am|
+      deals = deals_by_user[am.id] || []
+      next if deals.empty?
+
+      pending = deals.select(&:forecast_pending?)
+      pct = pending.size.to_f / deals.size * 100
+      { label: am.name, value: pct, count: pending.size, total: deals.size, arr: pending.sum { |d| d.arr.to_f },
+        status: pct.zero? ? "ok" : (pct >= 50 ? "ko" : nil) }
+    end.sort_by { |r| [-r[:value], -r[:count], r[:label]] }
   end
 
   # Why churned produits were lost (the raison filled in on Vue globale's "Produits churnés" table), one

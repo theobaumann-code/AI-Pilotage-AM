@@ -163,10 +163,11 @@ module ChartsHelper
   # here for any "one row per category, one rate/amount" breakdown — contract-size buckets, churn rate by
   # segment, the upsell funnel. Bar width is row[:value]/max_value; value_format gets the whole row (not
   # just :value) so the trailing label can combine several of the row's own fields (e.g. count *and* ARR).
-  def bar_rows(rows, value_format: ->(r) { r[:value].to_s })
+  # `max:` fixes the value a full bar stands for (e.g. 100 for a percentage) instead of the largest row's.
+  def bar_rows(rows, value_format: ->(r) { r[:value].to_s }, max: nil)
     return content_tag(:div, "Aucune donnée pour ce filtre.", class: "empty-state") if rows.empty?
 
-    max_value = rows.map { |r| r[:value].to_f }.max
+    max_value = max || rows.map { |r| r[:value].to_f }.max
     max_value = 1.0 if max_value.zero?
 
     content_tag(:div) do

@@ -1,5 +1,16 @@
 <tr id="<%= dom_id(company) %>">
-  <td><strong><%= company.name %></strong></td>
+  <td>
+    <% if current_user.privileged? %>
+      <%# A rename shows up in every table of the page, so it submits to the whole page (_top), not just this frame. %>
+      <%= form_with model: company, url: company_path(company, return_to: portfolio_path(user_id: viewed_user.id)), method: :patch,
+            data: { turbo_frame: "_top" } do |f| %>
+        <%= f.text_field :name, required: true, "aria-label": "Nom du client", style: "min-width:180px;font-weight:700;",
+              onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <strong><%= company.name %></strong>
+    <% end %>
+  </td>
   <td class="numeric"><%= number_to_currency(company.arr_initial, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="numeric"><%= number_to_currency(company.churned_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="numeric"><%= company.avg_increase_pct.nil? ? "—" : "#{number_with_precision(company.avg_increase_pct, precision: 1)}%" %></td>

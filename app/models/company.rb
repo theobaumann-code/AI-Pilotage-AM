@@ -4,6 +4,12 @@ class Company < ApplicationRecord
   # risque" to spread that follow-up across managers. Independent of the AM (user), who owns the portfolio.
   belongs_to :referent, class_name: "User", optional: true
 
+  normalizes :name, with: ->(name) { name.to_s.strip }
+
+  # Archived years (Historique) keep the company's name as plain text, not a reference — carry a rename
+  # over so a client's history doesn't split into two names.
+  after_update_commit :rename_archive_entries, if: :saved_change_to_name?
+
   validate :referent_must_be_privileged, if: :referent_id_changed?
   validate :owner_must_not_be_reader, if: :user_id_changed?
 
@@ -20,6 +26,10 @@ class Company < ApplicationRecord
 
   def sync_to_google_sheets
     GoogleSheetsSyncJob.enqueue
+  end
+
+  def rename_archive_entries
+    ArchiveEntry.where(company_name: name_before_last_save).update_all(company_name: name)
   end
 
   def owner_must_not_be_reader

@@ -20,7 +20,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     PortfolioSummary.new(@am.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts), user: @am)
   end
 
-  test "only Validé lines move ARR final and NRR, En cours lines are only reported in the section's total" do
+  test "Validé lines move only the actual KPIs, En cours lines only the projected ones" do
     base = summary
     OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
     OtherImpact.create!(company: @alpha, amount: "1000", statut: "Validé")
@@ -29,11 +29,26 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     s = summary
     assert_in_delta(-2000, s.other_impacts_validated, 0.001)
     assert_in_delta 7000, s.other_impacts_pending, 0.001
+
+    # actual side: Validé only (-2000), the En cours 7000 stays out
     assert_in_delta base.arr_final_actual - 2000, s.arr_final_actual, 0.001
-    assert_in_delta base.arr_final - 2000, s.arr_final, 0.001
     assert_in_delta base.nrr_actual - 2000.0 / base.arr_initial * 100, s.nrr_actual, 0.001
-    assert_in_delta base.nrr - 2000.0 / base.arr_initial * 100, s.nrr, 0.001
+    # projected side: En cours only (+7000), the Validé -2000 stays out
+    assert_in_delta base.arr_final + 7000, s.arr_final, 0.001
+    assert_in_delta base.nrr + 7000.0 / base.arr_initial * 100, s.nrr, 0.001
     assert_in_delta base.arr_initial, s.arr_initial, 0.001, "the starting ARR is untouched"
+  end
+
+  test "a line only ever counts on one side: switching its status moves it from projected to actual" do
+    base = summary
+    impact = OtherImpact.create!(company: @alpha, amount: "4000", statut: "En cours")
+    assert_in_delta base.nrr_actual, summary.nrr_actual, 0.001
+    assert_in_delta base.arr_final + 4000, summary.arr_final, 0.001
+
+    impact.update!(statut: "Validé")
+    assert_in_delta base.nrr, summary.nrr, 0.001
+    assert_in_delta base.arr_final, summary.arr_final, 0.001
+    assert_in_delta base.arr_final_actual + 4000, summary.arr_final_actual, 0.001
   end
 
   test "impacts from a previous year no longer count once the year has been closed" do

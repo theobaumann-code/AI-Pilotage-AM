@@ -86,9 +86,10 @@ class PortfolioSummary
     produit_deals.reject(&:churned?).sum(&:final_arr) + non_accompagne_renewed_contribution
   end
 
-  # "Autres impacts" (manual, one-off ARR impacts): the "Validé" ones are certain, so they sit in both the
-  # actual and the projected ARR final below; the "En cours" ones are only reported in the "Autres impacts"
-  # section's own Projeté total, never in the KPIs.
+  # "Autres impacts" (manual, one-off ARR impacts), each side counted on its own: "Validé" lines feed only
+  # the actual figures (ARR final actuel, NRR actuel), "En cours" lines only the projected ones (ARR final
+  # projeté, NRR projeté) — a line never counts on both sides, matching the Actuel / Projeté totals of the
+  # "Autres impacts" section.
   def other_impacts
     @other_impacts ||= companies.flat_map(&:current_other_impacts)
   end
@@ -110,7 +111,7 @@ class PortfolioSummary
   # every upsell's probability-weighted projection. Unlike `arr_final_actual`, this is forward-looking: it
   # must reflect `churn_projete`, not just already-confirmed churn (which `renewed_arr` alone excludes).
   def arr_final
-    renewed_arr - churn_projete + upsold + other_impacts_validated
+    renewed_arr - churn_projete + upsold + other_impacts_pending
   end
 
   def nrr_actual

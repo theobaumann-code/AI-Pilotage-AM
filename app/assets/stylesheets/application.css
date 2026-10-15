@@ -524,6 +524,11 @@ button.metric-info-trigger:focus-visible,.churn-details summary:focus-visible{ou
 .unmanaged-portfolio-card .metric-col+.metric-col{border-color:#ffe7bf;}
 .unmanaged-portfolio-card .metric-col-value{font-size:22px;}
 .unmanaged-portfolio-card .metric-card-actions{border-color:#ffe7bf;}
+/* "Autres impacts" reuses the unmanaged card's layout but is a plain summary card: white, like the KPI cards. */
+.other-impacts-card{background:#fff;border-color:var(--border);box-shadow:var(--shadow-card);}
+.other-impacts-card .metric-card-title{color:var(--text-muted);}
+.other-impacts-card .metric-pair,.other-impacts-card .metric-col+.metric-col{border-color:var(--border);}
+.other-impacts-card .metric-pair{grid-template-columns:repeat(2,minmax(0,1fr));}
 
 /* Table and chart sections share the same surface, headings and rhythm. */
 .section-card,.chart-wrap{margin-top:24px;padding:26px 28px 28px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow-card);}

@@ -15,6 +15,7 @@
   <td class="numeric"><%= number_to_currency(company.churned_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="numeric"><%= company.avg_increase_pct.nil? ? "—" : "#{number_with_precision(company.avg_increase_pct, precision: 1)}%" %></td>
   <td class="numeric"><%= number_to_currency(company.upsold_arr, unit: "€", format: "%n %u", precision: 0) %></td>
+  <td class="numeric" style="color:<%= company.other_impact_arr.negative? ? "var(--red)" : "inherit" %>"><%= number_to_currency(company.other_impact_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="computed"><%= number_to_currency(company.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="numeric">
     <% if company.evolution_pct.nil? %>

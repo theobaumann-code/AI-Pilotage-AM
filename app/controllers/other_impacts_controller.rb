@@ -8,14 +8,15 @@ class OtherImpactsController < ApplicationController
   before_action :require_admin!
   before_action :set_impact, only: [:update, :destroy]
 
-  # The button adds a ready-to-edit line (first client alphabetically, Mutuelle, 0 €, En cours) at the
-  # bottom of the table — the fields are then filled in place, like every other editable row.
+  # Submitted by the "+ Autre impact" pop-up; the new line then lives in the "Autres impacts" table, where it
+  # stays editable and deletable like any other.
   def create
-    company = viewed_user.companies.order(:name).first
-    return redirect_to(back_path, alert: "Cet AM n'a aucun client : impossible d'ajouter un impact.") unless company
-
-    OtherImpact.create!(company: company)
-    redirect_to back_path(anchor: "other-impacts"), notice: "Ligne ajoutée : renseignez-la dans « Autres impacts »."
+    impact = OtherImpact.new(impact_params)
+    if impact.save
+      redirect_to back_path(anchor: "other-impacts"), notice: "Impact ajouté."
+    else
+      redirect_to back_path, alert: impact.errors.full_messages.to_sentence
+    end
   end
 
   def update
@@ -67,11 +68,15 @@ class OtherImpactsController < ApplicationController
   def update_streams
     owner = viewed_user
     summary = PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts), user: owner)
+    # The KPI cards (which carry the "Autres impacts" card) and the client rows' "Autre impact" / "ARR final"
+    # — both the client the line was on and the one it's on now, if it was moved.
+    affected = Company.where(id: [@impact.company_id, @impact.company_id_before_last_save].compact.uniq)
+      .includes(:produit_deals, :upsell_deals, :current_other_impacts)
     [
       turbo_stream.replace(@impact, partial: "other_impacts/row", locals: row_locals, method: :morph),
       turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
         locals: { summary: summary, dom_id: "portfolio-summary-cards" }, method: :morph),
-      turbo_stream.replace("other-impacts-totals", partial: "other_impacts/totals", locals: { summary: summary }, method: :morph)
+      *affected.map { |company| turbo_stream.replace(company, partial: "companies/evolution_row", locals: { company: company }, method: :morph) }
     ]
   end
 end

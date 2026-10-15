@@ -25,13 +25,15 @@
     <%= render "deals/new_upsell_form", companies: @selectable_companies, ams: @viewable_ams %>
   </details>
   <% if current_user.privileged? %>
-    <%= button_to "+ Autre impact", other_impacts_path(redirect_user_id: viewed_user.id), method: :post, class: "button primary",
-          form: { style: "display:inline-block;margin:0;" } %>
+    <button type="button" class="button primary" onclick="document.getElementById('other-impact-dialog').showModal()">+ Autre impact</button>
   <% end %>
 </div>
 
+<% if current_user.privileged? %>
+  <%= render "other_impacts/dialog", companies: @companies %>
+<% end %>
+
 <%= render "shared/summary_cards", summary: @summary, dom_id: "portfolio-summary-cards" %>
-<%= render "other_impacts/totals", summary: @summary %>
 
 <div class="section-card">
   <%= turbo_frame_tag "evo-table-frame" do %>
@@ -54,6 +56,7 @@
             <%= sortable_th(@evo_pager, :churned, "ARR churné", col_class: "col-arr") %>
             <%= sortable_th(@evo_pager, :avg_increase_pct, "Augmentation moyenne", col_class: "col-taux") %>
             <%= sortable_th(@evo_pager, :upsold, "ARR upsellé", col_class: "col-arr") %>
+            <%= sortable_th(@evo_pager, :other_impact, "Autre impact", col_class: "col-arr") %>
             <%= sortable_th(@evo_pager, :final_arr, "ARR final", col_class: "col-final") %>
             <%= sortable_th(@evo_pager, :evolution_pct, "Évolution ARR", col_class: "col-evolution") %>
             <th class="col-action"></th>
@@ -61,7 +64,7 @@
         </thead>
         <tbody>
           <% if @evo_pager.records.empty? %>
-            <tr><td colspan="8" class="empty-state">Aucun client pour le moment.</td></tr>
+            <tr><td colspan="9" class="empty-state">Aucun client pour le moment.</td></tr>
           <% else %>
             <%= render partial: "companies/evolution_row", collection: @evo_pager.records, as: :company %>
           <% end %>

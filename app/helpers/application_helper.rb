@@ -2,7 +2,7 @@ module ApplicationHelper
   NUMERIC_SORT_FIELDS = %i[
     count arr_at_risk max_risque arr_initial churned upsold renewed_arr arr_final nrr
     arr taux risque_churn final_arr nombre_salaries upsell_amount probabilite_signature
-    projection avg_increase_pct evolution_pct annee arr_renouvele
+    projection avg_increase_pct evolution_pct annee arr_renouvele other_impact
   ].freeze
   RENEWAL_STATUT_CLASS = {
     "Augmenté" => "statut-signed",

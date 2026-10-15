@@ -45,3 +45,9 @@ document.addEventListener("turbo:before-cache", () => {
     if (openField) openField.value = "0";
   });
 });
+
+// A native <dialog> left open would be snapshotted open in Turbo's page cache and flash back up on the next
+// visit — close any before the snapshot is taken.
+document.addEventListener("turbo:before-cache", () => {
+  document.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
+});

@@ -27,6 +27,7 @@ class PortfolioController < ApplicationController
         churned: ->(c) { TablePager.key(c.churned_arr) },
         avg_increase_pct: ->(c) { TablePager.key(c.avg_increase_pct) },
         upsold: ->(c) { TablePager.key(c.upsold_arr) },
+        other_impact: ->(c) { TablePager.key(c.other_impact_arr) },
         final_arr: ->(c) { TablePager.key(c.final_arr) },
         evolution_pct: ->(c) { TablePager.key(c.evolution_pct) }
       }, default_sort: :nom)

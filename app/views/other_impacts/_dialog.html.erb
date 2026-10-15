@@ -1,0 +1,45 @@
+<%# locals: companies — the "+ Autre impact" pop-up: fill in the line right here, no scrolling to the table. Validating
+    creates the line in "Autres impacts" (still editable/deletable there). A native <dialog>, closed again
+    before Turbo caches the page (see application.js). %>
+<dialog id="other-impact-dialog" class="impact-dialog">
+  <div class="modal-box">
+    <%= form_with model: OtherImpact.new, url: other_impacts_path(redirect_user_id: viewed_user.id), method: :post do |f| %>
+      <div class="modal-header">
+        <h3>Nouvel autre impact</h3>
+      </div>
+      <div class="modal-body">
+        <% if companies.empty? %>
+          <p class="empty-state" style="margin:0;">Cet AM n'a aucun client : ajoutez d'abord un produit.</p>
+        <% else %>
+          <div class="modal-row">
+            <label style="flex:1 1 220px;">Client
+              <%= f.select :company_id, options_from_collection_for_select(companies, :id, :name), { prompt: "Choisir un client…" }, required: true %>
+            </label>
+            <label style="flex:1 1 160px;">Produit
+              <%= f.select :produit, OtherImpact::PRODUITS, { include_blank: false } %>
+            </label>
+          </div>
+          <div class="modal-row">
+            <label style="flex:1 1 160px;">Montant impacté (€)
+              <%= f.text_field :amount, value: "", required: true, inputmode: "decimal", placeholder: "ex : -3000", autocomplete: "off" %>
+            </label>
+            <label style="flex:1 1 160px;">Statut
+              <%= f.select :statut, OtherImpact::STATUTS, { include_blank: false } %>
+            </label>
+          </div>
+          <div class="modal-row">
+            <label style="flex:1 1 100%;">Commentaire
+              <%= f.text_area :comment, rows: 3, placeholder: "Nature de l'impact…" %>
+            </label>
+          </div>
+        <% end %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button ghost-burgundy" onclick="this.closest('dialog').close()">Annuler</button>
+        <% unless companies.empty? %>
+          <button type="submit" class="button primary">Valider</button>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</dialog>

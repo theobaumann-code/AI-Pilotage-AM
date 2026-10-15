@@ -524,11 +524,11 @@ button.metric-info-trigger:focus-visible,.churn-details summary:focus-visible{ou
 .unmanaged-portfolio-card .metric-col+.metric-col{border-color:#ffe7bf;}
 .unmanaged-portfolio-card .metric-col-value{font-size:22px;}
 .unmanaged-portfolio-card .metric-card-actions{border-color:#ffe7bf;}
-/* "Autres impacts" reuses the unmanaged card's layout but is a plain summary card: white, like the KPI cards. */
-.other-impacts-card{background:#fff;border-color:var(--border);box-shadow:var(--shadow-card);}
-.other-impacts-card .metric-card-title{color:var(--text-muted);}
-.other-impacts-card .metric-pair,.other-impacts-card .metric-col+.metric-col{border-color:var(--border);}
-.other-impacts-card .metric-pair{grid-template-columns:repeat(2,minmax(0,1fr));}
+/* Short cards (ARR final, Taux de renouvellement, Autres impacts): sized to their content instead of the tall
+   default, so the bottom row of the summary cards takes far less room. */
+.metric-card--compact{min-height:0;padding:16px 20px 10px;}
+.metric-card--compact .metric-card-title{min-height:0;margin-bottom:2px;}
+.metric-card--compact .metric-col{min-height:0;padding:9px 0 7px;}
 
 /* Table and chart sections share the same surface, headings and rhythm. */
 .section-card,.chart-wrap{margin-top:24px;padding:26px 28px 28px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow-card);}
@@ -657,3 +657,18 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
   .bar-value{min-width:75px;font-size:11px;}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*,*::before,*::after{transition:none!important;animation:none!important;}}
+
+/* Mon portefeuille: the summary cards plus "Autres impacts" make two rows of three — NRR / Churn / Upsell, then
+   ARR final / Taux de renouvellement / Autres impacts — at every width above the phone layouts. */
+@media (min-width:701px){
+  .summary-cards.with-other-impacts:has(.metric-card){grid-template-columns:repeat(3,minmax(0,1fr));}
+  .summary-cards.with-other-impacts:has(.metric-card) .metric-card,
+  .summary-cards.with-other-impacts:has(.metric-card) .metric-card:nth-child(n+4){grid-column:auto;}
+  .summary-cards.with-other-impacts:has(.metric-card) .metric-card:last-child{grid-column:auto;}
+}
+
+/* "+ Autre impact" pop-up (native <dialog>). */
+.impact-dialog{border:0;padding:0;border-radius:var(--radius);box-shadow:var(--shadow-lg);width:min(560px,calc(100vw - 32px));max-width:none;background:#fff;color:var(--text);}
+.impact-dialog::backdrop{background:rgba(48,17,17,.38);}
+.impact-dialog .modal-box{margin:0;border:0;box-shadow:none;}
+.impact-dialog .modal-row label select,.impact-dialog .modal-row label input,.impact-dialog .modal-row label textarea{width:100%;}

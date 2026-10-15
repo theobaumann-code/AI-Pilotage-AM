@@ -4,8 +4,11 @@
 <% churn_subi_label = number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %>
 <% churn_with_subi_label = number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %>
 <% churn_tooltip_prefix = local_assigns.fetch(:dom_id, "summary") %>
+<%# Mon portefeuille's cards also carry the "Autres impacts" card, so the bottom row reads ARR final / Taux de
+    renouvellement / Autres impacts — keyed on the dom_id because inline edits re-render this partial by itself. %>
+<% with_other_impacts = local_assigns[:dom_id] == "portfolio-summary-cards" %>
 <div class="summary-block" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
-<div class="summary-cards metrics-grid">
+<div class="summary-cards metrics-grid <%= "with-other-impacts" if with_other_impacts %>">
   <div class="metric-card">
     <div class="metric-card-title">NRR</div>
     <div class="metric-pair">
@@ -84,7 +87,7 @@
     </div>
   </div>
 
-  <div class="metric-card">
+  <div class="metric-card metric-card--compact">
     <div class="metric-card-title">ARR final</div>
     <div class="metric-pair">
       <div class="metric-col">
@@ -98,7 +101,7 @@
     </div>
   </div>
 
-  <div class="metric-card metric-card-single">
+  <div class="metric-card metric-card-single metric-card--compact">
     <div class="metric-card-title">Taux de renouvellement</div>
     <div class="metric-pair">
       <div class="metric-col">
@@ -108,5 +111,9 @@
       </div>
     </div>
   </div>
+
+  <% if with_other_impacts %>
+    <%= render "other_impacts/totals", summary: summary %>
+  <% end %>
 </div>
 </div>

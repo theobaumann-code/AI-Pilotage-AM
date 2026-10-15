@@ -80,8 +80,14 @@ class Company < ApplicationRecord
     upsell_deals.select(&:signed?).sum(&:upsell_amount)
   end
 
+  # The client's "Validé" Autres impacts for the current year (manual, signed ARR amounts) — shown in its own
+  # column of "Évolution de l'ARR par client" and part of final_arr, like the KPI's actual figures.
+  def other_impact_arr
+    current_other_impacts.select(&:validated?).sum { |i| i.amount.to_f }
+  end
+
   def final_arr
-    produit_deals.sum(&:final_arr) + upsold_arr
+    produit_deals.sum(&:final_arr) + upsold_arr + other_impact_arr
   end
 
   def evolution_pct

@@ -27,6 +27,7 @@ class AutresStatistiquesController < ApplicationController
     @am_performance = am_performance
     @pending_forecasts = pending_forecasts
     @churn_rate_by_assureur = churn_rate_by(:assureur)
+    @churn_by_risque = churn_by_risque
     @churn_reasons_by_produit = churn_reasons_by_produit
     @upsell_funnel = upsell_funnel
     @renewal_funnel = renewal_funnel
@@ -167,6 +168,25 @@ class AutresStatistiquesController < ApplicationController
         next if matching.empty?
         { label: "#{reason} (#{matching.size})", value: matching.sum { |d| d.arr.to_f }, color: colors[reason] }
       end
+    end
+  end
+
+  # Churn per "risque" — the two insurance lines, Mutuelle (santé) and Prévoyance: churned ARR over the
+  # line's total ARR (suffered churn set aside, like every churn rate here), plus the projected rate, i.e. the
+  # churn so far plus the risk-weighted ARR of the contracts still active (as PortfolioSummary#churn_total).
+  RISQUE_LABELS = { "Mutuelle" => "Mutuelle (santé)", "Prévoyance" => "Prévoyance" }.freeze
+
+  def churn_by_risque
+    ProduitDeal::PRODUITS.map do |produit|
+      deals = @active_deals.select { |d| d.produit == produit }
+      total = deals.sum { |d| d.arr.to_f }
+      churned = deals.select(&:churned?).sum { |d| d.arr.to_f }
+      at_risk = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 }
+      rate = total > 0 ? churned / total * 100 : 0.0
+      { label: RISQUE_LABELS.fetch(produit), value: rate, churned: churned, total: total,
+        projected: total > 0 ? (churned + at_risk) / total * 100 : 0.0,
+        count: deals.count(&:churned?), produits_count: deals.size,
+        status: rate > PortfolioSummary::CHURN_LIMIT_PCT ? "ko" : "ok" }
     end
   end
 

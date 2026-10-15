@@ -164,21 +164,24 @@
     </div>
 
     <div class="chart-wrap">
-      <h2>Taux de churn par assureur</h2>
-      <p class="section-sub">ARR churné ÷ ARR total, par assureur (hors churn subi).</p>
-      <%= bar_rows(@churn_rate_by_assureur, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
-    </div>
-
-    <div class="chart-wrap">
       <h2>Entonnoir des produits à renouveler</h2>
       <p class="section-sub">Nombre de produits à chaque étape de renouvellement, part du total et ARR entre parenthèses.</p>
       <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
     </div>
 
     <div class="chart-wrap">
-      <h2>Entonnoir des upsells</h2>
-      <p class="section-sub">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
-      <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
+      <h2>Churn par risque</h2>
+      <p class="section-sub">
+        Taux de churn par risque : ARR churné ÷ ARR total (hors churn subi), avec le montant et le taux projeté (churn actuel + risque de churn pondéré des contrats actifs).
+        Vert sous la limite de <%= number_with_precision(PortfolioSummary::CHURN_LIMIT_PCT, precision: 1) %> %, rouge au-delà.
+      </p>
+      <%= bar_rows(@churn_by_risque, value_format: ->(r) { "#{pct.call(r[:value])} · #{eur.call(r[:churned])} / #{eur.call(r[:total])} · projeté #{pct.call(r[:projected])}" }) %>
+    </div>
+
+    <div class="chart-wrap">
+      <h2>Taux de churn par assureur</h2>
+      <p class="section-sub">ARR churné ÷ ARR total, par assureur (hors churn subi).</p>
+      <%= bar_rows(@churn_rate_by_assureur, value_format: ->(r) { "#{number_with_precision(r[:value], precision: 1)}%" }) %>
     </div>
 
     <div class="chart-wrap span-2">
@@ -192,6 +195,12 @@
           </div>
         <% end %>
       </div>
+    </div>
+
+    <div class="chart-wrap span-2">
+      <h2>Entonnoir des upsells</h2>
+      <p class="section-sub">Nombre d'upsells à chaque étape, part du total et montant ARR upsellé entre parenthèses.</p>
+      <%= bar_rows(@upsell_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
     </div>
   </div>
 </section>

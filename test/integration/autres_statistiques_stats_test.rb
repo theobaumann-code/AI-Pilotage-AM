@@ -193,6 +193,36 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_equal ["AM Prévisions Faites"], @controller.instance_variable_get(:@pending_forecasts).map { |r| r[:label] }
   end
 
+  test "churn by risque: churned ARR over total ARR for Mutuelle (santé) and Prévoyance, with the projected rate, suffered churn set aside" do
+    company = Company.create!(name: "Client Risque", user: @am)
+    [["rk-1", "Mutuelle", "Churné", 10_000, 0], ["rk-2", "Mutuelle", "En cours", 30_000, 20], ["rk-3", "Mutuelle", "Churné (subi)", 50_000, 0],
+     ["rk-4", "Prévoyance", "En cours", 20_000, 10]].each_with_index do |(id, produit, statut, arr, risque), i|
+      ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: "Cadre",
+        assureur: ProduitDeal::ASSUREURS[i], arr: arr, statut_renouvellement: statut, risque_churn: risque)
+    end
+
+    get autres_statistiques_path
+    assert_response :success
+    rows = @controller.instance_variable_get(:@churn_by_risque).index_by { |r| r[:label] }
+    assert_equal ["Mutuelle (santé)", "Prévoyance"], rows.keys
+
+    sante = rows["Mutuelle (santé)"]
+    assert_in_delta 25.0, sante[:value], 0.001, "10 000 churned of 40 000 (the 50 000 subi is outside the base)"
+    assert_equal [10_000, 40_000], [sante[:churned], sante[:total]]
+    assert_in_delta 40.0, sante[:projected], 0.001, "(10 000 + 30 000 × 20%) / 40 000"
+    assert_equal [1, 2], [sante[:count], sante[:produits_count]]
+    assert_equal "ko", sante[:status], "above the 5.5% limit"
+
+    prevoyance = rows["Prévoyance"]
+    assert_in_delta 0.0, prevoyance[:value], 0.001
+    assert_in_delta 10.0, prevoyance[:projected], 0.001
+    assert_equal "ok", prevoyance[:status]
+
+    section = @response.body[/<h2>Churn par risque<\/h2>.*?Taux de churn par assureur/m]
+    assert_match(/Mutuelle \(santé\)[\s\S]*?25\.0 % · 10,000 € \/ 40,000 € · projeté 40\.0 %/, section)
+    assert_match(/Prévoyance[\s\S]*?0\.0 % · 0 € \/ 20,000 € · projeté 10\.0 %/, section)
+  end
+
   test "the Équipe and AM filters narrow every report to the chosen AMs" do
     admin = User.create!(email: "admin-filter-stats@example.com", name: "Admin Filtre", admin: true, active: true)
     mine = Company.create!(name: "Client Filtre Mien", user: @am)
@@ -269,7 +299,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
     get autres_statistiques_path
     assert_response :success
-    section = @response.body[/Entonnoir des produits à renouveler.*?Entonnoir des upsells/m]
+    section = @response.body[/Entonnoir des produits à renouveler.*?Churn par risque/m]
     labels = section.scan(/bar-label">([^<]+)</).flatten
     assert_equal ["En cours", "Renouvelé", "Churné"], labels
     assert_match(/En cours[\s\S]*?bar-value">1 · 16\.7% \(1,000 €\)/, section)

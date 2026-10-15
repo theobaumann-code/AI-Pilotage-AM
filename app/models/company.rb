@@ -17,6 +17,10 @@ class Company < ApplicationRecord
   has_many :produit_deals, -> { where(type: "ProduitDeal") }, class_name: "ProduitDeal", inverse_of: :company
   has_many :upsell_deals, -> { where(type: "UpsellDeal") }, class_name: "UpsellDeal", inverse_of: :company
   has_many :risk_notes, dependent: :destroy
+  has_many :other_impacts, dependent: :destroy
+  # Only this year's impacts feed the KPIs and the "Autres impacts" table (see OtherImpact).
+  has_many :current_other_impacts, -> { where(annee: AppSetting.instance.annee_en_cours) },
+    class_name: "OtherImpact", inverse_of: :company
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
 

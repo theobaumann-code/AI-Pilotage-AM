@@ -28,7 +28,7 @@ class PilotageController < ApplicationController
     # is explicitly checked back in — same as narrowing to one AM naturally excludes every other AM's book.
     include_non_accompagne = @summary_roles.empty? || @summary_roles.include?("Non accompagné")
 
-    summary_companies = Company.includes(:produit_deals, :upsell_deals)
+    summary_companies = Company.includes(:produit_deals, :upsell_deals, :current_other_impacts)
     summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
     @global_summary = PortfolioSummary.new(summary_companies, non_accompagne: (include_non_accompagne ? @app_setting : nil))
 

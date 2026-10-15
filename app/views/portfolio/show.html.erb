@@ -24,9 +24,14 @@
     <summary class="button primary">+ Nouvel upsell</summary>
     <%= render "deals/new_upsell_form", companies: @selectable_companies, ams: @viewable_ams %>
   </details>
+  <% if current_user.privileged? %>
+    <%= button_to "+ Autre impact", other_impacts_path(redirect_user_id: viewed_user.id), method: :post, class: "button primary",
+          form: { style: "display:inline-block;margin:0;" } %>
+  <% end %>
 </div>
 
 <%= render "shared/summary_cards", summary: @summary, dom_id: "portfolio-summary-cards" %>
+<%= render "other_impacts/totals", summary: @summary %>
 
 <div class="section-card">
   <%= turbo_frame_tag "evo-table-frame" do %>
@@ -184,3 +189,7 @@
     <%= page_size_select(@ups_pager) %>
   <% end %>
 </div>
+
+<% if current_user.privileged? || @other_impacts.any? %>
+  <%= render "other_impacts/table", impacts: @other_impacts, companies: @companies %>
+<% end %>

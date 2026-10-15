@@ -1,0 +1,16 @@
+<%# locals: summary — the two aggregated totals of "Autres impacts": Projeté = lines still "En cours", Actuel =
+    "Validé" lines (those are the ones already counted in the KPIs above). %>
+<% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
+<div class="metric-card unmanaged-portfolio-card other-impacts-card" id="other-impacts-totals">
+  <div class="metric-card-title">Autres impacts</div>
+  <div class="metric-pair">
+    <div class="metric-col">
+      <div class="metric-col-label">Projeté</div>
+      <div class="metric-col-value"><%= eur.call(summary.other_impacts_pending) %></div>
+    </div>
+    <div class="metric-col">
+      <div class="metric-col-label">Actuel</div>
+      <div class="metric-col-value"><%= eur.call(summary.other_impacts_validated) %></div>
+    </div>
+  </div>
+</div>

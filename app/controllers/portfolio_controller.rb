@@ -8,13 +8,14 @@ class PortfolioController < ApplicationController
     # produit_deals/upsell_deals are separate has_many associations from :deals (each scoped by `type`), so
     # `includes(:deals)` wouldn't preload them — Company's own arr_initial/churned_arr/upsold_arr/final_arr
     # (used per row below) and @produit_deals all call them directly, one query per company otherwise.
-    @companies = viewed_user.companies.includes(:produit_deals, :upsell_deals).order(:name)
+    @companies = viewed_user.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts).order(:name)
     @summary = PortfolioSummary.new(@companies, user: viewed_user)
     @produit_deals = @companies.flat_map(&:produit_deals).sort_by { |d| d.company.name }
     # Effective ownership, not company ownership — an upsell explicitly reassigned to viewed_user shows up
     # here even for a company they don't otherwise own, and one reassigned away from them doesn't, even for
     # one of their own companies. See Deal#effective_user / PortfolioSummary.
     @upsell_deals = @summary.upsell_deals.sort_by { |d| d.company.name }
+    @other_impacts = @companies.flat_map(&:current_other_impacts).sort_by(&:id)
     @viewable_ams = current_user.privileged? ? User.assignable.order(:name) : nil
     @selectable_companies = current_user.privileged? ? Company.order(:name) : current_user.companies.order(:name)
 

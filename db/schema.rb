@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_15_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -96,6 +96,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "other_impacts", force: :cascade do |t|
+    t.decimal "amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.integer "annee", null: false
+    t.text "comment"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.string "produit", default: "Mutuelle", null: false
+    t.string "statut", default: "En cours", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_other_impacts_on_company_id"
+  end
+
   create_table "risk_notes", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.text "content", null: false
@@ -138,6 +150,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_13_100000) do
   add_foreign_key "companies", "users", column: "referent_id", on_delete: :nullify
   add_foreign_key "deals", "companies"
   add_foreign_key "deals", "users"
+  add_foreign_key "other_impacts", "companies"
   add_foreign_key "risk_notes", "companies"
   add_foreign_key "risk_notes", "users"
   add_foreign_key "trash_batches", "users", column: "deleted_by_id"

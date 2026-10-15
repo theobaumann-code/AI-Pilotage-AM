@@ -1,0 +1,64 @@
+<%# locals: impact, companies — one editable "Autres impacts" line (read-only for everyone but admins/KAMs).
+    Same one-form-per-cell, submit-on-change pattern as the deal rows; redirect_user_id keeps the AM whose
+    page this is. %>
+<% editable = current_user.privileged? %>
+<% url = other_impact_path(impact, redirect_user_id: viewed_user.id) %>
+<% company_choices = (companies.to_a | [impact.company]).sort_by { |c| c.name.downcase } %>
+<tr id="<%= dom_id(impact) %>">
+  <td>
+    <% if editable %>
+      <%= form_with model: impact, url: url, method: :patch do |f| %>
+        <%= f.select :company_id, options_from_collection_for_select(company_choices, :id, :name, impact.company_id),
+              {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <strong><%= impact.company.name %></strong>
+    <% end %>
+  </td>
+  <td>
+    <% if editable %>
+      <%= form_with model: impact, url: url, method: :patch do |f| %>
+        <%= f.select :produit, OtherImpact::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= impact.produit %>
+    <% end %>
+  </td>
+  <td class="numeric">
+    <% if editable %>
+      <%= form_with model: impact, url: url, method: :patch do |f| %>
+        <%= f.text_field :amount, value: impact_amount_value(impact.amount), inputmode: "decimal", placeholder: "ex : -3000",
+              "aria-label": "Montant impacté en euros", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <span style="color:<%= impact.amount.negative? ? "var(--red)" : "inherit" %>"><%= number_to_currency(impact.amount, unit: "€", format: "%n %u", precision: 0) %></span>
+    <% end %>
+  </td>
+  <td>
+    <% if editable %>
+      <%= form_with model: impact, url: url, method: :patch do |f| %>
+        <%= f.text_field :comment, placeholder: "Nature de l'impact…", style: "width:100%;min-width:220px;",
+              onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <%= impact.comment %>
+    <% end %>
+  </td>
+  <td>
+    <% if editable %>
+      <%= form_with model: impact, url: url, method: :patch do |f| %>
+        <%= f.select :statut, OtherImpact::STATUTS, {},
+              class: "statut-select #{impact.validated? ? "statut-signed" : "statut-inprogress"}", onchange: "this.form.requestSubmit()" %>
+      <% end %>
+    <% else %>
+      <span class="statut-select <%= impact.validated? ? "statut-signed" : "statut-inprogress" %>" style="display:inline-block;padding:4px 10px;"><%= impact.statut %></span>
+    <% end %>
+  </td>
+  <td class="rowaction">
+    <% if editable %>
+      <%= button_to content_tag(:i, "", class: "fa-solid fa-trash-can"), url, method: :delete, class: "icon-btn danger",
+            title: "Supprimer cette ligne",
+            form: { data: { turbo_confirm: "Supprimer cette ligne d'impact (#{number_to_currency(impact.amount, unit: "€", format: "%n %u", precision: 0)}) ?" }, style: "display:inline-block;" } %>
+    <% end %>
+  </td>
+</tr>

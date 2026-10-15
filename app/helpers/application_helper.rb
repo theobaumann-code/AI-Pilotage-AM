@@ -22,6 +22,11 @@ module ApplicationHelper
     "Non démarré" => "statut-notstarted"
   }.freeze
 
+  # A signed amount as the plain number an admin would type back ("3000", "-3000", "-3000.5").
+  def impact_amount_value(amount)
+    amount.to_d == amount.to_d.to_i ? amount.to_d.to_i : amount.to_d.to_f
+  end
+
   def renewal_statut_class(statut)
     RENEWAL_STATUT_CLASS[statut]
   end

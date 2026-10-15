@@ -184,7 +184,7 @@ class AutresStatistiquesController < ApplicationController
       at_risk = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 }
       rate = total > 0 ? churned / total * 100 : 0.0
       { label: RISQUE_LABELS.fetch(produit), value: rate, churned: churned, total: total,
-        projected: total > 0 ? (churned + at_risk) / total * 100 : 0.0,
+        projected: total > 0 ? (churned + at_risk) / total * 100 : 0.0, projected_amount: churned + at_risk,
         count: deals.count(&:churned?), produits_count: deals.size,
         status: rate > PortfolioSummary::CHURN_LIMIT_PCT ? "ko" : "ok" }
     end

@@ -672,3 +672,24 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
 .impact-dialog::backdrop{background:rgba(48,17,17,.38);}
 .impact-dialog .modal-box{margin:0;border:0;box-shadow:none;}
 .impact-dialog .modal-row label select,.impact-dialog .modal-row label input,.impact-dialog .modal-row label textarea{width:100%;}
+
+/* Churn par risque: one compact block per risque, two labelled bars each, full width. */
+.risque-card-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin-bottom:16px;}
+.risque-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);font-weight:600;}
+.risque-legend span{display:inline-flex;align-items:center;gap:6px;}
+.risque-legend i{width:12px;height:12px;border-radius:3px;display:inline-block;}
+.risque-legend i.limit{width:2px;height:14px;border-radius:0;background:var(--burgundy);}
+.risque-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 40px;}
+.risque-block{display:flex;flex-direction:column;gap:12px;}
+.risque-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.risque-head strong{font-size:16px;}
+.risque-head span{font-size:12px;color:var(--text-muted);}
+.risque-line{display:grid;grid-template-columns:96px minmax(0,1fr) 128px;align-items:center;gap:12px;}
+.risque-label{font-size:12px;font-weight:700;color:var(--text-muted);}
+.risque-line .bar-track{height:16px;}
+.risque-limit{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--burgundy);}
+.risque-value{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.risque-value strong{font-size:16px;}
+.risque-value small{font-size:11px;color:var(--text-muted);}
+@media(max-width:900px){.risque-grid{grid-template-columns:minmax(0,1fr);}}
+@media(max-width:560px){.risque-line{grid-template-columns:minmax(0,1fr) auto;}.risque-line .bar-track{grid-column:1/-1;order:3;}}

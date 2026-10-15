@@ -218,9 +218,21 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_in_delta 10.0, prevoyance[:projected], 0.001
     assert_equal "ok", prevoyance[:status]
 
-    section = @response.body[/<h2>Churn par risque<\/h2>.*?Taux de churn par assureur/m]
-    assert_match(/Mutuelle \(santé\)[\s\S]*?25\.0 % · 10,000 € \/ 40,000 € · projeté 40\.0 %/, section)
-    assert_match(/Prévoyance[\s\S]*?0\.0 % · 0 € \/ 20,000 € · projeté 10\.0 %/, section)
+    assert_in_delta 16_000, sante[:projected_amount], 0.001
+
+    section = @response.body[/<h2>Churn par risque<\/h2>.*?<h2>Taux de churn par assureur/m]
+    # the legend names both series, and each risque gets one clearly labelled bar per series
+    assert_match "Churn à date", section[/risque-legend.*?<\/div>/m]
+    assert_match "Churn projeté", section[/risque-legend.*?<\/div>/m]
+    assert_equal 2, section.scan(/risque-block/).size
+    assert_equal 2, section.scan(/<span class="risque-label">Churn à date<\/span>/).size
+    assert_equal 2, section.scan(/<span class="risque-label">Churn projeté<\/span>/).size
+    sante_block = section[/<div class="risque-block">.*?(?=<div class="risque-block">|\z)/m]
+    assert_match "Mutuelle (santé)", sante_block
+    assert_match(/ARR total 40,000 €/, sante_block)
+    assert_match(/Churn à date[\s\S]*?25\.0 %[\s\S]*?10,000 €[\s\S]*?Churn projeté[\s\S]*?40\.0 %[\s\S]*?16,000 €/, sante_block)
+    prevoyance_block = section[/<strong>Prévoyance<\/strong>.*/m]
+    assert_match(/Churn à date[\s\S]*?0\.0 %[\s\S]*?0 €[\s\S]*?Churn projeté[\s\S]*?10\.0 %[\s\S]*?2,000 €/, prevoyance_block)
   end
 
   test "the Équipe and AM filters narrow every report to the chosen AMs" do

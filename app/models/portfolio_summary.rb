@@ -52,8 +52,10 @@ class PortfolioSummary
     produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_arr
   end
 
+  # Includes the "Validé" Autres impacts that took ARR away (see other_impacts_churn_actual).
   def churned
-    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_churn
+    produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_churn +
+      other_impacts_churn_actual
   end
 
   # The ARR lost to "subi" churn — shown alongside the Churn card for visibility, but deliberately not
@@ -102,6 +104,18 @@ class PortfolioSummary
     other_impacts.reject(&:validated?).sum { |i| i.amount.to_f }
   end
 
+  # Autres impacts as a factor of the global churn: an impact that takes ARR away (a negative amount) is a
+  # loss like any churn, so its size counts there — "Validé" ones in the actual churn, "En cours" ones in the
+  # projected churn. Positive impacts are not churn and never reduce it. This only feeds the churn figures
+  # (amount, rate, limit); ARR final and NRR already carry the signed impacts themselves.
+  def other_impacts_churn_actual
+    other_impacts.select(&:validated?).sum { |i| [-i.amount.to_f, 0].max }
+  end
+
+  def other_impacts_churn_pending
+    other_impacts.reject(&:validated?).sum { |i| [-i.amount.to_f, 0].max }
+  end
+
   # Behind the "ARR final" card — renewed ARR plus only the upsells actually signed so far.
   def arr_final_actual
     renewed_arr + upsold_actual + other_impacts_validated
@@ -146,8 +160,10 @@ class PortfolioSummary
 
   # Actual churn plus the projected risk on what's still active — the single figure the 5.5% budget is
   # meant to protect against going forward, not just what has already happened.
+  # The "En cours" Autres impacts that would take ARR away are part of the projected churn too — added here
+  # rather than into churn_projete, which arr_final already subtracts (the impact is in arr_final on its own).
   def churn_total
-    churned + churn_projete
+    churned + churn_projete + other_impacts_churn_pending
   end
 
   def churn_limit

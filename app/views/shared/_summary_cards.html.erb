@@ -65,6 +65,10 @@
       <summary>Détail du churn <span class="churn-details-chevron" aria-hidden="true">⌄</span></summary>
       <dl class="churn-details-list">
         <div><dt>Limite de churn</dt><dd><%= churn_limit_label %></dd></div>
+        <% if summary.other_impacts_churn_actual > 0 || summary.other_impacts_churn_pending > 0 %>
+          <div><dt>Dont autres impacts négatifs <small>(validés dans l'actuel, en cours dans le projeté)</small></dt>
+            <dd><%= number_to_currency(summary.other_impacts_churn_actual, unit: "€", format: "%n %u", precision: 0) %> / <%= number_to_currency(summary.other_impacts_churn_pending, unit: "€", format: "%n %u", precision: 0) %></dd></div>
+        <% end %>
         <% if summary.churn_subi_amount > 0 %>
           <div><dt>Dont churn subi <small>(non compté)</small></dt><dd><%= churn_subi_label %></dd></div>
           <div><dt>Churn total avec subi <small>(à date, non pris en compte dans le NRR)</small></dt><dd><%= churn_with_subi_label %></dd></div>

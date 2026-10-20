@@ -39,6 +39,49 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_in_delta base.arr_initial, s.arr_initial, 0.001, "the starting ARR is untouched"
   end
 
+  test "negative Autres impacts count in the global churn: Validé in the actual churn, En cours in the projected churn" do
+    base = summary
+    OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
+    OtherImpact.create!(company: @alpha, amount: "-500", statut: "Validé")
+    OtherImpact.create!(company: @churned, amount: "-2000", statut: "En cours")
+    OtherImpact.create!(company: @alpha, amount: "9000", statut: "Validé")   # a gain is not churn
+    OtherImpact.create!(company: @alpha, amount: "4000", statut: "En cours") # nor a pending gain
+
+    s = summary
+    assert_in_delta 3_500, s.other_impacts_churn_actual, 0.001
+    assert_in_delta 2_000, s.other_impacts_churn_pending, 0.001
+
+    assert_in_delta base.churned + 3_500, s.churned, 0.001, "actual churn: only the validated losses"
+    assert_in_delta base.churn_rate + 3_500.0 / base.arr_initial * 100, s.churn_rate, 0.001
+    assert_in_delta base.churn_total + 3_500 + 2_000, s.churn_total, 0.001, "projected churn: validated + pending losses"
+    assert_in_delta base.churn_total_rate + 5_500.0 / base.arr_initial * 100, s.churn_total_rate, 0.001
+    assert_in_delta base.churn_with_subi + 3_500, s.churn_with_subi, 0.001
+  end
+
+  test "the churn factor doesn't leak into ARR final or NRR, which already carry the signed impacts" do
+    base = summary
+    OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
+    OtherImpact.create!(company: @alpha, amount: "-2000", statut: "En cours")
+
+    s = summary
+    assert_in_delta base.arr_final_actual - 3_000, s.arr_final_actual, 0.001
+    assert_in_delta base.arr_final - 2_000, s.arr_final, 0.001, "the pending loss is subtracted once, not once more through churn"
+    assert_in_delta base.churn_projete, s.churn_projete, 0.001, "churn_projete (which arr_final subtracts) is untouched"
+  end
+
+  test "the churn card breaks the negative impacts out, and Vue globale's churn includes them" do
+    OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
+    OtherImpact.create!(company: @alpha, amount: "-2000", statut: "En cours")
+    sign_in @admin
+    get portfolio_path(user_id: @am.id)
+    assert_match(/Dont autres impacts négatifs[\s\S]*?3,000 € \/ 2,000 €/, @response.body)
+
+    get pilotage_path
+    assert_match "Dont autres impacts négatifs", @response.body
+    global = @controller.instance_variable_get(:@global_summary)
+    assert_operator global.churned, :>=, 3_000
+  end
+
   test "a line only ever counts on one side: switching its status moves it from projected to actual" do
     base = summary
     impact = OtherImpact.create!(company: @alpha, amount: "4000", statut: "En cours")

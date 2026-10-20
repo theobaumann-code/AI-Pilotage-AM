@@ -36,6 +36,22 @@ class User < ApplicationRecord
   before_save { self.reader = false if admin? || kam? }
   validate :reader_owns_no_company, if: :read_only?
 
+  # A team lead's "poste" rides on rights that must match it: TL AM = admin rights, TL Customer Care = plain
+  # user rights (neither admin, KAM nor lecteur). If the rights are changed so they no longer match (admin
+  # taken away from a TL AM, a TL Customer Care promoted...), the poste is dropped rather than left lying.
+  before_validation :align_poste_with_rights
+
+  POSTE_TL_AM = "TL AM".freeze
+  POSTE_TL_CSM = "TL Customer Care".freeze
+  POSTES = [POSTE_TL_AM, POSTE_TL_CSM].freeze
+
+  # Maximum number of client accounts one person can carry, by role — an unlisted role (AM, admin...) gets the
+  # default. Used by "Attribution portefeuille".
+  DEFAULT_ACCOUNT_LIMIT = 54
+  ACCOUNT_LIMITS = { kam: 35, tl_am: 9, tl_csm: 24 }.freeze
+
+  ROLE_LABELS = { admin: "Admin", kam: "KAM", reader: "Lecteur", am: "AM", tl_am: "TL AM", tl_csm: "TL Customer Care" }.freeze
+
   def active_for_authentication?
     super && active?
   end
@@ -47,23 +63,32 @@ class User < ApplicationRecord
   # Admin always wins if somehow both flags are set (shouldn't normally happen via the UI, which treats
   # them as separate toggles, but this keeps role/role_label well-defined regardless).
   def role
+    return :tl_am if poste == POSTE_TL_AM && admin?
     return :admin if admin?
     return :kam if kam?
     return :reader if reader?
+    return :tl_csm if poste == POSTE_TL_CSM
     :am
   end
 
   def role_label
-    { admin: "Admin", kam: "KAM", reader: "Lecteur", am: "AM" }.fetch(role)
+    ROLE_LABELS.fetch(role)
   end
 
-  # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin/Lecteur)
-  # instead of independent checkboxes — assignable like any other attribute (user.update(role: "KAM")). Any
-  # value other than the known labels is treated as "AM", the safe default.
+  def account_limit
+    ACCOUNT_LIMITS.fetch(role, DEFAULT_ACCOUNT_LIMIT)
+  end
+
+  # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin/TL AM/
+  # TL Customer Care/Lecteur) instead of independent checkboxes — assignable like any other attribute
+  # (user.update(role: "KAM")). "TL AM" means admin rights plus the poste; "TL Customer Care" plain user rights
+  # plus the poste. Any value other than the known labels is treated as "AM", the safe default.
   def role=(label)
-    self.admin = (label.to_s == "Admin")
-    self.kam = (label.to_s == "KAM")
-    self.reader = (label.to_s == "Lecteur")
+    label = label.to_s
+    self.admin = ["Admin", ROLE_LABELS[:tl_am]].include?(label)
+    self.kam = (label == "KAM")
+    self.reader = (label == "Lecteur")
+    self.poste = { ROLE_LABELS[:tl_am] => POSTE_TL_AM, ROLE_LABELS[:tl_csm] => POSTE_TL_CSM }[label]
   end
 
   # A "lecteur" can sign in and look at everything but change nothing — enforced server-side for every
@@ -81,6 +106,12 @@ class User < ApplicationRecord
   end
 
   private
+
+  def align_poste_with_rights
+    self.poste = nil if poste == POSTE_TL_AM && !admin?
+    self.poste = nil if poste == POSTE_TL_CSM && (admin? || kam? || reader?)
+    self.poste = nil unless POSTES.include?(poste)
+  end
 
   def reader_owns_no_company
     return unless companies.exists?

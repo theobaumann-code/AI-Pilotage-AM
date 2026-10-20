@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -135,6 +135,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_100000) do
     t.string "encrypted_password", default: "", null: false
     t.boolean "kam", default: false, null: false
     t.string "name", null: false
+    t.string "poste"
     t.boolean "reader", default: false, null: false
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"

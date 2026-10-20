@@ -41,7 +41,7 @@ class AutresStatistiquesController < ApplicationController
   # AMs of that role, named AMs narrow further. With neither, everything is in scope (companies owned by a
   # since-deactivated user included). Lecteurs are never offered — they own nothing.
   def load_scope
-    @available_roles = ["Admin", "KAM", "AM"]
+    @available_roles = ["Admin", "KAM", "AM", "TL AM", "TL Customer Care"]
     @roles = Array(params[:roles]).reject(&:blank?)
     @ams = Array(params[:ams]).reject(&:blank?)
     all_ams = User.assignable.order(:name).to_a

@@ -3,18 +3,14 @@
 class AttributionPortefeuilleController < ApplicationController
   before_action :require_strict_admin!
 
-  # Maximum number of accounts one person can carry (the sheet's "Portefeuille max" for an AM).
-  ACCOUNT_LIMIT = 54
-
   def show
-    @limit = ACCOUNT_LIMIT
     companies_by_user = Company.includes(:produit_deals).group_by(&:user_id)
 
-    # Everyone who carries — or could carry — a portfolio: AMs and KAMs, plus anyone who has accounts
-    # (an admin with none isn't a portfolio holder and would only inflate the capacity).
+    # Everyone who carries — or could carry — a portfolio: AMs, KAMs and team leads, plus anyone who has
+    # accounts (an admin with none isn't a portfolio holder and would only inflate the capacity).
     @rows = User.assignable.order(:name).filter_map do |user|
       accounts = companies_by_user[user.id] || []
-      next unless user.role.in?([:am, :kam]) || accounts.any?
+      next unless user.role.in?([:am, :kam, :tl_am, :tl_csm]) || accounts.any?
 
       build_row(user, accounts)
     end
@@ -25,15 +21,15 @@ class AttributionPortefeuilleController < ApplicationController
     @over = @rows.select { |r| r[:over] }.sort_by { |r| -r[:comptes] }
     @totals = {
       comptes: @rows.sum { |r| r[:comptes] }, arr: total_arr, people: @rows.size,
-      capacity: @rows.size * @limit, churned: @rows.sum { |r| r[:churned] }
+      capacity: @rows.sum { |r| r[:limit] }, churned: @rows.sum { |r| r[:churned] }
     }
     @totals[:remaining] = @totals[:capacity] - @totals[:comptes]
     @totals[:basket] = @totals[:comptes] > 0 ? total_arr / @totals[:comptes] : 0.0
-    @by_role = %w[KAM AM Admin].filter_map do |label|
+    @by_role = ["KAM", "AM", "TL AM", "TL Customer Care", "Admin"].filter_map do |label|
       group = @rows.select { |r| r[:role] == label }
       next if group.empty?
 
-      { role: label, people: group.size, capacity: group.size * @limit, comptes: group.sum { |r| r[:comptes] },
+      { role: label, people: group.size, capacity: group.sum { |r| r[:limit] }, limit: group.first[:limit], comptes: group.sum { |r| r[:comptes] },
         arr: group.sum { |r| r[:arr] }, over: group.count { |r| r[:over] } }
     end
 
@@ -104,6 +100,6 @@ class AttributionPortefeuilleController < ApplicationController
     arr = active.sum { |c| c.produit_deals.reject(&:churned?).sum { |d| d.arr.to_f } }
     comptes = active.size
     { user: user, role: user.role_label, comptes: comptes, churned: fully_churned.size, arr: arr,
-      basket: comptes > 0 ? arr / comptes : 0.0, remaining: @limit - comptes, over: comptes > @limit }
+      basket: comptes > 0 ? arr / comptes : 0.0, limit: user.account_limit, remaining: user.account_limit - comptes, over: comptes > user.account_limit }
   end
 end

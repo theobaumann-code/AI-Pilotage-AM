@@ -9,7 +9,7 @@ class PilotageController < ApplicationController
     @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
     @active_ams = User.assignable.order(:name)
     @selectable_companies = Company.order(:name)
-    @available_roles = ["Admin", "KAM", "AM"]
+    @available_roles = ["Admin", "KAM", "AM", "TL AM", "TL Customer Care"]
     # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/
     # upsell/risque ones, which are about individual deals) — checking it folds the non-accompagné figures
     # into the summary cards' totals; see PortfolioSummary#non_accompagne.

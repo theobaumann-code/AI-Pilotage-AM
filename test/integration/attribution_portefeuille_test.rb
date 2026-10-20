@@ -72,50 +72,63 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_not row[:over]
   end
 
-  test "someone over 54 accounts is in the red, listed in the banner, and 54 exactly is fine" do
-    55.times { account(@kam, arr: 100) }
+  test "each role has its own ceiling: KAM 35, AM 54, TL AM 9, TL Customer Care 24 — over it is red, at it is fine" do
+    tl_am = User.create!(email: "tlam-attr@example.com", name: "TL AM Attr", role: "TL AM", active: true)
+    tl_csm = User.create!(email: "tlcsm-attr@example.com", name: "TL CC Attr", role: "TL Customer Care", active: true)
+    36.times { account(@kam, arr: 100) }
     54.times { account(@am, arr: 100) }
+    10.times { account(tl_am, arr: 100) }
+    24.times { account(tl_csm, arr: 100) }
 
     sign_in @admin
     get attribution_portefeuille_path
     assert_response :success
-    kam_row = rows["KAM Attr"]
-    am_row = rows["AM Attr"]
-    assert kam_row[:over]
-    assert_equal [55, -1], [kam_row[:comptes], kam_row[:remaining]]
-    assert_not am_row[:over], "54 is the maximum, not over it"
-    assert_equal 0, am_row[:remaining]
+    assert_equal [35, 54, 9, 24], [rows["KAM Attr"][:limit], rows["AM Attr"][:limit], rows["TL AM Attr"][:limit], rows["TL CC Attr"][:limit]]
+    assert_equal [36, -1], [rows["KAM Attr"][:comptes], rows["KAM Attr"][:remaining]]
+    assert rows["KAM Attr"][:over], "36 accounts is over a KAM's 35"
+    assert rows["TL AM Attr"][:over], "10 accounts is over a TL AM's 9"
+    assert_not rows["AM Attr"][:over], "54 is an AM's maximum, not over it"
+    assert_not rows["TL CC Attr"][:over], "24 is a TL Customer Care's maximum"
+    assert_equal [0, 0], [rows["AM Attr"][:remaining], rows["TL CC Attr"][:remaining]]
 
-    assert_equal 1, @controller.instance_variable_get(:@over).size
-    assert_match(/1 personne dépasse les 54 comptes :[\s\S]*KAM Attr \(55 comptes, \+1\)/, @response.body)
+    assert_equal ["KAM Attr", "TL AM Attr"], @controller.instance_variable_get(:@over).map { |r| r[:user].name }.sort
+    assert_match(/2 personnes dépassent leur plafond de comptes :/, @response.body)
+    assert_match(/KAM Attr \(36 comptes pour 35 max, \+1\)/, @response.body)
+    assert_match(/TL AM Attr \(10 comptes pour 9 max, \+1\)/, @response.body)
     assert_match "✗ +1 en trop", @response.body
     assert_match "row-over-capacity", @response.body
     assert_match "✓ 0 restant", @response.body
 
     totals = @controller.instance_variable_get(:@totals)
-    assert_equal 109, totals[:comptes]
-    assert_equal 108, totals[:capacity]
-    assert_equal(-1, totals[:remaining], "the team as a whole is one account over")
+    assert_equal 124, totals[:comptes]
+    assert_equal 35 + 54 + 9 + 24, totals[:capacity]
+    assert_equal(-2, totals[:remaining], "the team as a whole is two accounts over")
   end
 
-  test "nobody over the ceiling shows the all-clear" do
+  test "nobody over their ceiling shows the all-clear" do
     account(@am)
     sign_in @admin
     get attribution_portefeuille_path
-    assert_match "Personne ne dépasse les 54 comptes", @response.body
+    assert_match "Personne ne dépasse son plafond de comptes", @response.body
     assert_empty @controller.instance_variable_get(:@over)
   end
 
-  test "the list is AMs and KAMs (even empty ones) plus anyone with accounts; lecteurs and empty admins stay out" do
+  test "the list is AMs, KAMs and team leads (even empty ones) plus anyone with accounts; lecteurs and empty admins stay out" do
+    User.create!(email: "tlam2-attr@example.com", name: "TL AM Vide", role: "TL AM", active: true)
+    User.create!(email: "tlcsm2-attr@example.com", name: "TL CC Vide", role: "TL Customer Care", active: true)
     sign_in @admin
     get attribution_portefeuille_path
-    assert_equal ["AM Attr", "KAM Attr"], rows.keys.sort, "empty AM and KAM listed with their full capacity"
+    assert_equal ["AM Attr", "KAM Attr", "TL AM Vide", "TL CC Vide"], rows.keys.sort, "empty ones listed with their full capacity"
     assert_equal 54, rows["AM Attr"][:remaining]
-    assert_equal 108, @controller.instance_variable_get(:@totals)[:capacity]
+    assert_equal 35, rows["KAM Attr"][:remaining]
+    assert_equal 9, rows["TL AM Vide"][:remaining]
+    assert_equal 24, rows["TL CC Vide"][:remaining]
+    assert_equal 35 + 54 + 9 + 24, @controller.instance_variable_get(:@totals)[:capacity]
 
     account(@admin)
     get attribution_portefeuille_path
     assert_includes rows.keys, "Admin Attr", "an admin who does carry accounts appears"
+    assert_equal 54, rows["Admin Attr"][:limit], "an admin without a poste gets the default ceiling"
     assert_not_includes rows.keys, "Lecteur Attr"
   end
 
@@ -131,20 +144,23 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal ["AM Attr", "KAM Attr"], @controller.instance_variable_get(:@pager).records.map { |r| r[:user].name }
   end
 
-  test "ARR share and the per-role capacity table" do
+  test "ARR share and the per-role capacity table, with each role's ceiling" do
+    tl = User.create!(email: "tlcsm3-attr@example.com", name: "TL CC Attr", role: "TL Customer Care", active: true)
     account(@am, arr: 30_000)
     account(@kam, arr: 10_000)
+    account(tl, arr: 10_000)
     sign_in @admin
     get attribution_portefeuille_path
-    assert_in_delta 75.0, rows["AM Attr"][:part], 0.001
-    assert_in_delta 25.0, rows["KAM Attr"][:part], 0.001
+    assert_in_delta 60.0, rows["AM Attr"][:part], 0.001
+    assert_in_delta 20.0, rows["KAM Attr"][:part], 0.001
 
     by_role = @controller.instance_variable_get(:@by_role).index_by { |g| g[:role] }
-    assert_equal [1, 54, 1, 30_000], [by_role["AM"][:people], by_role["AM"][:capacity], by_role["AM"][:comptes], by_role["AM"][:arr]]
-    assert_equal [1, 54, 1], [by_role["KAM"][:people], by_role["KAM"][:capacity], by_role["KAM"][:comptes]]
+    assert_equal [1, 54, 54, 1, 30_000], [by_role["AM"][:people], by_role["AM"][:limit], by_role["AM"][:capacity], by_role["AM"][:comptes], by_role["AM"][:arr]]
+    assert_equal [1, 35, 35, 1], [by_role["KAM"][:people], by_role["KAM"][:limit], by_role["KAM"][:capacity], by_role["KAM"][:comptes]]
+    assert_equal [1, 24, 24, 1], [by_role["TL Customer Care"][:people], by_role["TL Customer Care"][:limit], by_role["TL Customer Care"][:capacity], by_role["TL Customer Care"][:comptes]]
     assert_match "Capacité par rôle", @response.body
+    assert_match "Plafond / pers.", @response.body
   end
-
   def entreprises
     @controller.instance_variable_get(:@ent_pager).records.index_by { |r| r[:company].name }
   end

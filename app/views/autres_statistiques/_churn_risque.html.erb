@@ -1,4 +1,4 @@
-<%# locals: rows — "Churn par risque": one block per risque (Mutuelle (santé) / Prévoyance), each with two plainly
+<%# locals: rows, risque_assureurs (the card's own Assureur filter) — "Churn par risque": one block per risque (Mutuelle (santé) / Prévoyance), each with two plainly
     labelled bars on a shared scale — "Churn à date" (already lost) and "Churn projeté" (lost so far + the
     risk-weighted ARR of the contracts still active). The bordeaux tick marks the churn limit. %>
 <% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
@@ -9,6 +9,13 @@
 <div class="chart-wrap span-2 risque-card">
   <div class="risque-card-header">
     <h2>Churn par risque</h2>
+    <%# This card's own filter: it narrows these bars only, and keeps the page's Équipe/AM selection. %>
+    <%= form_with url: autres_statistiques_path, method: :get, class: "risque-filter" do %>
+      <%= preserved_query_fields("risque_assureurs", "risque_assureurs_open") %>
+      <%= render "shared/checklist_filter", param_name: "risque_assureurs", options: ProduitDeal::ASSUREURS, selected: risque_assureurs, legend: "Assureur" %>
+    <% end %>
+  </div>
+  <div class="risque-card-legend">
     <div class="risque-legend">
       <span><i style="background:var(--burgundy)"></i>Churn à date</span>
       <span><i style="background:var(--primary)"></i>Churn projeté</span>

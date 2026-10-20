@@ -169,7 +169,7 @@
       <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
     </div>
 
-    <%= render "autres_statistiques/churn_risque", rows: @churn_by_risque %>
+    <%= render "autres_statistiques/churn_risque", rows: @churn_by_risque, risque_assureurs: @risque_assureurs %>
 
     <div class="chart-wrap">
       <h2>Taux de churn par assureur</h2>

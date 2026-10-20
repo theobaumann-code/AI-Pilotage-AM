@@ -235,6 +235,56 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match(/Churn à date[\s\S]*?0\.0 %[\s\S]*?0 €[\s\S]*?Churn projeté[\s\S]*?10\.0 %[\s\S]*?2,000 €/, prevoyance_block)
   end
 
+  test "churn by risque can be filtered by assureur, alone or several at once, and only that card is affected" do
+    company = Company.create!(name: "Client Risque Assureur", user: @am)
+    [["ra-1", "Mutuelle", "AXA", "Churné", 10_000], ["ra-2", "Mutuelle", "AXA", "En cours", 30_000],
+     ["ra-3", "Mutuelle", "Gan", "Churné", 20_000], ["ra-4", "Mutuelle", "Gan", "En cours", 20_000],
+     ["ra-5", "Prévoyance", "Allianz", "Churné", 5_000], ["ra-6", "Prévoyance", "Allianz", "En cours", 15_000]].each_with_index do |(id, produit, assureur, statut, arr), i|
+      ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: i.even? ? "Cadre" : "Non cadre",
+        assureur: assureur, arr: arr, statut_renouvellement: statut)
+    end
+
+    rows = ->(params = {}) {
+      get autres_statistiques_path, params: params
+      @controller.instance_variable_get(:@churn_by_risque).index_by { |r| r[:label] }
+    }
+
+    all = rows.call
+    assert_equal [30_000, 80_000], [all["Mutuelle (santé)"][:churned], all["Mutuelle (santé)"][:total]]
+
+    axa = rows.call(risque_assureurs: ["AXA"])
+    assert_equal [10_000, 40_000], [axa["Mutuelle (santé)"][:churned], axa["Mutuelle (santé)"][:total]]
+    assert_in_delta 25.0, axa["Mutuelle (santé)"][:value], 0.001
+    assert_equal [0, 0], [axa["Prévoyance"][:total], axa["Prévoyance"][:produits_count]], "no AXA prévoyance: the bar is empty"
+
+    two = rows.call(risque_assureurs: ["AXA", "Allianz"])
+    assert_equal 40_000, two["Mutuelle (santé)"][:total]
+    assert_equal [5_000, 20_000], [two["Prévoyance"][:churned], two["Prévoyance"][:total]]
+
+    # only this card reacts: the other churn report keeps every assureur
+    assert_equal 3, @controller.instance_variable_get(:@churn_rate_by_assureur).size
+    assert_equal 6, @controller.instance_variable_get(:@renewal_funnel).sum { |s| s[:value] }
+  end
+
+  test "the Assureur filter of Churn par risque is in the card, keeps its selection and the page's AM filter" do
+    get autres_statistiques_path, params: { risque_assureurs: ["AXA", "Gan"], ams: ["AM Stats"] }
+    card = @response.body[/class="chart-wrap span-2 risque-card".*?class="risque-legend"/m]
+    assert_match 'name="risque_assureurs[]"', card
+    assert_match(/value="AXA"[^>]*checked/, card)
+    assert_match(/value="Gan"[^>]*checked/, card)
+    assert_match "Assureur (2)", card
+    assert_match(/<input type="hidden" name="ams\[\]" value="AM Stats"/, card, "the page's AM filter is carried by the card's form")
+  end
+
+  test "a multi-value filter is carried to other forms one value at a time, not fused into one string" do
+    get autres_statistiques_path, params: { ams: ["AM Stats"], risque_assureurs: ["AXA", "Gan"] }
+    # the page-wide Équipe/AM form re-emits the card's selection
+    page_form = @response.body[/<div class="toolbar stats-filters">.*?<\/form>/m]
+    assert_match(/<input type="hidden" name="risque_assureurs\[\]" value="AXA"/, page_form)
+    assert_match(/<input type="hidden" name="risque_assureurs\[\]" value="Gan"/, page_form)
+    assert_no_match(/value="AXA Gan"/, @response.body)
+  end
+
   test "the Équipe and AM filters narrow every report to the chosen AMs" do
     admin = User.create!(email: "admin-filter-stats@example.com", name: "Admin Filtre", admin: true, active: true)
     mine = Company.create!(name: "Client Filtre Mien", user: @am)

@@ -674,7 +674,9 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
 .impact-dialog .modal-row label select,.impact-dialog .modal-row label input,.impact-dialog .modal-row label textarea{width:100%;}
 
 /* Churn par risque: one compact block per risque, two labelled bars each, full width. */
-.risque-card-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin-bottom:16px;}
+.risque-card-header{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin-bottom:10px;}
+.risque-card-legend{margin-bottom:16px;}
+.risque-filter{display:flex;align-items:center;gap:8px;}
 .risque-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);font-weight:600;}
 .risque-legend span{display:inline-flex;align-items:center;gap:6px;}
 .risque-legend i{width:12px;height:12px;border-radius:3px;display:inline-block;}

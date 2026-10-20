@@ -18,6 +18,7 @@ class AutresStatistiquesController < ApplicationController
     @active_deals = ProduitDeal.where(company_id: @company_ids).includes(company: :user).reject(&:churn_subi?)
 
     @renewal_produit = params[:renewal_produit]
+    @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
     @renewal_donut = renewal_donut_slices
 
     @arr_by_produit = arr_by(:produit, ProduitDeal::PRODUITS)
@@ -176,9 +177,11 @@ class AutresStatistiquesController < ApplicationController
   # churn so far plus the risk-weighted ARR of the contracts still active (as PortfolioSummary#churn_total).
   RISQUE_LABELS = { "Mutuelle" => "Mutuelle (santé)", "Prévoyance" => "Prévoyance" }.freeze
 
+  # Narrowed by the card's own Assureur filter (on top of the page's Équipe/AM filters) when one is set.
   def churn_by_risque
+    scoped = @risque_assureurs.present? ? @active_deals.select { |d| @risque_assureurs.include?(d.assureur) } : @active_deals
     ProduitDeal::PRODUITS.map do |produit|
-      deals = @active_deals.select { |d| d.produit == produit }
+      deals = scoped.select { |d| d.produit == produit }
       total = deals.sum { |d| d.arr.to_f }
       churned = deals.select(&:churned?).sum { |d| d.arr.to_f }
       at_risk = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 }

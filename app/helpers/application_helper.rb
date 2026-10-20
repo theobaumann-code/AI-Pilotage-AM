@@ -63,7 +63,12 @@ module ApplicationHelper
   # AM selector), while still letting this form's own visible fields override this table's params.
   def preserved_query_fields(*exclude_keys)
     exclude = exclude_keys.map(&:to_s)
-    safe_join(request.query_parameters.reject { |k, _| exclude.include?(k.to_s) }.map { |k, v| hidden_field_tag(k, v, id: nil) })
+    kept = request.query_parameters.reject { |k, _| exclude.include?(k.to_s) }
+    # A multi-value param (a checklist filter) must come back as name[] once per value — handing the array
+    # to a single hidden field would fuse the values into one space-separated string ("AM A AM B").
+    safe_join(kept.flat_map do |k, v|
+      v.is_a?(Array) ? v.map { |item| hidden_field_tag("#{k}[]", item, id: nil) } : [hidden_field_tag(k, v, id: nil)]
+    end)
   end
 
   # One sortable <th> for a TablePager-backed table: clicking it re-sorts by `field` (flipping direction

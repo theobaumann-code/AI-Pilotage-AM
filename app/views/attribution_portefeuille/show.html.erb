@@ -138,3 +138,73 @@
     </div>
   </div>
 <% end %>
+
+<div class="section-card">
+  <%= turbo_frame_tag "ent-table-frame" do %>
+    <div class="table-toolbar">
+      <h2>Entreprises</h2>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("ent_q", "ent_ams", "ent_ams_open", "ent_risques", "ent_risques_open", "ent_upsell", "ent_page") %>
+          <%= live_search_field :ent_q, @ent_q %>
+          <%= render "shared/checklist_filter", param_name: "ent_ams", options: @ent_available_ams, selected: @ent_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "ent_risques", options: AttributionPortefeuilleController::RISQUES, selected: @ent_risques, legend: "Risque" %>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+            <%= check_box_tag :ent_upsell, "1", @ent_upsell, onchange: "this.form.requestSubmit()" %>
+            Opportunité d'upsell
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <p class="section-sub" style="margin-top:-8px;">
+      <strong><%= @ent_total[:count] %></strong> entreprise<%= "s" if @ent_total[:count] > 1 %> · enjeu ARR <strong><%= eur.call(@ent_total[:arr]) %></strong> ·
+      <strong><%= @ent_total[:upsell] %></strong> avec une opportunité d'upsell (<%= eur.call(@ent_total[:upsell_amount]) %>).
+      Enjeu ARR = produits encore actifs. Opportunité d'upsell = au moins un upsell « Non démarré » ou « En cours ».
+    </p>
+    <div class="table-scroll">
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ent_pager, :nom, "Entreprise", col_class: "col-nom") %>
+            <%= sortable_th(@ent_pager, :am, "AM") %>
+            <%= sortable_th(@ent_pager, :arr, "Enjeu ARR (€)", col_class: "col-arr") %>
+            <%= sortable_th(@ent_pager, :risque, "Risque couvert") %>
+            <%= sortable_th(@ent_pager, :upsell, "Opportunité d'upsell") %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ent_pager.records.empty? %>
+            <tr><td colspan="5" class="empty-state">Aucune entreprise pour ce filtre.</td></tr>
+          <% else %>
+            <% @ent_pager.records.each do |r| %>
+              <tr>
+                <td>
+                  <strong><%= r[:company].name %></strong>
+                  <% if r[:churned] %><span class="badge ko" style="margin-left:6px;">Churné</span><% end %>
+                </td>
+                <td><%= r[:am].name %></td>
+                <td class="numeric"><%= eur.call(r[:arr]) %></td>
+                <td>
+                  <% if r[:risque] %>
+                    <span class="badge <%= { "Double risque" => "ok", "Santé" => "warn", "Prévoyance" => "warn" }[r[:risque]] %>"><%= r[:risque] %></span>
+                  <% else %>
+                    —
+                  <% end %>
+                </td>
+                <td>
+                  <% if r[:upsell] %>
+                    <span class="badge ok">✓ Oui</span> <small style="color:var(--text-muted);"><%= eur.call(r[:upsell_amount]) %></small>
+                  <% else %>
+                    <span style="color:var(--text-muted);">Non</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@ent_pager) %>
+    <%= page_size_select(@ent_pager) %>
+  <% end %>
+</div>

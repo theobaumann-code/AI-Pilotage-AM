@@ -47,9 +47,55 @@ class AttributionPortefeuilleController < ApplicationController
         panier: ->(r) { TablePager.key(r[:basket]) },
         part: ->(r) { TablePager.key(r[:part]) }
       }, default_sort: :comptes, default_dir: "desc")
+
+    load_entreprises
   end
 
+  RISQUES = ["Santé", "Prévoyance", "Double risque"].freeze
+  OPEN_UPSELL_STATUTS = ["Non démarré", "En cours"].freeze
+
   private
+
+  # Every company, one row each: its AM, its ARR stake (produits still alive), the risk(s) it is covered for
+  # and whether an upsell is still open on it. Filterable by name / AM / risque / upsell, then sorted + paged.
+  def load_entreprises
+    @ent_q = params[:ent_q].to_s.strip
+    @ent_ams = Array(params[:ent_ams]).reject(&:blank?)
+    @ent_risques = Array(params[:ent_risques]).reject(&:blank?)
+    @ent_upsell = params[:ent_upsell].present?
+
+    all = Company.includes(:user, :produit_deals, :upsell_deals).map { |company| entreprise_row(company) }
+    @ent_available_ams = all.map { |r| r[:am].name }.uniq.sort
+    rows = all
+    rows = rows.select { |r| r[:company].name.downcase.include?(@ent_q.downcase) } if @ent_q.present?
+    rows = rows.select { |r| @ent_ams.include?(r[:am].name) } if @ent_ams.present?
+    rows = rows.select { |r| @ent_risques.include?(r[:risque]) } if @ent_risques.present?
+    rows = rows.select { |r| r[:upsell] } if @ent_upsell
+    @ent_total = { count: rows.size, arr: rows.sum { |r| r[:arr] }, upsell: rows.count { |r| r[:upsell] },
+                   upsell_amount: rows.sum { |r| r[:upsell_amount] } }
+
+    @ent_pager = TablePager.new(rows, params: params.reverse_merge("ent_size" => 50), prefix: "ent",
+      sort_procs: {
+        nom: ->(r) { TablePager.key(r[:company].name) },
+        am: ->(r) { TablePager.key(r[:am].name) },
+        arr: ->(r) { TablePager.key(r[:arr]) },
+        risque: ->(r) { TablePager.key(r[:risque]) },
+        upsell: ->(r) { TablePager.key(r[:upsell] ? r[:upsell_amount] : -1) }
+      }, default_sort: :arr, default_dir: "desc")
+  end
+
+  def entreprise_row(company)
+    alive = company.produit_deals.reject(&:churned?)
+    produits = alive.map(&:produit).uniq
+    risque = if produits.include?("Mutuelle") && produits.include?("Prévoyance") then "Double risque"
+    elsif produits.include?("Mutuelle") then "Santé"
+    elsif produits.include?("Prévoyance") then "Prévoyance"
+    end
+    open_upsells = company.upsell_deals.select { |u| OPEN_UPSELL_STATUTS.include?(u.statut_signature) }
+    { company: company, am: company.user, arr: alive.sum { |d| d.arr.to_f }, risque: risque,
+      churned: company.produit_deals.any? && alive.empty?,
+      upsell: open_upsells.any?, upsell_amount: open_upsells.sum(&:upsell_amount).to_f }
+  end
 
   # An account is a client the person still has to look after: one whose produits aren't all churned (a client
   # without any produit yet counts). ARR is that of the produits still alive.

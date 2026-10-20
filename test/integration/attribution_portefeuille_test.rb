@@ -144,4 +144,131 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal [1, 54, 1], [by_role["KAM"][:people], by_role["KAM"][:capacity], by_role["KAM"][:comptes]]
     assert_match "Capacité par rôle", @response.body
   end
+
+  def entreprises
+    @controller.instance_variable_get(:@ent_pager).records.index_by { |r| r[:company].name }
+  end
+
+  def table(body)
+    body[/id="ent-table-frame">.*?<\/turbo-frame>/m]
+  end
+
+  def deal(company, produit, arr: 1_000, statut: "En cours")
+    @n += 1
+    ProduitDeal.create!(company: company, produit: produit, identifiant: "ent-#{@n}", college: "Cadre", assureur: "AXA",
+      arr: arr, statut_renouvellement: statut)
+  end
+
+  test "the Entreprises table lists every company with its AM, ARR stake, risk covered and upsell opportunity" do
+    sante = Company.create!(name: "Sante Seule", user: @am)
+    deal(sante, "Mutuelle", arr: 10_000)
+    prev = Company.create!(name: "Prevoyance Seule", user: @kam)
+    deal(prev, "Prévoyance", arr: 4_000)
+    double = Company.create!(name: "Double Risque", user: @am)
+    deal(double, "Mutuelle", arr: 20_000)
+    deal(double, "Prévoyance", arr: 5_000)
+    Company.create!(name: "Sans Produit", user: @am)
+
+    sign_in @admin
+    get attribution_portefeuille_path
+    assert_response :success
+    rows = entreprises
+    assert_equal 4, rows.size, "all companies, even one without produit"
+
+    assert_equal [@am, 10_000.0, "Santé"], [rows["Sante Seule"][:am], rows["Sante Seule"][:arr], rows["Sante Seule"][:risque]]
+    assert_equal [@kam, 4_000.0, "Prévoyance"], [rows["Prevoyance Seule"][:am], rows["Prevoyance Seule"][:arr], rows["Prevoyance Seule"][:risque]]
+    assert_equal [25_000.0, "Double risque"], [rows["Double Risque"][:arr], rows["Double Risque"][:risque]]
+    assert_nil rows["Sans Produit"][:risque]
+
+    html = table(@response.body)
+    assert_match "Enjeu ARR", html
+    assert_match "Risque couvert", html
+    assert_match "Opportunité d'upsell", html
+    assert_match(/Double Risque[\s\S]*?AM Attr[\s\S]*?25,000 €[\s\S]*?Double risque/, html)
+  end
+
+  test "the stake counts produits still alive, a fully churned company is flagged and shows no risk" do
+    mixed = Company.create!(name: "Un Vivant Un Churne", user: @am)
+    deal(mixed, "Mutuelle", arr: 8_000)
+    deal(mixed, "Prévoyance", arr: 3_000, statut: "Churné")
+    gone = Company.create!(name: "Tout Churne", user: @am)
+    deal(gone, "Mutuelle", arr: 9_000, statut: "Churné (subi)")
+
+    sign_in @admin
+    get attribution_portefeuille_path
+    rows = entreprises
+    assert_equal [8_000.0, "Santé", false], [rows["Un Vivant Un Churne"][:arr], rows["Un Vivant Un Churne"][:risque], rows["Un Vivant Un Churne"][:churned]]
+    assert_equal [0.0, nil, true], [rows["Tout Churne"][:arr], rows["Tout Churne"][:risque], rows["Tout Churne"][:churned]]
+    assert_match(/Tout Churne<\/strong>\s*<span class="badge ko"[^>]*>Churné/, table(@response.body))
+  end
+
+  test "an upsell opportunity is an open upsell (Non démarré / En cours), not a signed or lost one" do
+    open_co = Company.create!(name: "Upsell Ouvert", user: @am)
+    started = Company.create!(name: "Upsell Non Demarre", user: @am)
+    signed = Company.create!(name: "Upsell Signe", user: @am)
+    lost = Company.create!(name: "Upsell Perdu", user: @am)
+    none = Company.create!(name: "Sans Upsell", user: @am)
+    { open_co => "En cours", started => "Non démarré", signed => "Signé", lost => "Perdu" }.each do |company, statut|
+      deal(company, "Mutuelle")
+      UpsellDeal.create!(company: company, produit: "Prévoyance", nombre_salaries: 10, probabilite_signature: 40, statut_signature: statut)
+    end
+    deal(none, "Mutuelle")
+
+    sign_in @admin
+    get attribution_portefeuille_path
+    rows = entreprises
+    assert rows["Upsell Ouvert"][:upsell]
+    assert rows["Upsell Non Demarre"][:upsell]
+    assert_not rows["Upsell Signe"][:upsell]
+    assert_not rows["Upsell Perdu"][:upsell]
+    assert_not rows["Sans Upsell"][:upsell]
+    assert_operator rows["Upsell Ouvert"][:upsell_amount], :>, 0
+    assert_match(/Upsell Ouvert[\s\S]*?✓ Oui/, table(@response.body))
+
+    total = @controller.instance_variable_get(:@ent_total)
+    assert_equal 2, total[:upsell]
+  end
+
+  test "the table filters by name, AM, risk and upsell, and sorts biggest stake first by default" do
+    a = Company.create!(name: "Alpha Ent", user: @am)
+    deal(a, "Mutuelle", arr: 1_000)
+    b = Company.create!(name: "Beta Ent", user: @kam)
+    deal(b, "Mutuelle", arr: 9_000)
+    deal(b, "Prévoyance", arr: 1_000)
+    UpsellDeal.create!(company: b, produit: "Mutuelle", nombre_salaries: 5, probabilite_signature: 10, statut_signature: "En cours")
+
+    sign_in @admin
+    get attribution_portefeuille_path
+    assert_equal ["Beta Ent", "Alpha Ent"], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
+
+    get attribution_portefeuille_path, params: { ent_sort: "arr", ent_dir: "asc" }
+    assert_equal ["Alpha Ent", "Beta Ent"], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
+
+    get attribution_portefeuille_path, params: { ent_q: "alp" }
+    assert_equal ["Alpha Ent"], entreprises.keys
+    get attribution_portefeuille_path, params: { ent_ams: [@kam.name] }
+    assert_equal ["Beta Ent"], entreprises.keys
+    get attribution_portefeuille_path, params: { ent_risques: ["Santé"] }
+    assert_equal ["Alpha Ent"], entreprises.keys
+    get attribution_portefeuille_path, params: { ent_risques: ["Double risque", "Santé"] }
+    assert_equal ["Alpha Ent", "Beta Ent"], entreprises.keys.sort
+    get attribution_portefeuille_path, params: { ent_upsell: "1" }
+    assert_equal ["Beta Ent"], entreprises.keys
+    assert_match(/<strong>1<\/strong> entreprise/, table(@response.body))
+  end
+
+  test "the Entreprises table is paginated and has its own filter controls" do
+    60.times { |i| deal(Company.create!(name: "Pagine #{i}", user: @am), "Mutuelle", arr: 100 + i) }
+    sign_in @admin
+    get attribution_portefeuille_path
+    pager = @controller.instance_variable_get(:@ent_pager)
+    assert_equal [50, 60, 2], [pager.records.size, pager.total_count, pager.total_pages]
+    html = table(@response.body)
+    assert_match 'name="ent_q"', html
+    assert_match 'name="ent_ams[]"', html
+    assert_match 'name="ent_risques[]"', html
+    assert_match 'name="ent_upsell"', html
+    get attribution_portefeuille_path, params: { ent_page: 2 }
+    assert_equal 10, @controller.instance_variable_get(:@ent_pager).records.size
+  end
 end

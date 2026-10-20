@@ -211,11 +211,41 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match(/metric-card--compact/, cards[/<div class="metric-card[^"]*" id="other-impacts-totals"/])
   end
 
-  test "Vue globale's cards don't carry the Autres impacts card" do
+  test "Vue globale has its own Autres impacts card with the global totals, after Taux de renouvellement" do
+    other_am = User.create!(email: "am2-impact@example.com", name: "AM Deux Impact", active: true)
+    other_company = Company.create!(name: "Client Deux Impact", user: other_am)
+    OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
+    OtherImpact.create!(company: other_company, amount: "1000", statut: "Validé")
+    OtherImpact.create!(company: other_company, amount: "8000", statut: "En cours")
+    OtherImpact.create!(company: @alpha, amount: "500", statut: "En cours")
+
     sign_in @admin
     get pilotage_path
-    assert_no_match "with-other-impacts", @response.body
-    assert_no_match 'id="other-impacts-totals"', @response.body
+    assert_response :success
+    cards = @response.body[/id="global-summary-cards".*?<\/main>/m]
+    assert_match(/summary-cards metrics-grid with-other-impacts/, cards)
+    assert cards.index("Taux de renouvellement") < cards.index("other-impacts-totals")
+    card = cards[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
+    assert_match(/Actuel[\s\S]*?-2,000 €[\s\S]*?Projeté[\s\S]*?8,500 €/, card, "validated -3000 + 1000 across both AMs, pending 8000 + 500")
+
+    # the Équipe/AM filters of the page narrow it too
+    get pilotage_path, params: { summary_ams: [@am.name] }
+    card = @response.body[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
+    assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?500 €/, card)
+  end
+
+  test "the impacts are not folded into Upsell or Churn" do
+    base_summary = summary
+    OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
+    OtherImpact.create!(company: @alpha, amount: "-2000", statut: "En cours")
+    OtherImpact.create!(company: @alpha, amount: "7000", statut: "Validé")
+
+    s = summary
+    assert_in_delta base_summary.churned, s.churned, 0.001
+    assert_in_delta base_summary.churn_total, s.churn_total, 0.001
+    assert_in_delta base_summary.churn_rate, s.churn_rate, 0.001
+    assert_in_delta base_summary.upsold, s.upsold, 0.001
+    assert_in_delta base_summary.upsold_actual, s.upsold_actual, 0.001
   end
 
   test "Évolution de l'ARR par client: an Autre impact column before ARR final, validated amounts only, added to ARR final" do

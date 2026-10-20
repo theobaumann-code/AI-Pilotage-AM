@@ -4,9 +4,10 @@
 <% churn_subi_label = number_to_currency(summary.churn_subi_amount, unit: "€", format: "%n %u", precision: 0) %>
 <% churn_with_subi_label = number_to_currency(summary.churn_with_subi, unit: "€", format: "%n %u", precision: 0) %>
 <% churn_tooltip_prefix = local_assigns.fetch(:dom_id, "summary") %>
-<%# Mon portefeuille's cards also carry the "Autres impacts" card, so the bottom row reads ARR final / Taux de
-    renouvellement / Autres impacts — keyed on the dom_id because inline edits re-render this partial by itself. %>
-<% with_other_impacts = local_assigns[:dom_id] == "portfolio-summary-cards" %>
+<%# Mon portefeuille's and Vue globale's cards also carry the dedicated "Autres impacts" card, so the bottom row
+    reads ARR final / Taux de renouvellement / Autres impacts — keyed on the dom_id because inline edits
+    re-render this partial by itself. The impacts are reported there, not folded into Upsell or Churn. %>
+<% with_other_impacts = %w[portfolio-summary-cards global-summary-cards].include?(local_assigns[:dom_id]) %>
 <div class="summary-block" <%= "id=\"#{dom_id}\"".html_safe if local_assigns[:dom_id] %>>
 <div class="summary-cards metrics-grid <%= "with-other-impacts" if with_other_impacts %>">
   <div class="metric-card">

@@ -9,7 +9,7 @@ class PilotageController < ApplicationController
     @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
     @active_ams = User.assignable.order(:name)
     @selectable_companies = Company.order(:name)
-    @available_roles = ["Admin", "KAM", "AM", "TL AM", "TL Customer Care"]
+    @available_roles = ["Admin", "KAM", "AM"]
     # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/
     # upsell/risque ones, which are about individual deals) — checking it folds the non-accompagné figures
     # into the summary cards' totals; see PortfolioSummary#non_accompagne.
@@ -19,7 +19,7 @@ class PilotageController < ApplicationController
     @available_summary_ams = @active_ams.map(&:name)
 
     filtered_ams = @active_ams
-    filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.role_label) } if @summary_roles.present?
+    filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.team_label) } if @summary_roles.present?
     filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
     team_filter_active = @summary_ams.present? || @summary_roles.present?
 
@@ -227,7 +227,7 @@ class PilotageController < ApplicationController
     deals = deals.select { |d| d.risque_churn.to_i > 0 }
     deals = deals.select { |d| d.company.name.downcase.include?(@risque_q.downcase) } if @risque_q.present?
     deals = deals.select { |d| @risque_ams.include?(d.company.user.name) } if @risque_ams.present?
-    deals = deals.select { |d| @risque_roles.include?(d.company.user.role_label) } if @risque_roles.present?
+    deals = deals.select { |d| @risque_roles.include?(d.company.user.team_label) } if @risque_roles.present?
     deals = deals.select { |d| @risque_produits.include?(d.produit) } if @risque_produits.present?
     deals = deals.select { |d| @risque_assureurs.include?(d.assureur) } if @risque_assureurs.present?
     deals = deals.select { |d| @risque_statuts.include?(d.statut_renouvellement) } if @risque_statuts.present?
@@ -261,7 +261,7 @@ class PilotageController < ApplicationController
     deals = ProduitDeal.includes(company: :user).where(statut_renouvellement: ProduitDeal::CHURNED).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@churn_q.downcase) } if @churn_q.present?
     deals = deals.select { |d| @churn_ams.include?(d.company.user.name) } if @churn_ams.present?
-    deals = deals.select { |d| @churn_roles.include?(d.company.user.role_label) } if @churn_roles.present?
+    deals = deals.select { |d| @churn_roles.include?(d.company.user.team_label) } if @churn_roles.present?
     deals = deals.select { |d| @churn_produits.include?(d.produit) } if @churn_produits.present?
     deals = deals.select { |d| @churn_assureurs.include?(d.assureur) } if @churn_assureurs.present?
     deals = deals.select { |d| @churn_raisons.include?(d.churn_reason.presence || NOT_QUALIFIED) } if @churn_raisons.present?
@@ -272,7 +272,7 @@ class PilotageController < ApplicationController
     deals = UpsellDeal.includes(:user, company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@upsell_q.downcase) } if @upsell_q.present?
     deals = deals.select { |d| @upsell_ams.include?(d.effective_user.name) } if @upsell_ams.present?
-    deals = deals.select { |d| @upsell_roles.include?(d.effective_user.role_label) } if @upsell_roles.present?
+    deals = deals.select { |d| @upsell_roles.include?(d.effective_user.team_label) } if @upsell_roles.present?
     deals = deals.select { |d| @upsell_produits.include?(d.produit) } if @upsell_produits.present?
     deals = deals.select { |d| @upsell_statuts.include?(d.statut_signature) } if @upsell_statuts.present?
     deals.sort_by { |d| d.company.name }
@@ -282,7 +282,7 @@ class PilotageController < ApplicationController
     deals = ProduitDeal.includes(company: :user).to_a
     deals = deals.select { |d| d.company.name.downcase.include?(@produit_q.downcase) } if @produit_q.present?
     deals = deals.select { |d| @produit_ams.include?(d.company.user.name) } if @produit_ams.present?
-    deals = deals.select { |d| @produit_roles.include?(d.company.user.role_label) } if @produit_roles.present?
+    deals = deals.select { |d| @produit_roles.include?(d.company.user.team_label) } if @produit_roles.present?
     deals = deals.select { |d| @produit_produits.include?(d.produit) } if @produit_produits.present?
     deals = deals.select { |d| @produit_assureurs.include?(d.assureur) } if @produit_assureurs.present?
     deals = deals.select { |d| d.taux.to_f >= @produit_taux_min } if @produit_taux_min

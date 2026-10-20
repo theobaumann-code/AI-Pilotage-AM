@@ -75,6 +75,12 @@ class User < ApplicationRecord
     ROLE_LABELS.fetch(role)
   end
 
+  # The "Équipe" a user belongs to in the Équipe filters (Admin / KAM / AM): the team leads sit with the AMs, so
+  # nobody has to pick their role separately — only role_label (badges, Gestion des droits) tells them apart.
+  def team_label
+    [:tl_am, :tl_csm].include?(role) ? ROLE_LABELS[:am] : role_label
+  end
+
   def account_limit
     ACCOUNT_LIMITS.fetch(role, DEFAULT_ACCOUNT_LIMIT)
   end

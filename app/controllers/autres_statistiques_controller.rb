@@ -41,7 +41,7 @@ class AutresStatistiquesController < ApplicationController
   # AMs of that role, named AMs narrow further. With neither, everything is in scope (companies owned by a
   # since-deactivated user included). Lecteurs are never offered — they own nothing.
   def load_scope
-    @available_roles = ["Admin", "KAM", "AM", "TL AM", "TL Customer Care"]
+    @available_roles = ["Admin", "KAM", "AM"]
     @roles = Array(params[:roles]).reject(&:blank?)
     @ams = Array(params[:ams]).reject(&:blank?)
     all_ams = User.assignable.order(:name).to_a
@@ -49,7 +49,7 @@ class AutresStatistiquesController < ApplicationController
 
     @filter_active = @roles.present? || @ams.present?
     @scoped_ams = all_ams
-    @scoped_ams = @scoped_ams.select { |am| @roles.include?(am.role_label) } if @roles.present?
+    @scoped_ams = @scoped_ams.select { |am| @roles.include?(am.team_label) } if @roles.present?
     @scoped_ams = @scoped_ams.select { |am| @ams.include?(am.name) } if @ams.present?
     @scoped_user_ids = @scoped_ams.map(&:id)
 

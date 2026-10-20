@@ -30,13 +30,13 @@ class GlobalChurnTest < ActionDispatch::IntegrationTest
   end
 
   test "filterable by AM, team, produit and raison" do
-    @churned.update!(churn_reason: "Offre concurrente")
+    @churned.update!(churn_reason: "Meilleure offre concurrente")
     sign_in @am
 
     get pilotage_path, params: { churn_ams: [@admin.name] }
     assert_no_match "Client Churné", churn_table(@response.body)
 
-    get pilotage_path, params: { churn_roles: ["AM"], churn_produits: ["Mutuelle"], churn_raisons: ["Offre concurrente"] }
+    get pilotage_path, params: { churn_roles: ["AM"], churn_produits: ["Mutuelle"], churn_raisons: ["Meilleure offre concurrente"] }
     assert_match "Client Churné", churn_table(@response.body)
 
     get pilotage_path, params: { churn_raisons: ["À qualifier"] }
@@ -45,13 +45,13 @@ class GlobalChurnTest < ActionDispatch::IntegrationTest
 
   test "an admin records a reason and a comment from the table" do
     sign_in @admin
-    patch deal_path(@churned), params: { deal: { churn_reason: "Tarif / hausse de prix", churn_comment: "Hausse de 12 % refusée" },
+    patch deal_path(@churned), params: { deal: { churn_reason: "Non conformité", churn_comment: "Hausse de 12 % refusée" },
       row_context: "global_churn" }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
     assert_response :success
     assert_match "churn_produit_deal_#{@churned.id}", @response.body
 
     @churned.reload
-    assert_equal "Tarif / hausse de prix", @churned.churn_reason
+    assert_equal "Non conformité", @churned.churn_reason
     assert_equal "Hausse de 12 % refusée", @churned.churn_comment
   end
 
@@ -63,7 +63,7 @@ class GlobalChurnTest < ActionDispatch::IntegrationTest
 
     sign_out @am
     sign_in @other_am
-    patch deal_path(@churned), params: { deal: { churn_reason: "Offre inadaptée" }, row_context: "global_churn" }
+    patch deal_path(@churned), params: { deal: { churn_reason: "Conseil apporté" }, row_context: "global_churn" }
     assert_equal "Autre", @churned.reload.churn_reason
   end
 
@@ -76,7 +76,7 @@ class GlobalChurnTest < ActionDispatch::IntegrationTest
   end
 
   test "CSV export mirrors the table, with reason and comment" do
-    @churned.update!(churn_reason: "Offre concurrente", churn_comment: "Parti chez Alan")
+    @churned.update!(churn_reason: "Meilleure offre concurrente", churn_comment: "Parti chez Alan")
     sign_in @am
     get export_churn_pilotage_path
     assert_response :success

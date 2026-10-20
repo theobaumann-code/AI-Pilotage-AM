@@ -23,8 +23,8 @@ class ProduitDeal < Deal
   CHURNED_STATUSES = [CHURNED, CHURNED_SUBI].freeze
   # Why a churned produit was lost (blank = not qualified yet) — filled in from Vue globale's "Produits
   # churnés" table, alongside a free-text churn_comment.
-  CHURN_REASONS = ["Tarif / hausse de prix", "Offre concurrente", "Insatisfaction (service, gestion)",
-                   "Offre inadaptée", "Cessation d'activité / fusion", "Autre"].freeze
+  CHURN_REASONS = ["Meilleure offre concurrente", "Qualité de la gestion", "Non conformité", "Conseil apporté",
+                   "Expérience client", "Rachat/Fusion", "Autre"].freeze
 
   validates :produit, inclusion: { in: PRODUITS }
   validates :college, presence: true, inclusion: { in: COLLEGES }

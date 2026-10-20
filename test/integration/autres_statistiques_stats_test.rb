@@ -29,11 +29,11 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
   test "churn reasons are split per produit, weighted by churned ARR, with blanks as À qualifier" do
     company = Company.create!(name: "Client Raisons", user: @am)
     ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rs-1", college: "Cadre", assureur: "AXA",
-      arr: 7_000, statut_renouvellement: "Churné", churn_reason: "Offre concurrente")
+      arr: 7_000, statut_renouvellement: "Churné", churn_reason: "Meilleure offre concurrente")
     ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rs-2", college: "Non cadre", assureur: "AXA",
       arr: 3_000, statut_renouvellement: "Churné")
     ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rs-3", college: "Cadre", assureur: "AXA",
-      arr: 4_000, statut_renouvellement: "Churné", churn_reason: "Tarif / hausse de prix")
+      arr: 4_000, statut_renouvellement: "Churné", churn_reason: "Non conformité")
     ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rs-4", college: "Non cadre", assureur: "AXA",
       arr: 8_000, statut_renouvellement: "Churné (subi)", churn_reason: "Autre")
 
@@ -41,12 +41,12 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_response :success
     slices = @controller.instance_variable_get(:@churn_reasons_by_produit)
     mutuelle, prevoyance = slices.values_at("Mutuelle", "Prévoyance")
-    assert_equal 7_000, mutuelle.find { |s| s[:label] == "Offre concurrente (1)" }[:value]
+    assert_equal 7_000, mutuelle.find { |s| s[:label] == "Meilleure offre concurrente (1)" }[:value]
     assert_equal 3_000, mutuelle.find { |s| s[:label] == "À qualifier (1)" }[:value]
-    assert_equal 4_000, prevoyance.find { |s| s[:label] == "Tarif / hausse de prix (1)" }[:value]
+    assert_equal 4_000, prevoyance.find { |s| s[:label] == "Non conformité (1)" }[:value]
     assert_nil prevoyance.find { |s| s[:label].start_with?("Autre") }, "churn subi and empty reasons are left out"
     section = @response.body[/Raisons de churn par produit.*/m]
-    assert_match "Offre concurrente (1)", section
+    assert_match "Meilleure offre concurrente (1)", section
   end
 
   test "NRR par AM matches each AM's own portfolio summary, and the college churn chart is gone" do

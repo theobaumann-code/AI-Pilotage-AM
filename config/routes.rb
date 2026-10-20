@@ -26,6 +26,7 @@ Rails.application.routes.draw do
     get :export_churn
   end
   resource :gestion_droits, only: [:show], controller: "gestion_droits"
+  resource :attribution_portefeuille, only: [:show], controller: "attribution_portefeuille"
   resource :autres_statistiques, only: [:show], controller: "autres_statistiques"
   resources :companies, only: [:create, :update, :destroy] do
     member { patch :reassign_am }

@@ -31,6 +31,13 @@ class ApplicationController < ActionController::Base
     redirect_back fallback_location: root_path, alert: "Réservé aux administrateurs et aux KAM."
   end
 
+  # For what only a real administrator may see — stricter than require_admin!, which KAMs pass too.
+  def require_strict_admin!
+    return if current_user.admin?
+
+    redirect_to root_path, alert: "Réservé aux administrateurs."
+  end
+
   # The AM whose portfolio is being viewed: always current_user for a regular AM (real per-user isolation,
   # stronger than the original which let anyone switch AM from a dropdown); an admin may additionally view
   # any other AM's portfolio via ?user_id= (the initial GET) or ?redirect_user_id= (the PATCH an inline

@@ -695,3 +695,8 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
 .risque-value small{font-size:11px;color:var(--text-muted);}
 @media(max-width:900px){.risque-grid{grid-template-columns:minmax(0,1fr);}}
 @media(max-width:560px){.risque-line{grid-template-columns:minmax(0,1fr) auto;}.risque-line .bar-track{grid-column:1/-1;order:3;}}
+
+/* Attribution portefeuille: a person over the account ceiling reads red across the whole row. */
+.attribution-table tr.row-over-capacity td{background:var(--red-bg);}
+.attribution-table .attribution-bar-col{min-width:200px;width:26%;}
+.attribution-table .bar-track{overflow:visible;}

@@ -266,9 +266,102 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_equal 6, @controller.instance_variable_get(:@renewal_funnel).sum { |s| s[:value] }
   end
 
+  def renewal_card(body)
+    body[%r{<h2>Renouvellement par risque</h2>.*?<h2>Churn par risque</h2>}m]
+  end
+
+  test "renewal by risque: ARR gained through renewal rates over the line's ARR, renewed-so-far vs projected, subi churn set aside" do
+    company = Company.create!(name: "Client Renouv Risque", user: @am)
+    [["rn-1", "Mutuelle", "Augmenté", 40_000, 5], ["rn-2", "Mutuelle", "En cours", 40_000, 3],
+     ["rn-3", "Mutuelle", "Churné", 10_000, 0], ["rn-4", "Mutuelle", "Churné (subi)", 50_000, 8],
+     ["rn-5", "Prévoyance", "Nouveau contrat", 20_000, 0], ["rn-6", "Prévoyance", "Augmentation particulière", 20_000, 10]].each_with_index do |(id, produit, statut, arr, taux), i|
+      ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: i.even? ? "Cadre" : "Non cadre",
+        assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
+    end
+
+    get autres_statistiques_path
+    assert_response :success
+    rows = @controller.instance_variable_get(:@renewal_by_risque).index_by { |r| r[:label] }
+    assert_equal ["Mutuelle (santé)", "Prévoyance"], rows.keys
+
+    sante = rows["Mutuelle (santé)"]
+    assert_equal 90_000, sante[:total], "40 000 + 40 000 + 10 000, the 50 000 subi is outside the base"
+    assert_in_delta 2_000, sante[:done_amount], 0.001, "only the renewed one: 40 000 × 5%"
+    assert_in_delta 2_000 / 90_000.0 * 100, sante[:value], 0.001
+    assert_in_delta 3_200, sante[:projected_amount], 0.001, "40 000 × 5% + 40 000 × 3%, the churned one excluded"
+    assert_in_delta 3_200 / 90_000.0 * 100, sante[:projected], 0.001
+    assert_equal [1, 3], [sante[:count], sante[:produits_count]]
+    assert_equal "ko", sante[:status], "below the 5% objective"
+
+    prevoyance = rows["Prévoyance"]
+    assert_in_delta 2_000, prevoyance[:done_amount], 0.001, "Nouveau contrat adds nothing, the particular increase 20 000 × 10%"
+    assert_in_delta 5.0, prevoyance[:value], 0.001
+    assert_in_delta 5.0, prevoyance[:projected], 0.001
+    assert_equal [2, 2], [prevoyance[:count], prevoyance[:produits_count]]
+    assert_equal "ok", prevoyance[:status], "5% reaches the objective"
+
+    section = renewal_card(@response.body)
+    assert_equal 2, section.scan("risque-block").size
+    assert_match "Renouvellement à date", section[/risque-legend.*?<\/div>/m]
+    assert_match "Renouvellement projeté", section[/risque-legend.*?<\/div>/m]
+    assert_match "Objectif 5.0 %", section[/risque-legend.*?<\/div>/m]
+    assert_equal 2, section.scan(/<span class="risque-label">Renouvellement à date<\/span>/).size
+    assert_equal 2, section.scan(/<span class="risque-label">Renouvellement projeté<\/span>/).size
+    sante_block = section[/<div class="risque-block">.*?(?=<div class="risque-block">|\z)/m]
+    assert_match "Mutuelle (santé)", sante_block
+    assert_match(/ARR total 90,000 € · 1 produit renouvelé sur 3/, sante_block)
+    assert_match(/Renouvellement à date[\s\S]*?2\.2 %[\s\S]*?2,000 €[\s\S]*?Renouvellement projeté[\s\S]*?3\.6 %[\s\S]*?3,200 €/, sante_block)
+    prevoyance_block = section[/<strong>Prévoyance<\/strong>.*/m]
+    assert_match(/5\.0 %[\s\S]*?2,000 €[\s\S]*?5\.0 %/, prevoyance_block)
+  end
+
+  test "a renewal rate below the objective reads red, at or above it does not" do
+    company = Company.create!(name: "Client Renouv Couleur", user: @am)
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rc-1", college: "Cadre", assureur: "AXA",
+      arr: 10_000, taux: 2, statut_renouvellement: "Augmenté")
+    ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rc-2", college: "Cadre", assureur: "AXA",
+      arr: 10_000, taux: 7, statut_renouvellement: "Augmenté")
+
+    get autres_statistiques_path
+    blocks = renewal_card(@response.body).split('<div class="risque-block">').drop(1)
+    assert_match(/color:var\(--red\)">\s*<strong>2\.0 %/, blocks[0], "2% is under the 5% objective")
+    assert_match(/color:var\(--text\)">\s*<strong>7\.0 %/, blocks[1], "7% beats it")
+  end
+
+  test "renewal by risque has its own Assureur filter that only moves this card, next to the churn one" do
+    company = Company.create!(name: "Client Renouv Assureur", user: @am)
+    [["ra-1", "AXA", 4], ["ra-2", "Gan", 8]].each_with_index do |(id, assureur, taux), i|
+      ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: id, college: i.zero? ? "Cadre" : "Non cadre",
+        assureur: assureur, arr: 10_000, taux: taux, statut_renouvellement: "Augmenté")
+    end
+    rows = ->(params = {}) {
+      get autres_statistiques_path, params: params
+      @controller.instance_variable_get(:@renewal_by_risque).first
+    }
+    assert_equal [20_000, 1_200], [rows.call[:total], rows.call[:done_amount]]
+    gan = rows.call(renouv_assureurs: ["Gan"])
+    assert_equal [10_000, 800], [gan[:total], gan[:done_amount]]
+    assert_in_delta 8.0, gan[:value], 0.001
+
+    # the churn card keeps its own filter: a renewal selection doesn't touch it, and vice versa
+    get autres_statistiques_path, params: { renouv_assureurs: ["Gan"] }
+    assert_equal 20_000, @controller.instance_variable_get(:@churn_by_risque).first[:total]
+    get autres_statistiques_path, params: { risque_assureurs: ["Gan"] }
+    assert_equal 20_000, @controller.instance_variable_get(:@renewal_by_risque).first[:total]
+
+    # the card shows its filter with the selection, and carries the other card's selection across (one value at a time)
+    get autres_statistiques_path, params: { renouv_assureurs: ["AXA", "Gan"], risque_assureurs: ["Allianz", "Gan"] }
+    card = renewal_card(@response.body)
+    assert_match 'name="renouv_assureurs[]"', card
+    assert_match "Assureur (2)", card
+    assert_match(/value="AXA"[^>]*checked/, card)
+    assert_match(/<input type="hidden" name="risque_assureurs\[\]" value="Allianz"/, card)
+    assert_match(/<input type="hidden" name="risque_assureurs\[\]" value="Gan"/, card)
+  end
+
   test "the Assureur filter of Churn par risque is in the card, keeps its selection and the page's AM filter" do
     get autres_statistiques_path, params: { risque_assureurs: ["AXA", "Gan"], ams: ["AM Stats"] }
-    card = @response.body[/class="chart-wrap span-2 risque-card".*?class="risque-legend"/m]
+    card = @response.body[%r{<h2>Churn par risque</h2>.*?class="risque-legend"}m]
     assert_match 'name="risque_assureurs[]"', card
     assert_match(/value="AXA"[^>]*checked/, card)
     assert_match(/value="Gan"[^>]*checked/, card)

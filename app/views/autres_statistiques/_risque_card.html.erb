@@ -1,0 +1,52 @@
+<%# locals: title, rows, filter_param, selected, series, target, target_label, bad_when (:above | :below), count_word
+    One block per risque (Mutuelle (santé) / Prévoyance), each with two plainly labelled bars on a shared scale —
+    used for "Churn par risque" (already lost / projected, limit as the target) and "Renouvellement par risque"
+    (already renewed / projected, objective as the target). The bordeaux tick marks the target; a value on the
+    wrong side of it reads red. The Assureur filter is the card's own: it narrows these bars only and keeps the
+    page's Équipe/AM selection. series: [[label, rate key, amount key, color], ...]. %>
+<% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
+<% pct = ->(v) { "#{number_with_precision(v, precision: 1)} %" } %>
+<% rate_keys = series.map { |_, rate_key, _, _| rate_key } %>
+<% scale_max = [rows.map { |r| rate_keys.map { |k| r[k] }.max }.max.to_f, target].max * 1.15 %>
+<% width = ->(v) { [v.to_f / scale_max * 100, 100].min.round(1) } %>
+<% bad = ->(rate) { bad_when == :above ? rate > target : rate < target } %>
+<div class="chart-wrap span-2 risque-card">
+  <div class="risque-card-header">
+    <h2><%= title %></h2>
+    <%= form_with url: autres_statistiques_path, method: :get, class: "risque-filter" do %>
+      <%= preserved_query_fields(filter_param, "#{filter_param}_open") %>
+      <%= render "shared/checklist_filter", param_name: filter_param, options: ProduitDeal::ASSUREURS, selected: selected, legend: "Assureur" %>
+    <% end %>
+  </div>
+  <div class="risque-card-legend">
+    <div class="risque-legend">
+      <% series.each do |label, _, _, color| %>
+        <span><i style="background:<%= color %>"></i><%= label %></span>
+      <% end %>
+      <span><i class="limit"></i><%= target_label %> <%= pct.call(target) %></span>
+    </div>
+  </div>
+  <div class="risque-grid">
+    <% rows.each do |r| %>
+      <div class="risque-block">
+        <div class="risque-head">
+          <strong><%= r[:label] %></strong>
+          <span>ARR total <%= eur.call(r[:total]) %> · <%= r[:count] %> produit<%= "s" if r[:count] > 1 %> <%= count_word %><%= "s" if r[:count] > 1 %> sur <%= r[:produits_count] %></span>
+        </div>
+        <% series.each do |label, rate_key, amount_key, color| %>
+          <% rate = r[rate_key] %>
+          <div class="risque-line">
+            <span class="risque-label"><%= label %></span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:<%= width.call(rate) %>%;background:<%= color %>;"></div>
+              <div class="risque-limit" style="left:<%= width.call(target) %>%;"></div>
+            </div>
+            <span class="risque-value" style="color:<%= bad.call(rate) ? "var(--red)" : "var(--text)" %>">
+              <strong><%= pct.call(rate) %></strong> <small><%= eur.call(r[amount_key]) %></small>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

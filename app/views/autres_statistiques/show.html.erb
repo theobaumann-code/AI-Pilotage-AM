@@ -169,7 +169,17 @@
       <%= bar_rows(@renewal_funnel, value_format: ->(r) { "#{r[:value]} · #{number_with_precision(r[:pct], precision: 1)}% (#{eur.call(r[:amount])})" }) %>
     </div>
 
-    <%= render "autres_statistiques/churn_risque", rows: @churn_by_risque, risque_assureurs: @risque_assureurs %>
+    <%= render "autres_statistiques/risque_card", title: "Renouvellement par risque", rows: @renewal_by_risque,
+          filter_param: "renouv_assureurs", selected: @renouv_assureurs, count_word: "renouvelé", bad_when: :below,
+          target: PortfolioSummary::RENEWAL_TARGET_PCT, target_label: "Objectif",
+          series: [["Renouvellement à date", :value, :done_amount, "var(--burgundy)"],
+                   ["Renouvellement projeté", :projected, :projected_amount, "var(--primary)"]] %>
+
+    <%= render "autres_statistiques/risque_card", title: "Churn par risque", rows: @churn_by_risque,
+          filter_param: "risque_assureurs", selected: @risque_assureurs, count_word: "churné", bad_when: :above,
+          target: PortfolioSummary::CHURN_LIMIT_PCT, target_label: "Limite",
+          series: [["Churn à date", :value, :churned, "var(--burgundy)"],
+                   ["Churn projeté", :projected, :projected_amount, "var(--primary)"]] %>
 
     <div class="chart-wrap">
       <h2>Taux de churn par assureur</h2>

@@ -19,6 +19,7 @@ class AutresStatistiquesController < ApplicationController
 
     @renewal_produit = params[:renewal_produit]
     @risque_assureurs = Array(params[:risque_assureurs]).reject(&:blank?)
+    @renouv_assureurs = Array(params[:renouv_assureurs]).reject(&:blank?)
     @renewal_donut = renewal_donut_slices
 
     @arr_by_produit = arr_by(:produit, ProduitDeal::PRODUITS)
@@ -29,6 +30,7 @@ class AutresStatistiquesController < ApplicationController
     @pending_forecasts = pending_forecasts
     @churn_rate_by_assureur = churn_rate_by(:assureur)
     @churn_by_risque = churn_by_risque
+    @renewal_by_risque = renewal_by_risque
     @churn_reasons_by_produit = churn_reasons_by_produit
     @upsell_funnel = upsell_funnel
     @renewal_funnel = renewal_funnel
@@ -190,6 +192,27 @@ class AutresStatistiquesController < ApplicationController
         projected: total > 0 ? (churned + at_risk) / total * 100 : 0.0, projected_amount: churned + at_risk,
         count: deals.count(&:churned?), produits_count: deals.size,
         status: rate > PortfolioSummary::CHURN_LIMIT_PCT ? "ko" : "ok" }
+    end
+  end
+
+  # Renewal rate per "risque", same shape as churn_by_risque: the ARR gained through negotiated renewal rates
+  # (arr × taux / 100, as PortfolioSummary#renewal_gain) over the line's total ARR (suffered churn set aside).
+  # "À date" counts only the produits already renewed (Augmenté, Augmentation particulière, Nouveau contrat);
+  # "projeté" counts every produit still alive with the rate entered so far — the figure behind the "Taux de
+  # renouvellement" card — so it also carries the ones still "En cours". Narrowed by the card's own Assureur filter.
+  def renewal_by_risque
+    scoped = @renouv_assureurs.present? ? @active_deals.select { |d| @renouv_assureurs.include?(d.assureur) } : @active_deals
+    ProduitDeal::PRODUITS.map do |produit|
+      deals = scoped.select { |d| d.produit == produit }
+      total = deals.sum { |d| d.arr.to_f }
+      renewed = deals.select { |d| ProduitDeal::RENEWED_STATUSES.include?(d.statut_renouvellement) }
+      done_amount = renewed.sum { |d| d.arr.to_f * d.taux.to_f / 100 }
+      projected_amount = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 }
+      rate = total > 0 ? done_amount / total * 100 : 0.0
+      { label: RISQUE_LABELS.fetch(produit), value: rate, done_amount: done_amount, total: total,
+        projected: total > 0 ? projected_amount / total * 100 : 0.0, projected_amount: projected_amount,
+        count: renewed.size, produits_count: deals.size,
+        status: rate >= PortfolioSummary::RENEWAL_TARGET_PCT ? "ok" : "ko" }
     end
   end
 

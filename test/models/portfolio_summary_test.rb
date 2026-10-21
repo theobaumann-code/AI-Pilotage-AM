@@ -314,6 +314,40 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_operator risky, :<, safe
   end
 
+  test "the projected renewal rate weights each increase by the chance the contract stays, next to the actual rate" do
+    deal("Mutuelle", arr: 100_000, taux: 10, risque: 20)
+    deal("Prévoyance", arr: 100_000, taux: 4, risque: 0)
+    deal("Mutuelle", arr: 100_000, taux: 8, risque: 100)
+    s = summary
+
+    # actual: every produit still alive at its entered rate — (10 000 + 4 000 + 8 000) / 300 000
+    assert_in_delta 22_000, s.renewal_gain, 0.01
+    assert_in_delta 22_000 / 300_000.0 * 100, s.renewal_rate, 0.001
+    # projected: 10 000 × 80% + 4 000 × 100% + 8 000 × 0% = 12 000
+    assert_in_delta 12_000, s.renewal_gain_projected, 0.01
+    assert_in_delta 12_000 / 300_000.0 * 100, s.renewal_rate_projected, 0.001
+    assert_operator s.renewal_rate_projected, :<, s.renewal_rate
+  end
+
+  test "renewal_target_met_projected? compares the projected gain with the 5% objective" do
+    deal("Mutuelle", arr: 100_000, taux: 6, risque: 0)
+    assert summary.renewal_target_met_projected?, "6% with no risk beats 5%"
+
+    ProduitDeal.destroy_all
+    @n = 0
+    deal("Mutuelle", arr: 100_000, taux: 6, risque: 30)
+    assert summary.renewal_target_met?, "the actual rate (6%) reaches the objective..."
+    assert_not summary.renewal_target_met_projected?, "...but 6% × 70% = 4.2% no longer does once the churn risk is counted"
+  end
+
+  test "no churn risk: projected renewal rate equals the actual one; no ARR: zero" do
+    deal("Mutuelle", arr: 50_000, taux: 3, risque: 0)
+    assert_in_delta summary.renewal_rate, summary.renewal_rate_projected, 0.0001
+
+    ProduitDeal.destroy_all
+    assert_equal 0, summary.renewal_rate_projected
+  end
+
   test "the churn figures are unchanged: churn projeté is still the base ARR at risk, not the increased ARR" do
     deal("Mutuelle", arr: 100_000, taux: 10, risque: 20)
     s = summary

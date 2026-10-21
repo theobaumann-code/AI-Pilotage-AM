@@ -195,6 +195,22 @@ class PortfolioSummary
     arr_initial > 0 ? (renewal_gain / arr_initial * 100) : 0
   end
 
+  # The projected counterpart of renewal_gain, like the projected NRR: each produit's negotiated increase is
+  # weighted by its chance of staying (1 − risque_churn), since the increase on a contract that churns is never
+  # collected. The non-accompagné gain has no per-contract risk and counts as is.
+  def renewal_gain_projected
+    produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 * (1 - d.risque_churn.to_f / 100) } +
+      non_accompagne_renewal_gain
+  end
+
+  def renewal_rate_projected
+    arr_initial > 0 ? (renewal_gain_projected / arr_initial * 100) : 0
+  end
+
+  def renewal_target_met_projected?
+    renewal_gain_projected >= renewal_target
+  end
+
   private
 
   def non_accompagne_arr

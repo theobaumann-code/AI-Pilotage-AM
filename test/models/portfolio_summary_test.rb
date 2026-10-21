@@ -267,4 +267,72 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 0, summary.churned, 0.01
     assert_in_delta 100_000, summary.renewed_arr, 0.01
   end
+
+  def deal(produit, arr:, taux: 0, risque: 0, statut: "En cours")
+    @n = (@n || 0) + 1
+    ProduitDeal.create!(company: @company, produit: produit, identifiant: "nrr-proj-#{@n}", college: "Cadre",
+      assureur: ProduitDeal::ASSUREURS[@n % ProduitDeal::ASSUREURS.size], arr: arr, taux: taux,
+      statut_renouvellement: statut, risque_churn: risque)
+  end
+
+  test "projected ARR final weights each produit by its chance of staying, so an increase on a contract that may churn isn't counted as certain" do
+    deal("Mutuelle", arr: 100_000, taux: 10, risque: 20)
+
+    # 110 000 once renewed, but a 20% chance of churning: 110 000 × 80% = 88 000 expected — not the 110 000 − 20 000
+    # = 90 000 the old formula gave, which kept the whole increase.
+    assert_in_delta 88_000, summary.renewed_arr_projected, 0.01
+    assert_in_delta 88_000, summary.arr_final, 0.01
+    assert_in_delta 88.0, summary.nrr, 0.001
+    assert_in_delta 110_000, summary.arr_final_actual, 0.01, "the actual figures are untouched"
+    assert_in_delta 110.0, summary.nrr_actual, 0.001
+  end
+
+  test "a produit certain to churn (100% risk) but not yet marked churned contributes nothing, increase included" do
+    deal("Mutuelle", arr: 50_000, taux: 8, risque: 100)
+    deal("Prévoyance", arr: 50_000, taux: 0, risque: 0)
+
+    assert_in_delta 50_000, summary.arr_final, 0.01, "only the safe produit remains"
+    assert_in_delta 50.0, summary.nrr, 0.001
+    # before the fix the 8% (4 000) of a contract certain to be lost was still counted: 50 000 × 1.08 − 50 000 + 50 000 = 54 000
+  end
+
+  test "with no churn risk the projected figures are unchanged, and the risk-free produits are counted in full" do
+    deal("Mutuelle", arr: 100_000, taux: 3, risque: 0)
+    assert_in_delta 103_000, summary.arr_final, 0.01
+    assert_in_delta 103.0, summary.nrr, 0.001
+  end
+
+  test "the projected NRR only moves with the increase of safe contracts: the riskier the contract, the less its increase counts" do
+    deal("Mutuelle", arr: 100_000, taux: 10, risque: 0)
+    safe = summary.nrr
+    ProduitDeal.destroy_all
+    @n = 0
+    deal("Mutuelle", arr: 100_000, taux: 10, risque: 50)
+    risky = summary.nrr
+    assert_in_delta 110.0, safe, 0.001
+    assert_in_delta 55.0, risky, 0.001
+    assert_operator risky, :<, safe
+  end
+
+  test "the churn figures are unchanged: churn projeté is still the base ARR at risk, not the increased ARR" do
+    deal("Mutuelle", arr: 100_000, taux: 10, risque: 20)
+    s = summary
+    assert_in_delta 20_000, s.churn_projete, 0.01
+    assert_in_delta 20_000, s.churn_total, 0.01
+    assert_in_delta 20.0, s.churn_total_rate, 0.001
+    assert_in_delta 0, s.churned, 0.01
+  end
+
+  test "already churned produits and the non-accompagné lump sum behave as before in the projected ARR" do
+    deal("Mutuelle", arr: 40_000, taux: 5, risque: 10)
+    deal("Prévoyance", arr: 10_000, taux: 0, statut: "Churné") # risque forced to 100, counted in churned
+    setting = AppSetting.instance
+    setting.update!(arr_non_accompagne: 20_000, churn_projete_non_accompagne: 1_000,
+      taux_renouvellement_non_accompagne: 2)
+    s = PortfolioSummary.new(@am.companies.includes(:deals), non_accompagne: setting)
+
+    # accompagné: 40 000 × 1.05 × 90% = 37 800 ; non accompagné: 20 000 × 1.02 − 1 000 (manual churn projeté) = 19 400
+    assert_in_delta 37_800 + 19_400, s.renewed_arr_projected, 0.01
+    assert_in_delta 37_800 + 19_400, s.arr_final, 0.01
+  end
 end

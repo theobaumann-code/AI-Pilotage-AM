@@ -198,8 +198,9 @@ class AutresStatistiquesController < ApplicationController
   # Renewal rate per "risque", same shape as churn_by_risque: the ARR gained through negotiated renewal rates
   # (arr × taux / 100, as PortfolioSummary#renewal_gain) over the line's total ARR (suffered churn set aside).
   # "À date" counts only the produits already renewed (Augmenté, Augmentation particulière, Nouveau contrat);
-  # "projeté" counts every produit still alive with the rate entered so far — the figure behind the "Taux de
-  # renouvellement" card — so it also carries the ones still "En cours". Narrowed by the card's own Assureur filter.
+  # "projeté" counts every produit still alive with the rate entered so far — the ones still "En cours" too —
+  # but each gain weighted by its chance of staying (1 − risque_churn), like the projected NRR: an increase on a
+  # contract that may churn isn't certain. Narrowed by the card's own Assureur filter.
   def renewal_by_risque
     scoped = @renouv_assureurs.present? ? @active_deals.select { |d| @renouv_assureurs.include?(d.assureur) } : @active_deals
     ProduitDeal::PRODUITS.map do |produit|
@@ -207,7 +208,7 @@ class AutresStatistiquesController < ApplicationController
       total = deals.sum { |d| d.arr.to_f }
       renewed = deals.select { |d| ProduitDeal::RENEWED_STATUSES.include?(d.statut_renouvellement) }
       done_amount = renewed.sum { |d| d.arr.to_f * d.taux.to_f / 100 }
-      projected_amount = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 }
+      projected_amount = deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 * (1 - d.risque_churn.to_f / 100) }
       rate = total > 0 ? done_amount / total * 100 : 0.0
       { label: RISQUE_LABELS.fetch(produit), value: rate, done_amount: done_amount, total: total,
         projected: total > 0 ? projected_amount / total * 100 : 0.0, projected_amount: projected_amount,

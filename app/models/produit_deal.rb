@@ -59,6 +59,12 @@ class ProduitDeal < Deal
     churned? ? 0 : arr.to_f * (1 + taux.to_f / 100)
   end
 
+  # final_arr weighted by the chance the contract survives (1 − risque_churn): the expected ARR after renewal
+  # for a contract that might still churn. Behind the projected ARR final / NRR (see PortfolioSummary).
+  def risk_adjusted_final_arr
+    final_arr * (1 - risque_churn.to_f / 100)
+  end
+
   private
 
   def sync_to_google_sheets

@@ -315,6 +315,20 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_match(/5\.0 %[\s\S]*?2,000 €[\s\S]*?5\.0 %/, prevoyance_block)
   end
 
+  test "the projected renewal weights each increase by the chance the contract stays (1 − risque de churn)" do
+    company = Company.create!(name: "Client Renouv Pondere", user: @am)
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rp-1", college: "Cadre", assureur: "AXA",
+      arr: 100_000, taux: 10, statut_renouvellement: "En cours", risque_churn: 20)
+    ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rp-2", college: "Non cadre", assureur: "Gan",
+      arr: 100_000, taux: 10, statut_renouvellement: "En cours", risque_churn: 100)
+
+    get autres_statistiques_path
+    sante = @controller.instance_variable_get(:@renewal_by_risque).first
+    assert_in_delta 8_000, sante[:projected_amount], 0.001, "100 000 × 10% × 80% — the contract certain to churn adds nothing"
+    assert_in_delta 4.0, sante[:projected], 0.001
+    assert_in_delta 0.0, sante[:value], 0.001, "nothing renewed yet"
+  end
+
   test "a renewal rate below the objective reads red, at or above it does not" do
     company = Company.create!(name: "Client Renouv Couleur", user: @am)
     ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rc-1", college: "Cadre", assureur: "AXA",

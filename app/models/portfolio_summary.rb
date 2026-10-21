@@ -107,11 +107,19 @@ class PortfolioSummary
     renewed_arr + upsold_actual + other_impacts_validated
   end
 
-  # Behind the "ARR final projeté" card — renewed ARR minus the risk-weighted churn still to come, plus
-  # every upsell's probability-weighted projection. Unlike `arr_final_actual`, this is forward-looking: it
-  # must reflect `churn_projete`, not just already-confirmed churn (which `renewed_arr` alone excludes).
+  # The ARR the produits still alive are expected to end up with once renewed, each weighted by its chance of
+  # surviving (1 − risque_churn): a produit at 10% risk contributes 90% of its renewed ARR — increase included —
+  # because if it churns, the negotiated increase is lost along with the base. Only a manually tracked
+  # non-accompagné churn projeté (an amount, with no per-contract risk) is subtracted as a lump sum.
+  def renewed_arr_projected
+    produit_deals.reject(&:churned?).sum(&:risk_adjusted_final_arr) + non_accompagne_renewed_contribution - non_accompagne_churn_projete
+  end
+
+  # Behind the "ARR final projeté" card (and so the projected NRR) — the risk-weighted renewed ARR plus every
+  # upsell's probability-weighted projection. Forward-looking, unlike `arr_final_actual`: an account that might
+  # churn counts only for its chance of staying, so its renewal-rate increase isn't counted as if it were certain.
   def arr_final
-    renewed_arr - churn_projete + upsold + other_impacts_pending
+    renewed_arr_projected + upsold + other_impacts_pending
   end
 
   def nrr_actual

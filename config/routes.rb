@@ -16,35 +16,37 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  resource :portfolio, only: [:show], controller: "portfolio" do
+  resource :portfolio, only: [ :show ], controller: "portfolio" do
     get :export_produits
   end
-  resource :pilotage, only: [:show], controller: "pilotage" do
+  resource :pilotage, only: [ :show ], controller: "pilotage" do
     get :export_upsells
     get :export_produits
     get :export_risque
     get :export_churn
   end
-  resource :gestion_droits, only: [:show], controller: "gestion_droits"
-  resource :attribution_portefeuille, only: [:show], controller: "attribution_portefeuille"
-  resource :autres_statistiques, only: [:show], controller: "autres_statistiques"
-  resources :companies, only: [:create, :update, :destroy] do
+  resource :gestion_droits, only: [ :show ], controller: "gestion_droits"
+  resource :attribution_portefeuille, only: [ :show ], controller: "attribution_portefeuille" do
+    post :sync_bi
+  end
+  resource :autres_statistiques, only: [ :show ], controller: "autres_statistiques"
+  resources :companies, only: [ :create, :update, :destroy ] do
     member { patch :reassign_am }
   end
-  resources :deals, only: [:create, :update, :destroy] do
+  resources :deals, only: [ :create, :update, :destroy ] do
     member { patch :reassign_am }
   end
-  resources :users, only: [:create, :update, :destroy]
-  resource :historique, only: [:show], controller: "historique"
-  resources :archive_entries, only: [:update]
-  resources :trash_batches, only: [:create, :destroy] do
+  resources :users, only: [ :create, :update, :destroy ]
+  resource :historique, only: [ :show ], controller: "historique"
+  resources :archive_entries, only: [ :update ]
+  resources :trash_batches, only: [ :create, :destroy ] do
     member { patch :restore }
   end
-  resource :year_closure, only: [:create], controller: "year_closures"
-  resource :app_setting, only: [:update], controller: "app_settings"
-  resources :non_accompagne_churn_entries, only: [:create, :update, :destroy]
-  resources :risk_notes, only: [:create, :destroy]
-  resources :other_impacts, only: [:create, :update, :destroy]
+  resource :year_closure, only: [ :create ], controller: "year_closures"
+  resource :app_setting, only: [ :update ], controller: "app_settings"
+  resources :non_accompagne_churn_entries, only: [ :create, :update, :destroy ]
+  resources :risk_notes, only: [ :create, :destroy ]
+  resources :other_impacts, only: [ :create, :update, :destroy ]
   get "import" => "imports#new", as: :new_import
   get "import/template/:type" => "imports#template", as: :import_template, constraints: { type: /produit|upsell/ }
   post "import/preview" => "imports#preview", as: :preview_import

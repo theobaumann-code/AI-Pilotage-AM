@@ -18,7 +18,7 @@ class TauxFilterTest < ActionDispatch::IntegrationTest
   end
 
   def assert_only(section, *present)
-    all = ["Client Taux Zero", "Client Taux Cinq", "Client Taux Dix"]
+    all = [ "Client Taux Zero", "Client Taux Cinq", "Client Taux Dix" ]
     present.each { |n| assert_match n, section }
     (all - present).each { |n| assert_no_match n, section }
   end
@@ -55,7 +55,7 @@ class TauxFilterTest < ActionDispatch::IntegrationTest
       produit: "Mutuelle", assureur: "AXA", college: "Cadre", arr: 1_000, taux: 8, statut_renouvellement: "Augmenté")
     year = AppSetting.instance.annee_en_cours
 
-    get historique_path, params: { years: [year, 2025], taux_min: "4" }
+    get historique_path, params: { years: [ year, 2025 ], taux_min: "4" }
     assert_response :success
     table = @response.body[/Historique par contrat.*?<\/table>/m]
     assert_match "Client Archive Haut", table

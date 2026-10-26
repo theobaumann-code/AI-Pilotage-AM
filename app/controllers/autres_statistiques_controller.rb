@@ -1,20 +1,20 @@
-# Split out of Vue globale (which had grown too dense) — open to the same audience Vue globale itself is
+# Split out of Vue globale (which had grown too dense) - open to the same audience Vue globale itself is
 # (no before_action here, matching PilotageController's own lack of one), since this is just a different
 # slice of the same reporting data, not a rights-management action.
 #
 # The Équipe / AM filters at the top of the page narrow *every* report to the companies those AMs own (and,
-# for upsells, to the upsells effectively theirs) — see #load_scope.
+# for upsells, to the upsells effectively theirs) - see #load_scope.
 class AutresStatistiquesController < ApplicationController
   # The first five colors are SideCare's brand and semantic tokens; the remaining shades extend them
   # for charts with many categories while keeping enough contrast against a white card.
-  PALETTE = ["#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff", "#99536a", "#e85f2a",
-             "#1f9c53", "#3f3f3f", "#b97829", "#76618f", "#2f9e8f", "#c94f4f", "#5a7d9a"].freeze
+  PALETTE = [ "#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff", "#99536a", "#e85f2a",
+             "#1f9c53", "#3f3f3f", "#b97829", "#76618f", "#2f9e8f", "#c94f4f", "#5a7d9a" ].freeze
 
   def show
     load_scope
 
     # "Subi" churn (liquidation/rachat) is excluded from every stat below exactly as it is everywhere else
-    # in the app — it isn't a renewal or portfolio-health outcome anyone here had control over.
+    # in the app - it isn't a renewal or portfolio-health outcome anyone here had control over.
     @active_deals = ProduitDeal.where(company_id: @company_ids).includes(company: :user).reject(&:churn_subi?)
 
     @renewal_produit = params[:renewal_produit]
@@ -41,9 +41,9 @@ class AutresStatistiquesController < ApplicationController
 
   # Équipe (role) and AM filters, same semantics as Vue globale's summary filters: a team narrows to the
   # AMs of that role, named AMs narrow further. With neither, everything is in scope (companies owned by a
-  # since-deactivated user included). Lecteurs are never offered — they own nothing.
+  # since-deactivated user included). Lecteurs are never offered - they own nothing.
   def load_scope
-    @available_roles = ["Admin", "KAM", "AM"]
+    @available_roles = [ "Admin", "KAM", "AM" ]
     @roles = Array(params[:roles]).reject(&:blank?)
     @ams = Array(params[:ams]).reject(&:blank?)
     all_ams = User.assignable.order(:name).to_a
@@ -61,19 +61,19 @@ class AutresStatistiquesController < ApplicationController
   end
 
   # Mirrors the original's "Nouveau contrat vs Augmentation" donut: only produit deals that were actually
-  # renewed are in scope — "En cours" and "Churné" fall outside this chart entirely.
+  # renewed are in scope - "En cours" and "Churné" fall outside this chart entirely.
   def renewal_donut_slices
     scope = ProduitDeal.where(company_id: @company_ids)
     scope = scope.where(produit: @renewal_produit) if @renewal_produit.present?
     nouveau = scope.where(statut_renouvellement: "Nouveau contrat").count
-    augmentation = scope.where(statut_renouvellement: ["Augmenté", "Augmentation particulière"]).count
+    augmentation = scope.where(statut_renouvellement: [ "Augmenté", "Augmentation particulière" ]).count
     [
       { label: "Nouveau contrat", value: nouveau, color: "var(--primary)" },
       { label: "Augmentation", value: augmentation, color: "var(--burgundy)" }
     ]
   end
 
-  # ARR répartition (currently active book only — churned deals aren't part of "what the portfolio looks
+  # ARR répartition (currently active book only - churned deals aren't part of "what the portfolio looks
   # like today") grouped by an arbitrary field (produit or assureur), one slice per known value.
   def arr_by(field, known_values)
     active = @active_deals.reject(&:churned?)
@@ -82,7 +82,7 @@ class AutresStatistiquesController < ApplicationController
     end
   end
 
-  # Top 10 clients by current ARR and what share of the whole active book they represent — a concentration
+  # Top 10 clients by current ARR and what share of the whole active book they represent - a concentration
   # read: a portfolio leaning on a handful of accounts is a different risk profile than a long tail of many.
   def portfolio_concentration
     by_company = @active_deals.reject(&:churned?).group_by(&:company)
@@ -99,12 +99,12 @@ class AutresStatistiquesController < ApplicationController
   end
 
   # How many companies (and how much ARR) sit in each size band, by the company's *total* active ARR across
-  # all its contracts — a book of many small companies behaves very differently, operationally and
+  # all its contracts - a book of many small companies behaves very differently, operationally and
   # risk-wise, than one leaning on a few large ones.
   BUCKETS = [
     { label: "< 5 000 €", range: 0...5_000 },
-    { label: "5 000 – 20 000 €", range: 5_000...20_000 },
-    { label: "20 000 – 50 000 €", range: 20_000...50_000 },
+    { label: "5 000 - 20 000 €", range: 5_000...20_000 },
+    { label: "20 000 - 50 000 €", range: 20_000...50_000 },
     { label: "≥ 50 000 €", range: 50_000...Float::INFINITY }
   ].freeze
 
@@ -137,8 +137,8 @@ class AutresStatistiquesController < ApplicationController
     end.sort_by { |r| -r[:nrr] }
   end
 
-  # Per AM, the share of their produits still "En cours" at a 0% renewal rate — i.e. whose forecast hasn't
-  # been updated yet — to spot who hasn't filled in their predictions. Share of produits (suffered churn set
+  # Per AM, the share of their produits still "En cours" at a 0% renewal rate - i.e. whose forecast hasn't
+  # been updated yet - to spot who hasn't filled in their predictions. Share of produits (suffered churn set
   # aside, like "% de produits renouvelés"), with the ARR those produits carry alongside. Worst first; AMs
   # with no produit at all have nothing to update and are left out.
   def pending_forecasts
@@ -152,15 +152,15 @@ class AutresStatistiquesController < ApplicationController
       pct = pending.size.to_f / deals.size * 100
       { label: am.name, value: pct, count: pending.size, total: deals.size, arr: pending.sum { |d| d.arr.to_f },
         status: pct.zero? ? "ok" : (pct >= 50 ? "ko" : nil) }
-    end.sort_by { |r| [-r[:value], -r[:count], r[:label]] }
+    end.sort_by { |r| [ -r[:value], -r[:count], r[:label] ] }
   end
 
   # Why churned produits were lost (the raison filled in on Vue globale's "Produits churnés" table), one
-  # slice list per produit, weighted by churned ARR — blank reasons show up as "À qualifier" so an
+  # slice list per produit, weighted by churned ARR - blank reasons show up as "À qualifier" so an
   # unqualified backlog is visible rather than silently missing from the chart.
   def churn_reasons_by_produit
     churned = @active_deals.select { |d| d.statut_renouvellement == ProduitDeal::CHURNED }
-    reasons = [PilotageController::NOT_QUALIFIED] + ProduitDeal::CHURN_REASONS
+    reasons = [ PilotageController::NOT_QUALIFIED ] + ProduitDeal::CHURN_REASONS
     colors = { PilotageController::NOT_QUALIFIED => "#c9c9c9" }
     ProduitDeal::CHURN_REASONS.each_with_index { |reason, i| colors[reason] = PALETTE[i % PALETTE.size] }
 
@@ -174,7 +174,7 @@ class AutresStatistiquesController < ApplicationController
     end
   end
 
-  # Churn per "risque" — the two insurance lines, Mutuelle (santé) and Prévoyance: churned ARR over the
+  # Churn per "risque" - the two insurance lines, Mutuelle (santé) and Prévoyance: churned ARR over the
   # line's total ARR (suffered churn set aside, like every churn rate here), plus the projected rate, i.e. the
   # churn so far plus the risk-weighted ARR of the contracts still active (as PortfolioSummary#churn_total).
   RISQUE_LABELS = { "Mutuelle" => "Mutuelle (santé)", "Prévoyance" => "Prévoyance" }.freeze
@@ -198,7 +198,7 @@ class AutresStatistiquesController < ApplicationController
   # Renewal rate per "risque", same shape as churn_by_risque: the ARR gained through negotiated renewal rates
   # (arr × taux / 100, as PortfolioSummary#renewal_gain) over the line's total ARR (suffered churn set aside).
   # "À date" counts only the produits already renewed (Augmenté, Augmentation particulière, Nouveau contrat);
-  # "projeté" counts every produit still alive with the rate entered so far — the ones still "En cours" too —
+  # "projeté" counts every produit still alive with the rate entered so far - the ones still "En cours" too -
   # but each gain weighted by its chance of staying (1 − risque_churn), like the projected NRR: an increase on a
   # contract that may churn isn't certain. Narrowed by the card's own Assureur filter.
   def renewal_by_risque
@@ -217,7 +217,7 @@ class AutresStatistiquesController < ApplicationController
     end
   end
 
-  # Churn rate (churned ARR ÷ total ARR) per assureur — spots whether losses concentrate on a particular
+  # Churn rate (churned ARR ÷ total ARR) per assureur - spots whether losses concentrate on a particular
   # insurer rather than spreading evenly across the book.
   def churn_rate_by(field)
     @active_deals.group_by { |d| d.public_send(field) }.filter_map do |key, deals|
@@ -229,7 +229,7 @@ class AutresStatistiquesController < ApplicationController
     end.sort_by { |r| -r[:value] }
   end
 
-  # Count, montant and % of every upsell at each signature stage, in the funnel's natural order — a
+  # Count, montant and % of every upsell at each signature stage, in the funnel's natural order - a
   # stalled pipeline (lots of "En cours", little "Signé") reads very differently from a healthy one even
   # with the same total ARR, and the % share makes that comparison possible independent of book size.
   # In scope by effective ownership (an upsell reassigned to another AM follows that AM, as everywhere).
@@ -245,12 +245,12 @@ class AutresStatistiquesController < ApplicationController
   end
 
   RENEWAL_FUNNEL_STAGES = [
-    ["En cours", ["En cours"]],
-    ["Renouvelé", ProduitDeal::RENEWED_STATUSES],
-    ["Churné", ProduitDeal::CHURNED_STATUSES]
+    [ "En cours", [ "En cours" ] ],
+    [ "Renouvelé", ProduitDeal::RENEWED_STATUSES ],
+    [ "Churné", ProduitDeal::CHURNED_STATUSES ]
   ].freeze
 
-  # Same idea as upsell_funnel but for produits à renouveler, rolled up into three stages — every status is
+  # Same idea as upsell_funnel but for produits à renouveler, rolled up into three stages - every status is
   # covered (both churn statuses included) rather than @active_deals' churn_subi-excluded scope, since this
   # is a "where does every deal currently stand" distribution, not an NRR-affecting calculation.
   def renewal_funnel
@@ -264,11 +264,11 @@ class AutresStatistiquesController < ApplicationController
   end
 
   # How much of the total book (active produits + the manually-tracked non-accompagné figure) each side
-  # represents — a quick sense of scale for the business nobody individually manages. The non-accompagné
+  # represents - a quick sense of scale for the business nobody individually manages. The non-accompagné
   # figure isn't tied to any AM, so it drops out as soon as an Équipe/AM filter narrows the page.
   def accompagnement_split
     accompagne = @active_deals.reject(&:churned?).sum { |d| d.arr.to_f }
-    slices = [{ label: "Accompagné", value: accompagne, color: "var(--primary)" }]
+    slices = [ { label: "Accompagné", value: accompagne, color: "var(--primary)" } ]
     unless @filter_active
       slices << { label: "Non accompagné", value: AppSetting.instance.arr_non_accompagne.to_f, color: "var(--burgundy)" }
     end

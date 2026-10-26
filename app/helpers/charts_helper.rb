@@ -1,15 +1,15 @@
 module ChartsHelper
-  LINE_CHART_COLORS = ["#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff"].freeze
+  LINE_CHART_COLORS = [ "#ff7b44", "#6d092a", "#3ac26e", "#ffa656", "#3a99ff" ].freeze
 
-  # Hand-rolled SVG polylines (no charting library) — one line per series, x-axis is the given years.
+  # Hand-rolled SVG polylines (no charting library) - one line per series, x-axis is the given years.
   # A series stays in the legend even with zero data points, so a produit never silently disappears.
   def line_chart(years, series, zero_line)
     has_any_data = series.any? { |s| s[:points].any? { |p| !p.nil? } }
     return content_tag(:div, "Aucune donnée pour ce filtre.", class: "empty-state") if years.empty? || !has_any_data
 
     all_vals = series.flat_map { |s| s[:points].compact }
-    min_t = [zero_line, *all_vals].min.to_f
-    max_t = [zero_line, *all_vals].max.to_f
+    min_t = [ zero_line, *all_vals ].min.to_f
+    max_t = [ zero_line, *all_vals ].max.to_f
     if min_t == max_t
       min_t -= 5
       max_t += 5
@@ -83,11 +83,11 @@ module ChartsHelper
     end
   end
 
-  # Stacked SVG circles via stroke-dasharray/stroke-dashoffset — the same dependency-free donut technique
+  # Stacked SVG circles via stroke-dasharray/stroke-dashoffset - the same dependency-free donut technique
   # as the original app, so there is no charting library to port or keep in sync.
   #
   # value_format/total_label let this double as an ARR-weighted donut (Autres statistiques' répartitions)
-  # instead of just a deal-count one (the renewal donut) — both default to the original plain-count display
+  # instead of just a deal-count one (the renewal donut) - both default to the original plain-count display
   # so every existing call site keeps rendering exactly as before.
   def donut_chart(slices, value_format: ->(v) { v.to_s }, total_label: ->(total) { "Total : #{total} deal(s)" })
     total = slices.sum { |s| s[:value] }
@@ -114,7 +114,7 @@ module ChartsHelper
       pct = s[:value].to_f / total * 100
       content_tag(:div, style: "display:flex;align-items:center;gap:8px;font-size:13px;") do
         concat content_tag(:span, "", style: "width:12px;height:12px;border-radius:3px;background:#{s[:color]};flex-shrink:0;")
-        concat " #{s[:label]} — #{tag.strong(value_format.call(s[:value]))} (#{number_with_precision(pct, precision: 1)}%)".html_safe
+        concat " #{s[:label]} - #{tag.strong(value_format.call(s[:value]))} (#{number_with_precision(pct, precision: 1)}%)".html_safe
       end
     end.join.html_safe
 
@@ -128,11 +128,11 @@ module ChartsHelper
   end
 
   # One row per AM with two thin bars (projeté above, actuel below) on a shared scale that doesn't start at
-  # zero — NRR values all sit near 100%, so a zero-based bar would make every AM look identical. A vertical
+  # zero - NRR values all sit near 100%, so a zero-based bar would make every AM look identical. A vertical
   # tick marks the target; the projeté bar is green/red against it, the actuel bar stays neutral.
   def nrr_scale(rows, target)
-    values = rows.flat_map { |r| [r[:nrr], r[:nrr_actual]] } + [target]
-    [((values.min - 5) / 5.0).floor * 5, ((values.max + 5) / 5.0).ceil * 5]
+    values = rows.flat_map { |r| [ r[:nrr], r[:nrr_actual] ] } + [ target ]
+    [ ((values.min - 5) / 5.0).floor * 5, ((values.max + 5) / 5.0).ceil * 5 ]
   end
 
   # The NRR cell of the "Performance par AM" table: the two thin bars on the shared `scale`, with the
@@ -160,7 +160,7 @@ module ChartsHelper
   end
 
   # Horizontal bar rows (.bar-row/.bar-track/.bar-fill, already styled for the old per-AM NRR chart) reused
-  # here for any "one row per category, one rate/amount" breakdown — contract-size buckets, churn rate by
+  # here for any "one row per category, one rate/amount" breakdown - contract-size buckets, churn rate by
   # segment, the upsell funnel. Bar width is row[:value]/max_value; value_format gets the whole row (not
   # just :value) so the trailing label can combine several of the row's own fields (e.g. count *and* ARR).
   # `max:` fixes the value a full bar stands for (e.g. 100 for a percentage) instead of the largest row's.
@@ -172,7 +172,7 @@ module ChartsHelper
 
     content_tag(:div) do
       rows.each do |r|
-        width = [r[:value].to_f / max_value * 100, 100].min
+        width = [ r[:value].to_f / max_value * 100, 100 ].min
         concat(content_tag(:div, class: "bar-row") do
           concat content_tag(:div, r[:label], class: "bar-label")
           concat(content_tag(:div, class: "bar-track") do

@@ -1,7 +1,7 @@
 require "test_helper"
 
-# "Upsells en cours (tous AM)" mirrors the produits table's filters: AM, produit, statut, and — like the
-# top summary cards — team (role), so an admin can narrow it down to just the AMs, just the KAMs, etc.
+# "Upsells en cours (tous AM)" mirrors the produits table's filters: AM, produit, statut, and - like the
+# top summary cards - team (role), so an admin can narrow it down to just the AMs, just the KAMs, etc.
 class GlobalUpsellsFilterTest < ActionDispatch::IntegrationTest
   setup do
     @admin = User.create!(email: "admin-gups-filter@example.com", name: "Admin Gups Filter", admin: true, active: true)
@@ -11,7 +11,7 @@ class GlobalUpsellsFilterTest < ActionDispatch::IntegrationTest
       probabilite_signature: 50, statut_signature: "En cours")
   end
 
-  # Scoped to the upsells table's own frame, not the whole page — the privileged-only "+ Nouvel upsell"/
+  # Scoped to the upsells table's own frame, not the whole page - the privileged-only "+ Nouvel upsell"/
   # "+ Nouveau produit" toolbar (see PilotageToolbarTest) lists every company in its picker regardless of
   # this table's own AM/rôle filters, so asserting against the raw body would see "Client Gups Filter"
   # there even when the table itself correctly excludes it.
@@ -21,11 +21,11 @@ class GlobalUpsellsFilterTest < ActionDispatch::IntegrationTest
 
   test "the upsells table is filterable by team (role)" do
     sign_in @admin
-    get pilotage_path, params: { upsell_roles: ["Admin"] }
+    get pilotage_path, params: { upsell_roles: [ "Admin" ] }
     assert_response :success
     assert_no_match "Client Gups Filter", upsells_table(@response.body)
 
-    get pilotage_path, params: { upsell_roles: ["AM"] }
+    get pilotage_path, params: { upsell_roles: [ "AM" ] }
     assert_match "Client Gups Filter", upsells_table(@response.body)
   end
 end

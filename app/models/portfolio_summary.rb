@@ -1,6 +1,6 @@
 # Ports computePortfolio(am) from the original app: AM-level (or, when constructed with User.all-derived
 # companies, cross-AM) aggregate over produit + upsell deals. Deliberately a plain Ruby object, not an
-# ActiveRecord model — this is pure aggregation over already-loaded deals, reused by both "Mon portefeuille"
+# ActiveRecord model - this is pure aggregation over already-loaded deals, reused by both "Mon portefeuille"
 # (Phase 2) and "Vue globale" (Phase 3).
 class PortfolioSummary
   NRR_TARGET = 101
@@ -13,13 +13,13 @@ class PortfolioSummary
 
   # `user:` scopes upsold/upsell-related figures to what's actually in that AM's pipeline right now (an
   # upsell explicitly reassigned to them counts here even for a company they don't own; one reassigned away
-  # from them doesn't, even though the company is still theirs) — pass it for any single-AM summary. Omit
+  # from them doesn't, even though the company is still theirs) - pass it for any single-AM summary. Omit
   # it for a cross-AM aggregate (e.g. Company.all): every upsell belongs to *someone* in that set either
   # way, so company-scoped and effective-ownership-scoped totals are the same sum.
   #
   # `non_accompagne:` optionally blends AppSetting's manually-tracked non-accompagné figures (ARR, churn,
   # churn projeté, taux de renouvellement) into arr_initial/churned/renewed_arr/renewal_gain/churn_projete
-  # below, as if it were one more aggregate "deal" — see PilotageController, which passes this only for Vue
+  # below, as if it were one more aggregate "deal" - see PilotageController, which passes this only for Vue
   # globale's top summary cards, gated by the Équipe filter's "Non accompagné" option. Every other
   # PortfolioSummary caller (Mon portefeuille, the AM roster) omits it and is completely unaffected.
   def initialize(companies, user: nil, non_accompagne: nil)
@@ -46,7 +46,7 @@ class PortfolioSummary
   end
 
   # Excludes "subi" churn (company liquidated or acquired, not lost to a competitor) from the denominator
-  # every NRR/churn figure below is built on — see ProduitDeal::CHURNED_SUBI. Without this, a liquidated
+  # every NRR/churn figure below is built on - see ProduitDeal::CHURNED_SUBI. Without this, a liquidated
   # client's original ARR would still drag NRR down even though `arr_final`/`churned` already don't count it.
   def arr_initial
     produit_deals.reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_arr
@@ -56,27 +56,27 @@ class PortfolioSummary
     produit_deals.select(&:churned?).reject(&:churn_subi?).sum { |d| d.arr.to_f } + non_accompagne_churn
   end
 
-  # The ARR lost to "subi" churn — shown alongside the Churn card for visibility, but deliberately not
+  # The ARR lost to "subi" churn - shown alongside the Churn card for visibility, but deliberately not
   # folded into `churned`/`arr_initial`/any NRR figure above.
   def churn_subi_amount
     produit_deals.select(&:churn_subi?).sum { |d| d.arr.to_f }
   end
 
   # Purely informational total (churned + churn_subi_amount) for AMs who want the full picture of ARR lost
-  # this period regardless of cause. Deliberately not used anywhere else — churn_rate, churn_within_limit?,
+  # this period regardless of cause. Deliberately not used anywhere else - churn_rate, churn_within_limit?,
   # arr_initial and every NRR figure must keep excluding "subi" churn, per churn_subi_amount above.
   def churn_with_subi
     churned + churn_subi_amount
   end
 
-  # Only fully-signed upsells — the confirmed number behind the "Upsell" card. See `upsold` for the
+  # Only fully-signed upsells - the confirmed number behind the "Upsell" card. See `upsold` for the
   # probability-weighted projection behind "Upsell projeté".
   def upsold_actual
     upsell_deals.select(&:signed?).sum(&:upsell_amount)
   end
 
   # Projected, not actual-only: a signed upsell already carries probabilite_signature 100 (see UpsellDeal's
-  # business rule), so it still contributes its full amount here — the only difference from `upsold_actual`
+  # business rule), so it still contributes its full amount here - the only difference from `upsold_actual`
   # is that in-pipeline upsells contribute their probability-weighted share too, instead of $0 until signed.
   def upsold
     upsell_deals.sum(&:projection)
@@ -88,7 +88,7 @@ class PortfolioSummary
 
   # "Autres impacts" (manual, one-off ARR impacts), each side counted on its own: "Validé" lines feed only
   # the actual figures (ARR final actuel, NRR actuel), "En cours" lines only the projected ones (ARR final
-  # projeté, NRR projeté) — a line never counts on both sides, matching the Actuel / Projeté totals of the
+  # projeté, NRR projeté) - a line never counts on both sides, matching the Actuel / Projeté totals of the
   # "Autres impacts" section.
   def other_impacts
     @other_impacts ||= companies.flat_map(&:current_other_impacts)
@@ -102,20 +102,20 @@ class PortfolioSummary
     other_impacts.reject(&:validated?).sum { |i| i.amount.to_f }
   end
 
-  # Behind the "ARR final" card — renewed ARR plus only the upsells actually signed so far.
+  # Behind the "ARR final" card - renewed ARR plus only the upsells actually signed so far.
   def arr_final_actual
     renewed_arr + upsold_actual + other_impacts_validated
   end
 
   # The ARR the produits still alive are expected to end up with once renewed, each weighted by its chance of
-  # surviving (1 − risque_churn): a produit at 10% risk contributes 90% of its renewed ARR — increase included —
+  # surviving (1 − risque_churn): a produit at 10% risk contributes 90% of its renewed ARR - increase included -
   # because if it churns, the negotiated increase is lost along with the base. Only a manually tracked
   # non-accompagné churn projeté (an amount, with no per-contract risk) is subtracted as a lump sum.
   def renewed_arr_projected
     produit_deals.reject(&:churned?).sum(&:risk_adjusted_final_arr) + non_accompagne_renewed_contribution - non_accompagne_churn_projete
   end
 
-  # Behind the "ARR final projeté" card (and so the projected NRR) — the risk-weighted renewed ARR plus every
+  # Behind the "ARR final projeté" card (and so the projected NRR) - the risk-weighted renewed ARR plus every
   # upsell's probability-weighted projection. Forward-looking, unlike `arr_final_actual`: an account that might
   # churn counts only for its chance of staying, so its renewal-rate increase isn't counted as if it were certain.
   def arr_final
@@ -138,21 +138,21 @@ class PortfolioSummary
     nrr >= NRR_TARGET
   end
 
-  # The ARR gained (or lost) purely from renewal-rate negotiation — final_arr minus arr for every
+  # The ARR gained (or lost) purely from renewal-rate negotiation - final_arr minus arr for every
   # non-churned produit deal, i.e. arr × taux/100 summed. Distinct from churn (ARR removed) and upsold
   # (ARR added from upsells): this isolates what the negotiated renewal rates themselves contributed.
   def renewal_gain
     produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.taux.to_f / 100 } + non_accompagne_renewal_gain
   end
 
-  # Risk-weighted ARR of produits that haven't churned yet (arr × risque_churn/100, summed) — the AM's own
+  # Risk-weighted ARR of produits that haven't churned yet (arr × risque_churn/100, summed) - the AM's own
   # estimate of what's likely to be lost next, distinct from `churned` (already lost). Already-churned
   # produits are excluded here since their loss is counted once, in `churned`, not twice.
   def churn_projete
     produit_deals.reject(&:churned?).sum { |d| d.arr.to_f * d.risque_churn.to_f / 100 } + non_accompagne_churn_projete
   end
 
-  # Actual churn plus the projected risk on what's still active — the single figure the 5.5% budget is
+  # Actual churn plus the projected risk on what's still active - the single figure the 5.5% budget is
   # meant to protect against going forward, not just what has already happened.
   def churn_total
     churned + churn_projete
@@ -163,7 +163,7 @@ class PortfolioSummary
   end
 
   # churned/churn_total re-expressed as a % of arr_initial, so the Churn cards can show a rate alongside
-  # the raw € amount — same pattern as renewal_rate below.
+  # the raw € amount - same pattern as renewal_rate below.
   def churn_rate
     arr_initial > 0 ? (churned / arr_initial * 100) : 0
   end
@@ -188,7 +188,7 @@ class PortfolioSummary
     renewal_gain >= renewal_target
   end
 
-  # Behind the "Taux de renouvellement" card — renewal_gain re-expressed as a % of arr_initial, so it reads
+  # Behind the "Taux de renouvellement" card - renewal_gain re-expressed as a % of arr_initial, so it reads
   # alongside NRR/churn as a rate rather than a raw € amount. Equivalent to renewal_target_met? at the 5%
   # mark, just expressed directly as a percentage instead of comparing two € figures.
   def renewal_rate
@@ -221,22 +221,22 @@ class PortfolioSummary
     non_accompagne ? non_accompagne.churn_non_accompagne.to_f : 0
   end
 
-  # No individual deals behind the non-accompagné book, so there's no risque_churn % to weight — just the
+  # No individual deals behind the non-accompagné book, so there's no risque_churn % to weight - just the
   # same manually-tracked € figure everything else here uses, added straight into churn_projete (and, via
-  # arr_final = renewed_arr - churn_projete + upsold, into the projected NRR/ARR final cards only — the
+  # arr_final = renewed_arr - churn_projete + upsold, into the projected NRR/ARR final cards only - the
   # "actuel" variants never subtract churn_projete, matching how a real deal's risque_churn works too).
   def non_accompagne_churn_projete
     non_accompagne ? non_accompagne.churn_projete_non_accompagne.to_f : 0
   end
 
-  # What's left of the non-accompagné book once its own actual churn comes out — never negative, in case
+  # What's left of the non-accompagné book once its own actual churn comes out - never negative, in case
   # someone enters a churn figure larger than the ARR it's meant to be a share of.
   def non_accompagne_active_arr
-    [non_accompagne_arr - non_accompagne_churn, 0].max
+    [ non_accompagne_arr - non_accompagne_churn, 0 ].max
   end
 
   # Treated like one more aggregate "deal": the still-active share of the non-accompagné book, grown by its
-  # own taux de renouvellement — the same arr × (1 + taux/100) shape as ProduitDeal#final_arr.
+  # own taux de renouvellement - the same arr × (1 + taux/100) shape as ProduitDeal#final_arr.
   def non_accompagne_renewed_contribution
     return 0 unless non_accompagne
     non_accompagne_active_arr * (1 + non_accompagne.taux_renouvellement_non_accompagne.to_f / 100)

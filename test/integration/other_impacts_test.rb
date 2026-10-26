@@ -72,7 +72,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to portfolio_path(user_id: @am.id, anchor: "other-impacts")
     impact = OtherImpact.last
-    assert_equal [@alpha, "Les deux", "Avenant", "Validé"], [impact.company, impact.produit, impact.comment, impact.statut]
+    assert_equal [ @alpha, "Les deux", "Avenant", "Validé" ], [ impact.company, impact.produit, impact.comment, impact.statut ]
     assert_in_delta(-3000, impact.amount.to_f, 0.001)
     assert_equal AppSetting.instance.annee_en_cours, impact.annee
   end
@@ -92,7 +92,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     end
     impact = OtherImpact.last
 
-    [@am, @reader].each do |user|
+    [ @am, @reader ].each do |user|
       sign_out :user
       sign_in user
       assert_no_difference "OtherImpact.count" do
@@ -120,13 +120,13 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match dom_id_for(@churned), @response.body, "and the one it moved to"
 
     impact.reload
-    assert_equal [@churned, "Les deux", "Avenant", "Validé"], [impact.company, impact.produit, impact.comment, impact.statut]
+    assert_equal [ @churned, "Les deux", "Avenant", "Validé" ], [ impact.company, impact.produit, impact.comment, impact.statut ]
     assert_in_delta(-3000.5, impact.amount.to_f, 0.001)
 
-    # a Validé line stays freely editable — back to En cours, a different amount
+    # a Validé line stays freely editable - back to En cours, a different amount
     patch other_impact_path(impact, redirect_user_id: @am.id), params: { other_impact: { statut: "En cours", amount: "42" } },
       headers: { "Accept" => "text/vnd.turbo-stream.html" }
-    assert_equal ["En cours", 42], [impact.reload.statut, impact.amount.to_i]
+    assert_equal [ "En cours", 42 ], [ impact.reload.statut, impact.amount.to_i ]
   end
 
   def dom_id_for(record)
@@ -229,7 +229,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match(/Actuel[\s\S]*?-2,000 €[\s\S]*?Projeté[\s\S]*?8,500 €/, card, "validated -3000 + 1000 across both AMs, pending 8000 + 500")
 
     # the Équipe/AM filters of the page narrow it too
-    get pilotage_path, params: { summary_ams: [@am.name] }
+    get pilotage_path, params: { summary_ams: [ @am.name ] }
     card = @response.body[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
     assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?500 €/, card)
   end

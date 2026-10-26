@@ -1,14 +1,14 @@
 class CompaniesController < ApplicationController
-  before_action :require_admin!, only: [:destroy, :reassign_am]
+  before_action :require_admin!, only: [ :destroy, :reassign_am ]
 
   # Scoped to "Entreprises à risque" (Vue globale) on purpose, not a general company-edit endpoint: any
   # signed-in user may flag a company as at-risk for lack of offers (risque_manque_offres), the same
   # collaborative-record-keeping spirit as that table's risk notes; naming its référent (the manager
-  # following the deal) is a workload-distribution decision, so it stays with admins/KAMs — and so does
+  # following the deal) is a workload-distribution decision, so it stays with admins/KAMs - and so does
   # renaming a client (from Mon portefeuille's "Évolution de l'ARR par client" table).
   def update
     company = Company.find(params[:id])
-    permitted = [:risque_manque_offres]
+    permitted = [ :risque_manque_offres ]
     permitted.push(:referent_id, :name) if current_user.privileged?
     company.update!(params.require(:company).permit(*permitted))
     redirect_to return_path, notice: "Mis à jour."
@@ -37,7 +37,7 @@ class CompaniesController < ApplicationController
 
   private
 
-  # Mirrors RiskNotesController#return_path — the checkbox lives inside the same filtered/paginated
+  # Mirrors RiskNotesController#return_path - the checkbox lives inside the same filtered/paginated
   # "Entreprises à risque" table, and only a same-app path is ever honored (never an open redirect).
   def return_path
     candidate = params[:return_to].to_s

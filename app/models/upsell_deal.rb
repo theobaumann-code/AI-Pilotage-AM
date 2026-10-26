@@ -1,20 +1,20 @@
 class UpsellDeal < Deal
-  PRODUITS = (ProduitDeal::PRODUITS + ["Mutuelle/Prévoyance"]).freeze
-  STATUTS_SIGNATURE = ["Non démarré", "En cours", "Signé", "Perdu"].freeze
+  PRODUITS = (ProduitDeal::PRODUITS + [ "Mutuelle/Prévoyance" ]).freeze
+  STATUTS_SIGNATURE = [ "Non démarré", "En cours", "Signé", "Perdu" ].freeze
   SIGNE = "Signé"
   PERDU = "Perdu"
 
-  # Generic per-employee reference formula — communicated directly by Sarra Bachar on 2026-09-30, replacing
+  # Generic per-employee reference formula - communicated directly by Sarra Bachar on 2026-09-30, replacing
   # the Bonus Tracker BO estimate for upsells: Bonus Tracker's per-company invoice-based estimate turned out
   # to swing on how much of a company's headcount happened to have matured, invoiced sub-contracts (e.g.
   # ~78% covered for one client vs ~8% for another), which could make a smaller company outrank a much
-  # larger one on ARR for the same product — a real inconsistency, not a data-sync issue. This flat, uniform
+  # larger one on ARR for the same product - a real inconsistency, not a data-sync issue. This flat, uniform
   # formula trades that invoice-level precision for a result that's always monotonic in headcount and fully
   # reproducible from data Pilotage NRR actually has (nombre_salaries, produit).
   #
   # Corrected the same day: the mutuelle base rate is tax-adjusted (divided by 1+taxe) and both rates are
-  # weighted by their average affiliation rate (taux d'affiliation moyen — not every signed employee
-  # actually enrolls), and the result IS the final per-employee ARR — no separate commission conversion on
+  # weighted by their average affiliation rate (taux d'affiliation moyen - not every signed employee
+  # actually enrolls), and the result IS the final per-employee ARR - no separate commission conversion on
   # top this time (unlike the first version of this formula).
   MUTUELLE_RATE_BASE = 140.0
   MUTUELLE_TAXE = 0.1532
@@ -31,7 +31,7 @@ class UpsellDeal < Deal
   # An upsell's collège matters far less than a produit's (no per-collège contract to keep straight), so
   # unlike ProduitDeal, every UpsellDeal gets a sensible default instead of forcing every caller (forms,
   # CSV import, tests, the console) to always pass one explicitly. Only fills in when truly unset, so an
-  # explicit value — including one already loaded from the database — is never overwritten.
+  # explicit value - including one already loaded from the database - is never overwritten.
   after_initialize { self.college ||= ProduitDeal::COLLEGES.first }
 
   before_validation :apply_business_rules
@@ -45,7 +45,7 @@ class UpsellDeal < Deal
     statut_signature == PERDU
   end
 
-  # Signed or lost: the client has decided, so the "% de chance" no longer is an estimate to edit — it's
+  # Signed or lost: the client has decided, so the "% de chance" no longer is an estimate to edit - it's
   # forced to 100 / 0 (see apply_business_rules).
   def decided?
     signed? || lost?
@@ -55,10 +55,22 @@ class UpsellDeal < Deal
     arr_estimation_source.present? && arr_estimation_source != "unavailable"
   end
 
+  # €/an per employee for a produit - also used by "Attribution portefeuille" to value a BI account's upsell.
+  def self.rate_per_employee_for(produit)
+    mutuelle = (MUTUELLE_RATE_BASE / (1 + MUTUELLE_TAXE)) * MUTUELLE_TAUX_AFFILIATION
+    prevoyance = PREVOYANCE_RATE_BASE * PREVOYANCE_TAUX_AFFILIATION
+    case produit
+    when "Mutuelle" then mutuelle
+    when "Prévoyance" then prevoyance
+    when "Mutuelle/Prévoyance" then mutuelle + prevoyance
+    else 0.0
+    end
+  end
+
   private
 
-  # Pure arithmetic, so — unlike the old Bonus Tracker refresh, which only ran on specific field changes
-  # to avoid pointless external calls — this simply recomputes on every save. arr can never drift out of
+  # Pure arithmetic, so - unlike the old Bonus Tracker refresh, which only ran on specific field changes
+  # to avoid pointless external calls - this simply recomputes on every save. arr can never drift out of
   # sync with produit/nombre_salaries, and every upsell always uses today's rates regardless of status
   # (Non démarré/En cours/Signé/Perdu all get a real, comparable ARR, not just active ones).
   def estimate_arr
@@ -70,24 +82,11 @@ class UpsellDeal < Deal
   end
 
   def rate_per_employee
-    case produit
-    when "Mutuelle" then rate_per_employee_mutuelle
-    when "Prévoyance" then rate_per_employee_prevoyance
-    when "Mutuelle/Prévoyance" then rate_per_employee_mutuelle + rate_per_employee_prevoyance
-    else 0.0
-    end
-  end
-
-  def rate_per_employee_mutuelle
-    (MUTUELLE_RATE_BASE / (1 + MUTUELLE_TAXE)) * MUTUELLE_TAUX_AFFILIATION
-  end
-
-  def rate_per_employee_prevoyance
-    PREVOYANCE_RATE_BASE * PREVOYANCE_TAUX_AFFILIATION
+    self.class.rate_per_employee_for(produit)
   end
 
   # Rule 5: marking an upsell "Signé" always forces probabilite_signature to 100. Moving back off "Signé"
-  # must not leave that forced 100 behind — it was never a real probability the AM entered, and leaving it
+  # must not leave that forced 100 behind - it was never a real probability the AM entered, and leaving it
   # in place silently overstates the projected ARR (100% of the deal) until someone notices and fixes it
   # by hand. Only reset on an actual transition away from "Signé", so editing any other field on an
   # already-non-signed upsell doesn't touch it.

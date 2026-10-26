@@ -52,10 +52,10 @@ class HistoriqueQuery
   end
 
   def rows
-    @rows ||= (archived_rows + live_rows).sort_by { |r| [r.nom, r.produit, r.annee] }
+    @rows ||= (archived_rows + live_rows).sort_by { |r| [ r.nom, r.produit, r.annee ] }
   end
 
-  # ARR-weighted average per produit+year, always — including with a single entreprise selected. A
+  # ARR-weighted average per produit+year, always - including with a single entreprise selected. A
   # company can hold several contracts for the same produit (different collèges and/or, since the
   # collège+assureur rule change, different assureurs too), so picking just one row's taux by
   # overwriting the others (the original app's behavior, ported and then "fixed" here once already) was

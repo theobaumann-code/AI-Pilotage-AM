@@ -37,7 +37,7 @@ class EntreprisesARisqueTest < ActionDispatch::IntegrationTest
     assert_no_match "Client Sans Risque", risque_table(@response.body)
   end
 
-  test "a churned produit's risque_churn (forced to 100) does not count — it's no longer à renouveler" do
+  test "a churned produit's risque_churn (forced to 100) does not count - it's no longer à renouveler" do
     company = Company.create!(name: "Client Churne", user: @am)
     ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "risk-3",
       college: "Cadre", assureur: "AXA", arr: 20_000, taux: 0, statut_renouvellement: "Churné")
@@ -55,10 +55,10 @@ class EntreprisesARisqueTest < ActionDispatch::IntegrationTest
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 10)
 
     sign_in @admin
-    get pilotage_path, params: { risque_ams: [other_am.name] }
+    get pilotage_path, params: { risque_ams: [ other_am.name ] }
     assert_no_match "Client Filtré", risque_table(@response.body)
 
-    get pilotage_path, params: { risque_ams: [@am.name] }
+    get pilotage_path, params: { risque_ams: [ @am.name ] }
     assert_match "Client Filtré", risque_table(@response.body)
   end
 end

@@ -16,23 +16,23 @@ class User < ApplicationRecord
 
   validates :name, presence: true
 
-  # The Google Sheet export denormalizes each produit's AM name onto its row — a rename doesn't touch any
+  # The Google Sheet export denormalizes each produit's AM name onto its row - a rename doesn't touch any
   # ProduitDeal itself, so it needs its own trigger to keep the sheet current.
   after_commit :sync_to_google_sheets, if: :saved_change_to_name?
 
   has_many :companies, dependent: :restrict_with_error
-  # dependent: :restrict_with_error — mirrors the "one company = one AM" invariant: an AM with an active
+  # dependent: :restrict_with_error - mirrors the "one company = one AM" invariant: an AM with an active
   # portfolio can't simply be deleted (unlike the original's blind wipe); reassign or deactivate instead.
 
   scope :active, -> { where(active: true) }
-  # Admins and KAMs — the managers who can be named "référent" on an at-risk company.
+  # Admins and KAMs - the managers who can be named "référent" on an at-risk company.
   scope :managers, -> { where(admin: true).or(where(kam: true)) }
   # Everyone who can own a portfolio or be picked in a table filter/select: active users minus "lecteurs",
   # who only sign in to consult and would just make those lists longer.
   scope :assignable, -> { active.where(reader: false) }
 
   # Admin/KAM always win over a stale reader flag (e.g. promoting a lecteur through the admin/KAM toggle
-  # buttons, which only set their own flag) — a lecteur is by definition neither.
+  # buttons, which only set their own flag) - a lecteur is by definition neither.
   before_save { self.reader = false if admin? || kam? }
   validate :reader_owns_no_company, if: :read_only?
 
@@ -43,9 +43,9 @@ class User < ApplicationRecord
 
   POSTE_TL_AM = "TL AM".freeze
   POSTE_TL_CSM = "TL Customer Care".freeze
-  POSTES = [POSTE_TL_AM, POSTE_TL_CSM].freeze
+  POSTES = [ POSTE_TL_AM, POSTE_TL_CSM ].freeze
 
-  # Maximum number of client accounts one person can carry, by role — an unlisted role (AM, admin...) gets the
+  # Maximum number of client accounts one person can carry, by role - an unlisted role (AM, admin...) gets the
   # default. Used by "Attribution portefeuille".
   DEFAULT_ACCOUNT_LIMIT = 54
   ACCOUNT_LIMITS = { kam: 35, tl_am: 9, tl_csm: 24 }.freeze
@@ -76,9 +76,9 @@ class User < ApplicationRecord
   end
 
   # The "Équipe" a user belongs to in the Équipe filters (Admin / KAM / AM): the team leads sit with the AMs, so
-  # nobody has to pick their role separately — only role_label (badges, Gestion des droits) tells them apart.
+  # nobody has to pick their role separately - only role_label (badges, Gestion des droits) tells them apart.
   def team_label
-    [:tl_am, :tl_csm].include?(role) ? ROLE_LABELS[:am] : role_label
+    [ :tl_am, :tl_csm ].include?(role) ? ROLE_LABELS[:am] : role_label
   end
 
   def account_limit
@@ -86,25 +86,25 @@ class User < ApplicationRecord
   end
 
   # Virtual attribute so the create/edit forms can offer one "Équipe" selector (AM/KAM/Admin/TL AM/
-  # TL Customer Care/Lecteur) instead of independent checkboxes — assignable like any other attribute
+  # TL Customer Care/Lecteur) instead of independent checkboxes - assignable like any other attribute
   # (user.update(role: "KAM")). "TL AM" means admin rights plus the poste; "TL Customer Care" plain user rights
   # plus the poste. Any value other than the known labels is treated as "AM", the safe default.
   def role=(label)
     label = label.to_s
-    self.admin = ["Admin", ROLE_LABELS[:tl_am]].include?(label)
+    self.admin = [ "Admin", ROLE_LABELS[:tl_am] ].include?(label)
     self.kam = (label == "KAM")
     self.reader = (label == "Lecteur")
     self.poste = { ROLE_LABELS[:tl_am] => POSTE_TL_AM, ROLE_LABELS[:tl_csm] => POSTE_TL_CSM }[label]
   end
 
-  # A "lecteur" can sign in and look at everything but change nothing — enforced server-side for every
+  # A "lecteur" can sign in and look at everything but change nothing - enforced server-side for every
   # non-GET request (see ApplicationController#block_read_only_users!), not just by hiding buttons.
   def read_only?
     role == :reader
   end
 
   # KAM has the same rights as admin everywhere in the app (see ApplicationController#require_admin! and
-  # every current_user.privileged? check) — only the NRR/portfolio calculations themselves stay identical
+  # every current_user.privileged? check) - only the NRR/portfolio calculations themselves stay identical
   # for AM and KAM. Deliberately not folded into `admin?` itself: that column still needs to mean exactly
   # "is a real administrator" for the last-admin safeguard and the role badge.
   def privileged?

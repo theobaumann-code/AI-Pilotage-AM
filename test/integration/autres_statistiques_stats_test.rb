@@ -1,7 +1,7 @@
 require "test_helper"
 
 # Every stat on "Autres statistiques" excludes "subi" churn (liquidation/rachat) the same way the rest of
-# the app does — these are the correctness checks for that, plus a spot-check on the trickier aggregations
+# the app does - these are the correctness checks for that, plus a spot-check on the trickier aggregations
 # (concentration, contract-size buckets, churn rate by segment).
 class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
   setup do
@@ -91,7 +91,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
   test "the distribution counts companies by their total active ARR across contracts, not contracts" do
     split = Company.create!(name: "Client Stats Taille", user: @am)
-    # Two contracts of 30 000 each: individually in the 20–50k band, but 60 000 together → one company ≥ 50k.
+    # Two contracts of 30 000 each: individually in the 20-50k band, but 60 000 together → one company ≥ 50k.
     ProduitDeal.create!(company: split, produit: "Mutuelle", identifiant: "size-1",
       college: "Cadre", assureur: "AXA", arr: 30_000, taux: 0, statut_renouvellement: "En cours")
     ProduitDeal.create!(company: split, produit: "Prévoyance", identifiant: "size-2",
@@ -104,8 +104,8 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_no_match "Distribution de la taille des contrats", @response.body
     rows = @controller.instance_variable_get(:@company_distribution)
-    assert_equal({ "< 5 000 €" => 1, "5 000 – 20 000 €" => 0, "20 000 – 50 000 €" => 0, "≥ 50 000 €" => 1 },
-      rows.to_h { |r| [r[:label], r[:value]] })
+    assert_equal({ "< 5 000 €" => 1, "5 000 - 20 000 €" => 0, "20 000 - 50 000 €" => 0, "≥ 50 000 €" => 1 },
+      rows.to_h { |r| [ r[:label], r[:value] ] })
     assert_equal 60_000, rows.last[:arr]
     assert_match "Distribution des entreprises", @response.body
   end
@@ -126,13 +126,13 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     section = @response.body[/Répartition de l'ARR par assureur.*?Portefeuille accompagné/m]
     assert_match "AXA", section
     assert_no_match "Allianz", section
-    assert_no_match "Gan —", section
+    assert_no_match "Gan -", section
   end
 
   test "per-AM performance adds upsell, average renewal rate, churn rate and % of produits renewed" do
     company = Company.create!(name: "Client Perf", user: @am)
-    [["perf-1", "Augmenté", 10_000, 10], ["perf-2", "Nouveau contrat", 10_000, 0], ["perf-3", "En cours", 10_000, 0],
-     ["perf-4", "Churné", 10_000, 0], ["perf-5", "Churné (subi)", 10_000, 0]].each_with_index do |(id, statut, arr, taux), i|
+    [ [ "perf-1", "Augmenté", 10_000, 10 ], [ "perf-2", "Nouveau contrat", 10_000, 0 ], [ "perf-3", "En cours", 10_000, 0 ],
+     [ "perf-4", "Churné", 10_000, 0 ], [ "perf-5", "Churné (subi)", 10_000, 0 ] ].each_with_index do |(id, statut, arr, taux), i|
       ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: id, college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
     end
@@ -162,13 +162,13 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     done_co = Company.create!(name: "Client Fait", user: diligent)
     Company.create!(name: "Client Sans Produit FC", user: empty)
     # lazy: 3 of 4 produits untouched (En cours, 0%); the 4th is En cours but has a rate -> not pending
-    [["fc-1", "En cours", 0, 1_000], ["fc-2", "En cours", 0, 2_000], ["fc-3", "En cours", 0, 3_000], ["fc-4", "En cours", 3.5, 4_000],
-     ["fc-5", "Churné (subi)", 0, 9_000]].each_with_index do |(id, statut, taux, arr), i|
+    [ [ "fc-1", "En cours", 0, 1_000 ], [ "fc-2", "En cours", 0, 2_000 ], [ "fc-3", "En cours", 0, 3_000 ], [ "fc-4", "En cours", 3.5, 4_000 ],
+     [ "fc-5", "Churné (subi)", 0, 9_000 ] ].each_with_index do |(id, statut, taux, arr), i|
       ProduitDeal.create!(company: lazy_co, produit: "Mutuelle", identifiant: id, college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
     end
     # diligent: rate set, renewed, and a 0% that is already decided (Churné / Nouveau contrat) -> none pending
-    [["fc-6", "En cours", 2, 1_000], ["fc-7", "Nouveau contrat", 0, 1_000], ["fc-8", "Churné", 0, 1_000]].each_with_index do |(id, statut, taux, arr), i|
+    [ [ "fc-6", "En cours", 2, 1_000 ], [ "fc-7", "Nouveau contrat", 0, 1_000 ], [ "fc-8", "Churné", 0, 1_000 ] ].each_with_index do |(id, statut, taux, arr), i|
       ProduitDeal.create!(company: done_co, produit: "Prévoyance", identifiant: id, college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
     end
@@ -177,26 +177,26 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_response :success
     rows = @controller.instance_variable_get(:@pending_forecasts)
     lazy_row = rows.find { |r| r[:label] == "AM Prévisions Vides" }
-    assert_equal [3, 4], [lazy_row[:count], lazy_row[:total]], "the subi-churned produit is left out of the base"
+    assert_equal [ 3, 4 ], [ lazy_row[:count], lazy_row[:total] ], "the subi-churned produit is left out of the base"
     assert_in_delta 75.0, lazy_row[:value], 0.001
     assert_equal 6_000, lazy_row[:arr]
     assert_equal "ko", lazy_row[:status]
     done_row = rows.find { |r| r[:label] == "AM Prévisions Faites" }
-    assert_equal [0, 3], [done_row[:count], done_row[:total]]
+    assert_equal [ 0, 3 ], [ done_row[:count], done_row[:total] ]
     assert_equal "ok", done_row[:status]
     assert_nil rows.find { |r| r[:label] == "AM Sans Produit" }, "an AM with no produit has nothing to update"
     assert_operator rows.index(lazy_row), :<, rows.index(done_row), "worst first"
     assert_match "Prévisions de renouvellement non mises à jour", @response.body
     assert_match "75.0 % · 3/4 produits", @response.body
 
-    get autres_statistiques_path, params: { ams: ["AM Prévisions Faites"] }
-    assert_equal ["AM Prévisions Faites"], @controller.instance_variable_get(:@pending_forecasts).map { |r| r[:label] }
+    get autres_statistiques_path, params: { ams: [ "AM Prévisions Faites" ] }
+    assert_equal [ "AM Prévisions Faites" ], @controller.instance_variable_get(:@pending_forecasts).map { |r| r[:label] }
   end
 
   test "churn by risque: churned ARR over total ARR for Mutuelle (santé) and Prévoyance, with the projected rate, suffered churn set aside" do
     company = Company.create!(name: "Client Risque", user: @am)
-    [["rk-1", "Mutuelle", "Churné", 10_000, 0], ["rk-2", "Mutuelle", "En cours", 30_000, 20], ["rk-3", "Mutuelle", "Churné (subi)", 50_000, 0],
-     ["rk-4", "Prévoyance", "En cours", 20_000, 10]].each_with_index do |(id, produit, statut, arr, risque), i|
+    [ [ "rk-1", "Mutuelle", "Churné", 10_000, 0 ], [ "rk-2", "Mutuelle", "En cours", 30_000, 20 ], [ "rk-3", "Mutuelle", "Churné (subi)", 50_000, 0 ],
+     [ "rk-4", "Prévoyance", "En cours", 20_000, 10 ] ].each_with_index do |(id, produit, statut, arr, risque), i|
       ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, statut_renouvellement: statut, risque_churn: risque)
     end
@@ -204,13 +204,13 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     get autres_statistiques_path
     assert_response :success
     rows = @controller.instance_variable_get(:@churn_by_risque).index_by { |r| r[:label] }
-    assert_equal ["Mutuelle (santé)", "Prévoyance"], rows.keys
+    assert_equal [ "Mutuelle (santé)", "Prévoyance" ], rows.keys
 
     sante = rows["Mutuelle (santé)"]
     assert_in_delta 25.0, sante[:value], 0.001, "10 000 churned of 40 000 (the 50 000 subi is outside the base)"
-    assert_equal [10_000, 40_000], [sante[:churned], sante[:total]]
+    assert_equal [ 10_000, 40_000 ], [ sante[:churned], sante[:total] ]
     assert_in_delta 40.0, sante[:projected], 0.001, "(10 000 + 30 000 × 20%) / 40 000"
-    assert_equal [1, 2], [sante[:count], sante[:produits_count]]
+    assert_equal [ 1, 2 ], [ sante[:count], sante[:produits_count] ]
     assert_equal "ko", sante[:status], "above the 5.5% limit"
 
     prevoyance = rows["Prévoyance"]
@@ -237,9 +237,9 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
   test "churn by risque can be filtered by assureur, alone or several at once, and only that card is affected" do
     company = Company.create!(name: "Client Risque Assureur", user: @am)
-    [["ra-1", "Mutuelle", "AXA", "Churné", 10_000], ["ra-2", "Mutuelle", "AXA", "En cours", 30_000],
-     ["ra-3", "Mutuelle", "Gan", "Churné", 20_000], ["ra-4", "Mutuelle", "Gan", "En cours", 20_000],
-     ["ra-5", "Prévoyance", "Allianz", "Churné", 5_000], ["ra-6", "Prévoyance", "Allianz", "En cours", 15_000]].each_with_index do |(id, produit, assureur, statut, arr), i|
+    [ [ "ra-1", "Mutuelle", "AXA", "Churné", 10_000 ], [ "ra-2", "Mutuelle", "AXA", "En cours", 30_000 ],
+     [ "ra-3", "Mutuelle", "Gan", "Churné", 20_000 ], [ "ra-4", "Mutuelle", "Gan", "En cours", 20_000 ],
+     [ "ra-5", "Prévoyance", "Allianz", "Churné", 5_000 ], [ "ra-6", "Prévoyance", "Allianz", "En cours", 15_000 ] ].each_with_index do |(id, produit, assureur, statut, arr), i|
       ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: i.even? ? "Cadre" : "Non cadre",
         assureur: assureur, arr: arr, statut_renouvellement: statut)
     end
@@ -250,16 +250,16 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     }
 
     all = rows.call
-    assert_equal [30_000, 80_000], [all["Mutuelle (santé)"][:churned], all["Mutuelle (santé)"][:total]]
+    assert_equal [ 30_000, 80_000 ], [ all["Mutuelle (santé)"][:churned], all["Mutuelle (santé)"][:total] ]
 
-    axa = rows.call(risque_assureurs: ["AXA"])
-    assert_equal [10_000, 40_000], [axa["Mutuelle (santé)"][:churned], axa["Mutuelle (santé)"][:total]]
+    axa = rows.call(risque_assureurs: [ "AXA" ])
+    assert_equal [ 10_000, 40_000 ], [ axa["Mutuelle (santé)"][:churned], axa["Mutuelle (santé)"][:total] ]
     assert_in_delta 25.0, axa["Mutuelle (santé)"][:value], 0.001
-    assert_equal [0, 0], [axa["Prévoyance"][:total], axa["Prévoyance"][:produits_count]], "no AXA prévoyance: the bar is empty"
+    assert_equal [ 0, 0 ], [ axa["Prévoyance"][:total], axa["Prévoyance"][:produits_count] ], "no AXA prévoyance: the bar is empty"
 
-    two = rows.call(risque_assureurs: ["AXA", "Allianz"])
+    two = rows.call(risque_assureurs: [ "AXA", "Allianz" ])
     assert_equal 40_000, two["Mutuelle (santé)"][:total]
-    assert_equal [5_000, 20_000], [two["Prévoyance"][:churned], two["Prévoyance"][:total]]
+    assert_equal [ 5_000, 20_000 ], [ two["Prévoyance"][:churned], two["Prévoyance"][:total] ]
 
     # only this card reacts: the other churn report keeps every assureur
     assert_equal 3, @controller.instance_variable_get(:@churn_rate_by_assureur).size
@@ -272,9 +272,9 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
   test "renewal by risque: ARR gained through renewal rates over the line's ARR, renewed-so-far vs projected, subi churn set aside" do
     company = Company.create!(name: "Client Renouv Risque", user: @am)
-    [["rn-1", "Mutuelle", "Augmenté", 40_000, 5], ["rn-2", "Mutuelle", "En cours", 40_000, 3],
-     ["rn-3", "Mutuelle", "Churné", 10_000, 0], ["rn-4", "Mutuelle", "Churné (subi)", 50_000, 8],
-     ["rn-5", "Prévoyance", "Nouveau contrat", 20_000, 0], ["rn-6", "Prévoyance", "Augmentation particulière", 20_000, 10]].each_with_index do |(id, produit, statut, arr, taux), i|
+    [ [ "rn-1", "Mutuelle", "Augmenté", 40_000, 5 ], [ "rn-2", "Mutuelle", "En cours", 40_000, 3 ],
+     [ "rn-3", "Mutuelle", "Churné", 10_000, 0 ], [ "rn-4", "Mutuelle", "Churné (subi)", 50_000, 8 ],
+     [ "rn-5", "Prévoyance", "Nouveau contrat", 20_000, 0 ], [ "rn-6", "Prévoyance", "Augmentation particulière", 20_000, 10 ] ].each_with_index do |(id, produit, statut, arr, taux), i|
       ProduitDeal.create!(company: company, produit: produit, identifiant: id, college: i.even? ? "Cadre" : "Non cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: taux, statut_renouvellement: statut)
     end
@@ -282,7 +282,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     get autres_statistiques_path
     assert_response :success
     rows = @controller.instance_variable_get(:@renewal_by_risque).index_by { |r| r[:label] }
-    assert_equal ["Mutuelle (santé)", "Prévoyance"], rows.keys
+    assert_equal [ "Mutuelle (santé)", "Prévoyance" ], rows.keys
 
     sante = rows["Mutuelle (santé)"]
     assert_equal 90_000, sante[:total], "40 000 + 40 000 + 10 000, the 50 000 subi is outside the base"
@@ -290,14 +290,14 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_in_delta 2_000 / 90_000.0 * 100, sante[:value], 0.001
     assert_in_delta 3_200, sante[:projected_amount], 0.001, "40 000 × 5% + 40 000 × 3%, the churned one excluded"
     assert_in_delta 3_200 / 90_000.0 * 100, sante[:projected], 0.001
-    assert_equal [1, 3], [sante[:count], sante[:produits_count]]
+    assert_equal [ 1, 3 ], [ sante[:count], sante[:produits_count] ]
     assert_equal "ko", sante[:status], "below the 5% objective"
 
     prevoyance = rows["Prévoyance"]
     assert_in_delta 2_000, prevoyance[:done_amount], 0.001, "Nouveau contrat adds nothing, the particular increase 20 000 × 10%"
     assert_in_delta 5.0, prevoyance[:value], 0.001
     assert_in_delta 5.0, prevoyance[:projected], 0.001
-    assert_equal [2, 2], [prevoyance[:count], prevoyance[:produits_count]]
+    assert_equal [ 2, 2 ], [ prevoyance[:count], prevoyance[:produits_count] ]
     assert_equal "ok", prevoyance[:status], "5% reaches the objective"
 
     section = renewal_card(@response.body)
@@ -324,7 +324,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
     get autres_statistiques_path
     sante = @controller.instance_variable_get(:@renewal_by_risque).first
-    assert_in_delta 8_000, sante[:projected_amount], 0.001, "100 000 × 10% × 80% — the contract certain to churn adds nothing"
+    assert_in_delta 8_000, sante[:projected_amount], 0.001, "100 000 × 10% × 80% - the contract certain to churn adds nothing"
     assert_in_delta 4.0, sante[:projected], 0.001
     assert_in_delta 0.0, sante[:value], 0.001, "nothing renewed yet"
   end
@@ -344,7 +344,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
   test "renewal by risque has its own Assureur filter that only moves this card, next to the churn one" do
     company = Company.create!(name: "Client Renouv Assureur", user: @am)
-    [["ra-1", "AXA", 4], ["ra-2", "Gan", 8]].each_with_index do |(id, assureur, taux), i|
+    [ [ "ra-1", "AXA", 4 ], [ "ra-2", "Gan", 8 ] ].each_with_index do |(id, assureur, taux), i|
       ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: id, college: i.zero? ? "Cadre" : "Non cadre",
         assureur: assureur, arr: 10_000, taux: taux, statut_renouvellement: "Augmenté")
     end
@@ -352,19 +352,19 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
       get autres_statistiques_path, params: params
       @controller.instance_variable_get(:@renewal_by_risque).first
     }
-    assert_equal [20_000, 1_200], [rows.call[:total], rows.call[:done_amount]]
-    gan = rows.call(renouv_assureurs: ["Gan"])
-    assert_equal [10_000, 800], [gan[:total], gan[:done_amount]]
+    assert_equal [ 20_000, 1_200 ], [ rows.call[:total], rows.call[:done_amount] ]
+    gan = rows.call(renouv_assureurs: [ "Gan" ])
+    assert_equal [ 10_000, 800 ], [ gan[:total], gan[:done_amount] ]
     assert_in_delta 8.0, gan[:value], 0.001
 
     # the churn card keeps its own filter: a renewal selection doesn't touch it, and vice versa
-    get autres_statistiques_path, params: { renouv_assureurs: ["Gan"] }
+    get autres_statistiques_path, params: { renouv_assureurs: [ "Gan" ] }
     assert_equal 20_000, @controller.instance_variable_get(:@churn_by_risque).first[:total]
-    get autres_statistiques_path, params: { risque_assureurs: ["Gan"] }
+    get autres_statistiques_path, params: { risque_assureurs: [ "Gan" ] }
     assert_equal 20_000, @controller.instance_variable_get(:@renewal_by_risque).first[:total]
 
     # the card shows its filter with the selection, and carries the other card's selection across (one value at a time)
-    get autres_statistiques_path, params: { renouv_assureurs: ["AXA", "Gan"], risque_assureurs: ["Allianz", "Gan"] }
+    get autres_statistiques_path, params: { renouv_assureurs: [ "AXA", "Gan" ], risque_assureurs: [ "Allianz", "Gan" ] }
     card = renewal_card(@response.body)
     assert_match 'name="renouv_assureurs[]"', card
     assert_match "Assureur (2)", card
@@ -374,7 +374,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
   end
 
   test "the Assureur filter of Churn par risque is in the card, keeps its selection and the page's AM filter" do
-    get autres_statistiques_path, params: { risque_assureurs: ["AXA", "Gan"], ams: ["AM Stats"] }
+    get autres_statistiques_path, params: { risque_assureurs: [ "AXA", "Gan" ], ams: [ "AM Stats" ] }
     card = @response.body[%r{<h2>Churn par risque</h2>.*?class="risque-legend"}m]
     assert_match 'name="risque_assureurs[]"', card
     assert_match(/value="AXA"[^>]*checked/, card)
@@ -384,7 +384,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
   end
 
   test "a multi-value filter is carried to other forms one value at a time, not fused into one string" do
-    get autres_statistiques_path, params: { ams: ["AM Stats"], risque_assureurs: ["AXA", "Gan"] }
+    get autres_statistiques_path, params: { ams: [ "AM Stats" ], risque_assureurs: [ "AXA", "Gan" ] }
     # the page-wide Équipe/AM form re-emits the card's selection
     page_form = @response.body[/<div class="toolbar stats-filters">.*?<\/form>/m]
     assert_match(/<input type="hidden" name="risque_assureurs\[\]" value="AXA"/, page_form)
@@ -405,25 +405,25 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     get autres_statistiques_path
     assert_equal 2, @controller.instance_variable_get(:@company_ids).size
     assert_equal 2, @controller.instance_variable_get(:@am_performance).size
-    assert_equal ["Accompagné", "Non accompagné"], @controller.instance_variable_get(:@accompagnement_split).map { |s| s[:label] }
+    assert_equal [ "Accompagné", "Non accompagné" ], @controller.instance_variable_get(:@accompagnement_split).map { |s| s[:label] }
 
-    get autres_statistiques_path, params: { ams: ["AM Stats"] }
-    assert_equal [mine.id], @controller.instance_variable_get(:@company_ids)
-    assert_equal ["AM Stats"], @controller.instance_variable_get(:@am_performance).map { |r| r[:am] }
+    get autres_statistiques_path, params: { ams: [ "AM Stats" ] }
+    assert_equal [ mine.id ], @controller.instance_variable_get(:@company_ids)
+    assert_equal [ "AM Stats" ], @controller.instance_variable_get(:@am_performance).map { |r| r[:am] }
     assert_equal 1, @controller.instance_variable_get(:@renewal_funnel).sum { |s| s[:value] }
     assert_equal 1, @controller.instance_variable_get(:@upsell_funnel).sum { |s| s[:value] }
-    assert_equal ["Accompagné"], @controller.instance_variable_get(:@accompagnement_split).map { |s| s[:label] },
+    assert_equal [ "Accompagné" ], @controller.instance_variable_get(:@accompagnement_split).map { |s| s[:label] },
       "the non-accompagné figure belongs to no AM, so it drops out once filtered"
     assert_no_match "Client Filtre Admin", @response.body
 
-    get autres_statistiques_path, params: { roles: ["Admin"] }
-    assert_equal [theirs.id], @controller.instance_variable_get(:@company_ids)
-    assert_equal ["Admin Filtre"], @controller.instance_variable_get(:@am_performance).map { |r| r[:am] }
+    get autres_statistiques_path, params: { roles: [ "Admin" ] }
+    assert_equal [ theirs.id ], @controller.instance_variable_get(:@company_ids)
+    assert_equal [ "Admin Filtre" ], @controller.instance_variable_get(:@am_performance).map { |r| r[:am] }
   end
 
   test "the filter bar offers Équipe and AM, never lecteurs, and keeps the selection" do
     User.create!(email: "reader-filter-stats@example.com", name: "Lecteur Masqué", role: "Lecteur", active: true)
-    get autres_statistiques_path, params: { ams: ["AM Stats"] }
+    get autres_statistiques_path, params: { ams: [ "AM Stats" ] }
     assert_match 'name="roles[]"', @response.body
     assert_match 'name="ams[]"', @response.body
     assert_match(/value="AM Stats"[^>]*checked/, @response.body)
@@ -460,8 +460,8 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
 
   test "the renewal funnel rolls every produit up into En cours / Renouvelé / Churné, with its % share" do
     company = Company.create!(name: "Client Stats Renewal Funnel", user: @am)
-    [["En cours", 1_000], ["Augmenté", 2_000], ["Augmentation particulière", 3_000], ["Nouveau contrat", 4_000],
-     ["Churné", 5_000], ["Churné (subi)", 6_000]].each_with_index do |(statut, arr), i|
+    [ [ "En cours", 1_000 ], [ "Augmenté", 2_000 ], [ "Augmentation particulière", 3_000 ], [ "Nouveau contrat", 4_000 ],
+     [ "Churné", 5_000 ], [ "Churné (subi)", 6_000 ] ].each_with_index do |(statut, arr), i|
       ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rf-#{i}", college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: arr, taux: 0, statut_renouvellement: statut)
     end
@@ -470,7 +470,7 @@ class AutresStatistiquesStatsTest < ActionDispatch::IntegrationTest
     assert_response :success
     section = @response.body[/Entonnoir des produits à renouveler.*?Churn par risque/m]
     labels = section.scan(/bar-label">([^<]+)</).flatten
-    assert_equal ["En cours", "Renouvelé", "Churné"], labels
+    assert_equal [ "En cours", "Renouvelé", "Churné" ], labels
     assert_match(/En cours[\s\S]*?bar-value">1 · 16\.7% \(1,000 €\)/, section)
     assert_match(/Renouvelé[\s\S]*?bar-value">3 · 50\.0% \(9,000 €\)/, section)
     # Both churn statuses (subi included) are summed here, unlike every NRR-affecting stat elsewhere.

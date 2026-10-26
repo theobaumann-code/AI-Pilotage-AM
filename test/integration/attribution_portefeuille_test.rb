@@ -26,19 +26,19 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
 
   test "only real admins can open it: KAMs, AMs, lecteurs and visitors are turned away" do
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_response :success
     assert_match "Attribution portefeuille", @response.body
 
-    [@kam, @am, @reader].each do |user|
+    [ @kam, @am, @reader ].each do |user|
       sign_out :user
       sign_in user
-      get attribution_portefeuille_path
+      get attribution_portefeuille_path(vue: "brut")
       assert_response :redirect, "#{user.name} must not get in"
     end
 
     sign_out :user
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_redirected_to new_user_session_path
   end
 
@@ -62,7 +62,7 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     mixed.produit_deals.where(produit: "Prévoyance").first.update!(statut_renouvellement: "Churné")
 
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     row = rows["AM Attr"]
     assert_equal 3, row[:comptes], "active + no-produit + mixed"
     assert_equal 2, row[:churned]
@@ -72,7 +72,7 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_not row[:over]
   end
 
-  test "each role has its own ceiling: KAM 35, AM 54, TL AM 9, TL Customer Care 24 — over it is red, at it is fine" do
+  test "each role has its own ceiling: KAM 35, AM 54, TL AM 9, TL Customer Care 24 - over it is red, at it is fine" do
     tl_am = User.create!(email: "tlam-attr@example.com", name: "TL AM Attr", role: "TL AM", active: true)
     tl_csm = User.create!(email: "tlcsm-attr@example.com", name: "TL CC Attr", role: "TL Customer Care", active: true)
     36.times { account(@kam, arr: 100) }
@@ -81,17 +81,17 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     24.times { account(tl_csm, arr: 100) }
 
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_response :success
-    assert_equal [35, 54, 9, 24], [rows["KAM Attr"][:limit], rows["AM Attr"][:limit], rows["TL AM Attr"][:limit], rows["TL CC Attr"][:limit]]
-    assert_equal [36, -1], [rows["KAM Attr"][:comptes], rows["KAM Attr"][:remaining]]
+    assert_equal [ 35, 54, 9, 24 ], [ rows["KAM Attr"][:limit], rows["AM Attr"][:limit], rows["TL AM Attr"][:limit], rows["TL CC Attr"][:limit] ]
+    assert_equal [ 36, -1 ], [ rows["KAM Attr"][:comptes], rows["KAM Attr"][:remaining] ]
     assert rows["KAM Attr"][:over], "36 accounts is over a KAM's 35"
     assert rows["TL AM Attr"][:over], "10 accounts is over a TL AM's 9"
     assert_not rows["AM Attr"][:over], "54 is an AM's maximum, not over it"
     assert_not rows["TL CC Attr"][:over], "24 is a TL Customer Care's maximum"
-    assert_equal [0, 0], [rows["AM Attr"][:remaining], rows["TL CC Attr"][:remaining]]
+    assert_equal [ 0, 0 ], [ rows["AM Attr"][:remaining], rows["TL CC Attr"][:remaining] ]
 
-    assert_equal ["KAM Attr", "TL AM Attr"], @controller.instance_variable_get(:@over).map { |r| r[:user].name }.sort
+    assert_equal [ "KAM Attr", "TL AM Attr" ], @controller.instance_variable_get(:@over).map { |r| r[:user].name }.sort
     assert_match(/2 personnes dépassent leur plafond de comptes :/, @response.body)
     assert_match(/KAM Attr \(36 comptes pour 35 max, \+1\)/, @response.body)
     assert_match(/TL AM Attr \(10 comptes pour 9 max, \+1\)/, @response.body)
@@ -108,7 +108,7 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
   test "nobody over their ceiling shows the all-clear" do
     account(@am)
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_match "Personne ne dépasse son plafond de comptes", @response.body
     assert_empty @controller.instance_variable_get(:@over)
   end
@@ -117,8 +117,8 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     User.create!(email: "tlam2-attr@example.com", name: "TL AM Vide", role: "TL AM", active: true)
     User.create!(email: "tlcsm2-attr@example.com", name: "TL CC Vide", role: "TL Customer Care", active: true)
     sign_in @admin
-    get attribution_portefeuille_path
-    assert_equal ["AM Attr", "KAM Attr", "TL AM Vide", "TL CC Vide"], rows.keys.sort, "empty ones listed with their full capacity"
+    get attribution_portefeuille_path(vue: "brut")
+    assert_equal [ "AM Attr", "KAM Attr", "TL AM Vide", "TL CC Vide" ], rows.keys.sort, "empty ones listed with their full capacity"
     assert_equal 54, rows["AM Attr"][:remaining]
     assert_equal 35, rows["KAM Attr"][:remaining]
     assert_equal 9, rows["TL AM Vide"][:remaining]
@@ -126,7 +126,7 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal 35 + 54 + 9 + 24, @controller.instance_variable_get(:@totals)[:capacity]
 
     account(@admin)
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_includes rows.keys, "Admin Attr", "an admin who does carry accounts appears"
     assert_equal 54, rows["Admin Attr"][:limit], "an admin without a poste gets the default ceiling"
     assert_not_includes rows.keys, "Lecteur Attr"
@@ -137,11 +137,11 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     5.times { account(@kam) }
     sign_in @admin
 
-    get attribution_portefeuille_path
-    assert_equal ["KAM Attr", "AM Attr"], @controller.instance_variable_get(:@pager).records.map { |r| r[:user].name }
+    get attribution_portefeuille_path(vue: "brut")
+    assert_equal [ "KAM Attr", "AM Attr" ], @controller.instance_variable_get(:@pager).records.map { |r| r[:user].name }
 
-    get attribution_portefeuille_path, params: { attr_sort: "comptes", attr_dir: "asc" }
-    assert_equal ["AM Attr", "KAM Attr"], @controller.instance_variable_get(:@pager).records.map { |r| r[:user].name }
+    get attribution_portefeuille_path(vue: "brut"), params: { attr_sort: "comptes", attr_dir: "asc" }
+    assert_equal [ "AM Attr", "KAM Attr" ], @controller.instance_variable_get(:@pager).records.map { |r| r[:user].name }
   end
 
   test "ARR share and the per-role capacity table, with each role's ceiling" do
@@ -150,14 +150,14 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     account(@kam, arr: 10_000)
     account(tl, arr: 10_000)
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_in_delta 60.0, rows["AM Attr"][:part], 0.001
     assert_in_delta 20.0, rows["KAM Attr"][:part], 0.001
 
     by_role = @controller.instance_variable_get(:@by_role).index_by { |g| g[:role] }
-    assert_equal [1, 54, 54, 1, 30_000], [by_role["AM"][:people], by_role["AM"][:limit], by_role["AM"][:capacity], by_role["AM"][:comptes], by_role["AM"][:arr]]
-    assert_equal [1, 35, 35, 1], [by_role["KAM"][:people], by_role["KAM"][:limit], by_role["KAM"][:capacity], by_role["KAM"][:comptes]]
-    assert_equal [1, 24, 24, 1], [by_role["TL Customer Care"][:people], by_role["TL Customer Care"][:limit], by_role["TL Customer Care"][:capacity], by_role["TL Customer Care"][:comptes]]
+    assert_equal [ 1, 54, 54, 1, 30_000 ], [ by_role["AM"][:people], by_role["AM"][:limit], by_role["AM"][:capacity], by_role["AM"][:comptes], by_role["AM"][:arr] ]
+    assert_equal [ 1, 35, 35, 1 ], [ by_role["KAM"][:people], by_role["KAM"][:limit], by_role["KAM"][:capacity], by_role["KAM"][:comptes] ]
+    assert_equal [ 1, 24, 24, 1 ], [ by_role["TL Customer Care"][:people], by_role["TL Customer Care"][:limit], by_role["TL Customer Care"][:capacity], by_role["TL Customer Care"][:comptes] ]
     assert_match "Capacité par rôle", @response.body
     assert_match "Plafond / pers.", @response.body
   end
@@ -186,14 +186,14 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     Company.create!(name: "Sans Produit", user: @am)
 
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     assert_response :success
     rows = entreprises
     assert_equal 4, rows.size, "all companies, even one without produit"
 
-    assert_equal [@am, 10_000.0, "Santé"], [rows["Sante Seule"][:am], rows["Sante Seule"][:arr], rows["Sante Seule"][:risque]]
-    assert_equal [@kam, 4_000.0, "Prévoyance"], [rows["Prevoyance Seule"][:am], rows["Prevoyance Seule"][:arr], rows["Prevoyance Seule"][:risque]]
-    assert_equal [25_000.0, "Double risque"], [rows["Double Risque"][:arr], rows["Double Risque"][:risque]]
+    assert_equal [ @am, 10_000.0, "Santé" ], [ rows["Sante Seule"][:am], rows["Sante Seule"][:arr], rows["Sante Seule"][:risque] ]
+    assert_equal [ @kam, 4_000.0, "Prévoyance" ], [ rows["Prevoyance Seule"][:am], rows["Prevoyance Seule"][:arr], rows["Prevoyance Seule"][:risque] ]
+    assert_equal [ 25_000.0, "Double risque" ], [ rows["Double Risque"][:arr], rows["Double Risque"][:risque] ]
     assert_nil rows["Sans Produit"][:risque]
 
     html = table(@response.body)
@@ -211,10 +211,10 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     deal(gone, "Mutuelle", arr: 9_000, statut: "Churné (subi)")
 
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     rows = entreprises
-    assert_equal [8_000.0, "Santé", false], [rows["Un Vivant Un Churne"][:arr], rows["Un Vivant Un Churne"][:risque], rows["Un Vivant Un Churne"][:churned]]
-    assert_equal [0.0, nil, true], [rows["Tout Churne"][:arr], rows["Tout Churne"][:risque], rows["Tout Churne"][:churned]]
+    assert_equal [ 8_000.0, "Santé", false ], [ rows["Un Vivant Un Churne"][:arr], rows["Un Vivant Un Churne"][:risque], rows["Un Vivant Un Churne"][:churned] ]
+    assert_equal [ 0.0, nil, true ], [ rows["Tout Churne"][:arr], rows["Tout Churne"][:risque], rows["Tout Churne"][:churned] ]
     assert_match(/Tout Churne<\/strong>\s*<span class="badge ko"[^>]*>Churné/, table(@response.body))
   end
 
@@ -231,7 +231,7 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     deal(none, "Mutuelle")
 
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     rows = entreprises
     assert rows["Upsell Ouvert"][:upsell]
     assert rows["Upsell Non Demarre"][:upsell]
@@ -254,37 +254,37 @@ class AttributionPortefeuilleTest < ActionDispatch::IntegrationTest
     UpsellDeal.create!(company: b, produit: "Mutuelle", nombre_salaries: 5, probabilite_signature: 10, statut_signature: "En cours")
 
     sign_in @admin
-    get attribution_portefeuille_path
-    assert_equal ["Beta Ent", "Alpha Ent"], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
+    get attribution_portefeuille_path(vue: "brut")
+    assert_equal [ "Beta Ent", "Alpha Ent" ], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
 
-    get attribution_portefeuille_path, params: { ent_sort: "arr", ent_dir: "asc" }
-    assert_equal ["Alpha Ent", "Beta Ent"], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_sort: "arr", ent_dir: "asc" }
+    assert_equal [ "Alpha Ent", "Beta Ent" ], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:company].name }
 
-    get attribution_portefeuille_path, params: { ent_q: "alp" }
-    assert_equal ["Alpha Ent"], entreprises.keys
-    get attribution_portefeuille_path, params: { ent_ams: [@kam.name] }
-    assert_equal ["Beta Ent"], entreprises.keys
-    get attribution_portefeuille_path, params: { ent_risques: ["Santé"] }
-    assert_equal ["Alpha Ent"], entreprises.keys
-    get attribution_portefeuille_path, params: { ent_risques: ["Double risque", "Santé"] }
-    assert_equal ["Alpha Ent", "Beta Ent"], entreprises.keys.sort
-    get attribution_portefeuille_path, params: { ent_upsell: "1" }
-    assert_equal ["Beta Ent"], entreprises.keys
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_q: "alp" }
+    assert_equal [ "Alpha Ent" ], entreprises.keys
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_ams: [ @kam.name ] }
+    assert_equal [ "Beta Ent" ], entreprises.keys
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_risques: [ "Santé" ] }
+    assert_equal [ "Alpha Ent" ], entreprises.keys
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_risques: [ "Double risque", "Santé" ] }
+    assert_equal [ "Alpha Ent", "Beta Ent" ], entreprises.keys.sort
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_upsell: "1" }
+    assert_equal [ "Beta Ent" ], entreprises.keys
     assert_match(/<strong>1<\/strong> entreprise/, table(@response.body))
   end
 
   test "the Entreprises table is paginated and has its own filter controls" do
     60.times { |i| deal(Company.create!(name: "Pagine #{i}", user: @am), "Mutuelle", arr: 100 + i) }
     sign_in @admin
-    get attribution_portefeuille_path
+    get attribution_portefeuille_path(vue: "brut")
     pager = @controller.instance_variable_get(:@ent_pager)
-    assert_equal [50, 60, 2], [pager.records.size, pager.total_count, pager.total_pages]
+    assert_equal [ 50, 60, 2 ], [ pager.records.size, pager.total_count, pager.total_pages ]
     html = table(@response.body)
     assert_match 'name="ent_q"', html
     assert_match 'name="ent_ams[]"', html
     assert_match 'name="ent_risques[]"', html
     assert_match 'name="ent_upsell"', html
-    get attribution_portefeuille_path, params: { ent_page: 2 }
+    get attribution_portefeuille_path(vue: "brut"), params: { ent_page: 2 }
     assert_equal 10, @controller.instance_variable_get(:@ent_pager).records.size
   end
 end

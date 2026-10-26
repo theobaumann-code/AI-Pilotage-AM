@@ -33,13 +33,13 @@ class GlobalChurnTest < ActionDispatch::IntegrationTest
     @churned.update!(churn_reason: "Meilleure offre concurrente")
     sign_in @am
 
-    get pilotage_path, params: { churn_ams: [@admin.name] }
+    get pilotage_path, params: { churn_ams: [ @admin.name ] }
     assert_no_match "Client Churné", churn_table(@response.body)
 
-    get pilotage_path, params: { churn_roles: ["AM"], churn_produits: ["Mutuelle"], churn_raisons: ["Meilleure offre concurrente"] }
+    get pilotage_path, params: { churn_roles: [ "AM" ], churn_produits: [ "Mutuelle" ], churn_raisons: [ "Meilleure offre concurrente" ] }
     assert_match "Client Churné", churn_table(@response.body)
 
-    get pilotage_path, params: { churn_raisons: ["À qualifier"] }
+    get pilotage_path, params: { churn_raisons: [ "À qualifier" ] }
     assert_no_match "Client Churné", churn_table(@response.body)
   end
 

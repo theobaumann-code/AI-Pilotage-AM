@@ -1,4 +1,4 @@
-# Manual "Autres impacts" on Mon portefeuille — admins and KAMs only (require_admin!, which also covers KAM).
+# Manual "Autres impacts" on Mon portefeuille - admins and KAMs only (require_admin!, which also covers KAM).
 # Rows are edited in place; every edit re-renders its row plus the AM's KPI cards and impact totals, since a
 # "Validé" amount moves ARR final / NRR. The AM whose page it is travels as redirect_user_id (see
 # ApplicationController#viewed_user), exactly like Mon portefeuille's deal rows.
@@ -6,7 +6,7 @@ class OtherImpactsController < ApplicationController
   include ActionView::RecordIdentifier
 
   before_action :require_admin!
-  before_action :set_impact, only: [:update, :destroy]
+  before_action :set_impact, only: [ :update, :destroy ]
 
   # Submitted by the "+ Autre impact" pop-up; the new line then lives in the "Autres impacts" table, where it
   # stays editable and deletable like any other.
@@ -69,8 +69,8 @@ class OtherImpactsController < ApplicationController
     owner = viewed_user
     summary = PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts), user: owner)
     # The KPI cards (which carry the "Autres impacts" card) and the client rows' "Autre impact" / "ARR final"
-    # — both the client the line was on and the one it's on now, if it was moved.
-    affected = Company.where(id: [@impact.company_id, @impact.company_id_before_last_save].compact.uniq)
+    # - both the client the line was on and the one it's on now, if it was moved.
+    affected = Company.where(id: [ @impact.company_id, @impact.company_id_before_last_save ].compact.uniq)
       .includes(:produit_deals, :upsell_deals, :current_other_impacts)
     [
       turbo_stream.replace(@impact, partial: "other_impacts/row", locals: row_locals, method: :morph),

@@ -27,7 +27,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
       college: "Cadre", assureur: "AXA", arr: 5_000, taux: 0, statut_renouvellement: "Churné")
 
-    # initial = 105_000, limit = 5.5% = 5_775 — 5_000 churned stays under it.
+    # initial = 105_000, limit = 5.5% = 5_775 - 5_000 churned stays under it.
     assert summary.churn_within_limit?
     assert_in_delta 5_775, summary.churn_limit, 0.01
   end
@@ -38,7 +38,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 0, statut_renouvellement: "Churné")
 
-    # initial = 110_000, limit = 6_050 — 10_000 churned blows past it.
+    # initial = 110_000, limit = 6_050 - 10_000 churned blows past it.
     assert_not summary.churn_within_limit?
   end
 
@@ -46,7 +46,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 100_000, taux: 5, statut_renouvellement: "Augmenté")
 
-    # initial = 100_000, target = 5_000, gain = 100_000 * 5% = 5_000 — exactly meets it.
+    # initial = 100_000, target = 5_000, gain = 100_000 * 5% = 5_000 - exactly meets it.
     assert_in_delta 5_000, summary.renewal_target, 0.01
     assert summary.renewal_target_met?
   end
@@ -59,13 +59,13 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
       probabilite_signature: 100, statut_signature: "Signé", user: other_am)
 
     scoped = PortfolioSummary.new(@am.companies.includes(:deals), user: @am)
-    assert_equal [own_upsell], scoped.upsell_deals
+    assert_equal [ own_upsell ], scoped.upsell_deals
     assert_in_delta own_upsell.upsell_amount, scoped.upsold, 0.01
 
     # An upsell explicitly reassigned to other_am counts in *their* summary even though the company itself
-    # still belongs to @am — no company of other_am's own is needed for it to show up.
+    # still belongs to @am - no company of other_am's own is needed for it to show up.
     other_scoped = PortfolioSummary.new(other_am.companies.includes(:deals), user: other_am)
-    assert_equal [reassigned_away], other_scoped.upsell_deals
+    assert_equal [ reassigned_away ], other_scoped.upsell_deals
   end
 
   test "without user:, upsold stays company-scoped (used for cross-AM aggregates)" do
@@ -84,7 +84,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
       probabilite_signature: 50, statut_signature: "En cours")
 
     # Signed contributes its full amount (probability already forced to 100), the in-pipeline one
-    # contributes half its estimate — not $0, the way a signed-only total would.
+    # contributes half its estimate - not $0, the way a signed-only total would.
     assert_in_delta signed.upsell_amount + pipeline.upsell_amount * 0.5, summary.upsold, 0.01
   end
 
@@ -105,7 +105,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     ProduitDeal.create!(company: @company, produit: "Prévoyance", identifiant: "2",
       college: "Cadre", assureur: "AXA", arr: 5_000, taux: 0, statut_renouvellement: "Churné", risque_churn: 40)
 
-    # Only the non-churned deal counts (10_000 * 20%) — the churned one is already counted in `churned`,
+    # Only the non-churned deal counts (10_000 * 20%) - the churned one is already counted in `churned`,
     # not double-counted here even though its risque_churn was forced to 100 by the model callback.
     assert_in_delta 2_000, summary.churn_projete, 0.01
     assert_in_delta 5_000 + 2_000, summary.churn_total, 0.01
@@ -115,7 +115,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
       college: "Cadre", assureur: "AXA", arr: 100_000, taux: 0, statut_renouvellement: "En cours", risque_churn: 10)
 
-    # initial = 100_000, limit = 5_500; churned = 0, projected = 100_000 * 10% = 10_000 — over the limit
+    # initial = 100_000, limit = 5_500; churned = 0, projected = 100_000 * 10% = 10_000 - over the limit
     # even though nothing has actually churned yet.
     assert summary.churn_within_limit?
     assert_not summary.churn_total_within_limit?
@@ -180,7 +180,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_equal 0, summary.churn_total_rate
   end
 
-  # "Subi" churn (company liquidated/acquired) must not move NRR at all — neither help nor hurt it — so it
+  # "Subi" churn (company liquidated/acquired) must not move NRR at all - neither help nor hurt it - so it
   # has to come out of arr_initial (the denominator), not just out of churned/renewed_arr.
   test "Churné (subi) is excluded from arr_initial, churned and NRR entirely" do
     ProduitDeal.create!(company: @company, produit: "Mutuelle", identifiant: "1",
@@ -189,7 +189,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
       college: "Cadre", assureur: "AXA", arr: 50_000, taux: 0, statut_renouvellement: "Churné (subi)")
 
     # arr_initial is 100_000 (the liquidated company's 50_000 is excluded), so NRR is computed purely off
-    # the one real, controllable renewal — as if the "subi" deal never existed for this purpose.
+    # the one real, controllable renewal - as if the "subi" deal never existed for this purpose.
     assert_in_delta 100_000, summary.arr_initial, 0.01
     assert_in_delta 0, summary.churned, 0.01
     assert_in_delta 105_000, summary.arr_final_actual, 0.01
@@ -219,7 +219,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     # The purely informational total must not leak into any of the figures it's displayed alongside:
     # arr_initial/churned/churn_rate/churn_within_limit?/nrr_actual are all computed exactly as if
     # churn_with_subi didn't exist (limit = 120_000 * 5.5% = 6_600, blown past by the 20_000 real churn
-    # alone — the 50_000 "subi" deal must not make it look worse or better).
+    # alone - the 50_000 "subi" deal must not make it look worse or better).
     assert_in_delta 120_000, summary.arr_initial, 0.01
     assert_in_delta 20_000, summary.churned, 0.01
     assert_in_delta (20_000.0 / 120_000 * 100), summary.churn_rate, 0.01
@@ -278,7 +278,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
   test "projected ARR final weights each produit by its chance of staying, so an increase on a contract that may churn isn't counted as certain" do
     deal("Mutuelle", arr: 100_000, taux: 10, risque: 20)
 
-    # 110 000 once renewed, but a 20% chance of churning: 110 000 × 80% = 88 000 expected — not the 110 000 − 20 000
+    # 110 000 once renewed, but a 20% chance of churning: 110 000 × 80% = 88 000 expected - not the 110 000 − 20 000
     # = 90 000 the old formula gave, which kept the whole increase.
     assert_in_delta 88_000, summary.renewed_arr_projected, 0.01
     assert_in_delta 88_000, summary.arr_final, 0.01
@@ -320,7 +320,7 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     deal("Mutuelle", arr: 100_000, taux: 8, risque: 100)
     s = summary
 
-    # actual: every produit still alive at its entered rate — (10 000 + 4 000 + 8 000) / 300 000
+    # actual: every produit still alive at its entered rate - (10 000 + 4 000 + 8 000) / 300 000
     assert_in_delta 22_000, s.renewal_gain, 0.01
     assert_in_delta 22_000 / 300_000.0 * 100, s.renewal_rate, 0.001
     # projected: 10 000 × 80% + 4 000 × 100% + 8 000 × 0% = 12 000

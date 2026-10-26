@@ -3,6 +3,11 @@ require "test_helper"
 # "TL AM" (team lead, admin rights) and "TL Customer Care" (team lead, plain user rights): a poste carried on
 # top of the rights, with its own ceiling of accounts.
 class UserPosteTest < ActiveSupport::TestCase
+  def after_teardown
+    super
+    clear_user_schema_caches if @changed_users_schema
+  end
+
   def user(attrs = {})
     @i = (@i || 0) + 1
     User.create!({ email: "poste#{@i}@example.com", name: "Poste #{@i}", active: true }.merge(attrs))
@@ -14,7 +19,7 @@ class UserPosteTest < ActiveSupport::TestCase
     assert tl.privileged?
     assert_not tl.kam?
     assert_equal "TL AM", tl.poste
-    assert_equal [:tl_am, "TL AM"], [tl.role, tl.role_label]
+    assert_equal [ :tl_am, "TL AM" ], [ tl.role, tl.role_label ]
   end
 
   test "TL Customer Care = plain user rights plus the poste" do
@@ -22,7 +27,7 @@ class UserPosteTest < ActiveSupport::TestCase
     assert_not tl.admin?
     assert_not tl.privileged?
     assert_equal "TL Customer Care", tl.poste
-    assert_equal [:tl_csm, "TL Customer Care"], [tl.role, tl.role_label]
+    assert_equal [ :tl_csm, "TL Customer Care" ], [ tl.role, tl.role_label ]
     assert_not tl.read_only?
   end
 
@@ -73,6 +78,7 @@ class UserPosteTest < ActiveSupport::TestCase
   end
 
   test "the migration gave the poste to the three known people" do
+    @changed_users_schema = true
     require Rails.root.join("db/migrate/20261021100000_add_poste_to_users")
     sarra = user(email: "sarra.bachar@sidecare.com", name: "Sarra Bachar", admin: true)
     zak = user(name: "Zakariaa Jirrari")
@@ -85,7 +91,7 @@ class UserPosteTest < ActiveSupport::TestCase
       migration.remove_column :users, :poste if User.column_names.include?("poste")
       migration.up
     end
-    User.reset_column_information
+    clear_user_schema_caches
 
     assert_equal "TL AM", sarra.reload.poste
     assert_equal "TL Customer Care", zak.reload.poste
@@ -94,5 +100,14 @@ class UserPosteTest < ActiveSupport::TestCase
     assert_nil boss.reload.poste
     assert sarra.admin?, "Sarra keeps her admin rights"
     assert_not zak.privileged?
+  end
+
+  private
+
+  # This test changes users inside a transaction. PostgreSQL invalidates prepared
+  # SELECT * plans both on the change and on rollback, including other connections.
+  def clear_user_schema_caches
+    User.connection_pool.connections.each(&:clear_cache!)
+    User.reset_column_information
   end
 end

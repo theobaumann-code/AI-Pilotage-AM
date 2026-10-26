@@ -1,0 +1,59 @@
+<div class="section-card">
+  <%= turbo_frame_tag "sam-table-frame" do %>
+    <div class="table-toolbar">
+      <h2>Comptes sans AM</h2>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("sam_q", "sam_page") %>
+          <%= live_search_field :sam_q, @sam_q, placeholder: "Rechercher un compte…" %>
+        <% end %>
+      </div>
+    </div>
+    <p class="section-sub" style="margin-top:-8px;">
+      <strong><%= @sam_total[:count] %></strong> compte<%= "s" if @sam_total[:count] > 1 %> sans responsable AM · ARR <strong><%= eur.call(@sam_total[:arr]) %></strong>.
+      Company sets et entreprises hors set de plus de <%= number_with_delimiter(BiAccount::SANS_AM_MIN_ARR, delimiter: " ") %> € d'ARR sans AM ;
+      sous <%= number_with_delimiter(BiAccount::SANS_AM_MIN_ARR_WITHOUT_STANDARD, delimiter: " ") %> €, seulement ceux qui ont au moins un produit santé standard (toute offre hors « sur mesure »).
+    </p>
+    <div class="table-scroll">
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@sam_pager, :nom, "Compte", col_class: "col-nom") %>
+            <%= sortable_th(@sam_pager, :type, "Type") %>
+            <%= sortable_th(@sam_pager, :arr, "ARR (€)", col_class: "col-arr") %>
+            <%= sortable_th(@sam_pager, :risque, "Risque couvert") %>
+            <th>Santé standard</th>
+            <%= sortable_th(@sam_pager, :nombre_salaries, "Salariés") %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @sam_pager.records.empty? %>
+            <tr><td colspan="6" class="empty-state">Aucun compte sans AM pour ce filtre.</td></tr>
+          <% else %>
+            <% @sam_pager.records.each do |a| %>
+              <tr>
+                <td>
+                  <strong><%= a.name %></strong>
+                  <% if a.siren.present? %><br><small style="color:var(--text-muted);">SIREN <%= a.siren %></small><% end %>
+                </td>
+                <td><%= a.kind_label %><%= " · #{pluralize(a.user_pros_count, "entreprise")}" if a.set? %></td>
+                <td class="numeric"><%= eur.call(a.arr) %></td>
+                <td>
+                  <% if a.risque %>
+                    <span class="badge <%= { "Double risque" => "ok", "Santé" => "warn", "Prévoyance" => "warn" }[a.risque] %>"><%= a.risque %></span>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td><%= a.has_standard_sante ? "Oui" : "Non" %></td>
+                <td class="numeric"><%= a.employees_count || "-" %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@sam_pager) %>
+    <%= page_size_select(@sam_pager) %>
+  <% end %>
+</div>

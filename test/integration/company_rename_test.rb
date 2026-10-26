@@ -54,7 +54,7 @@ class CompanyRenameTest < ActionDispatch::IntegrationTest
 
     sign_in @admin
     patch company_path(@company), params: { company: { name: "Nom Final" } }
-    assert_equal ["Nom Final"], ArchiveEntry.where(arr: 500).where.not(id: other_archive.id).pluck(:company_name)
+    assert_equal [ "Nom Final" ], ArchiveEntry.where(arr: 500).where.not(id: other_archive.id).pluck(:company_name)
     assert_equal "Autre Client", other_archive.reload.company_name
   end
 

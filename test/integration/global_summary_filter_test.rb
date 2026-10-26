@@ -1,6 +1,6 @@
 require "test_helper"
 
-# Vue globale's top summary cards (ARR initial, churn, NRR...) default to every AM combined — this filter
+# Vue globale's top summary cards (ARR initial, churn, NRR...) default to every AM combined - this filter
 # lets an admin narrow that same set of cards down to one or more chosen AMs without leaving the page.
 class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
   setup do
@@ -22,7 +22,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
 
   test "filtering by one AM narrows the summary cards to just that AM's ARR" do
     sign_in @admin
-    get pilotage_path, params: { summary_ams: [@am_a.name] }
+    get pilotage_path, params: { summary_ams: [ @am_a.name ] }
     assert_response :success
     global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
     assert_match "10,000", global_cards
@@ -35,7 +35,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
       identifiant: "gsum-kam", college: "Cadre", assureur: "AXA", arr: 1_000, taux: 0, statut_renouvellement: "En cours")
 
     sign_in @admin
-    get pilotage_path, params: { summary_roles: ["KAM"] }
+    get pilotage_path, params: { summary_roles: [ "KAM" ] }
     assert_response :success
     global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
     assert_match "1,000", global_cards
@@ -57,13 +57,13 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
     AppSetting.instance.update!(arr_non_accompagne: 5_000, taux_renouvellement_non_accompagne: 0)
 
     sign_in @admin
-    get pilotage_path, params: { summary_roles: ["AM"] }
+    get pilotage_path, params: { summary_roles: [ "AM" ] }
     assert_response :success
     global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
     assert_match "110,000", global_cards # both AMs, no non-accompagné
     assert_no_match "115,000", global_cards
 
-    get pilotage_path, params: { summary_roles: ["AM", "Non accompagné"] }
+    get pilotage_path, params: { summary_roles: [ "AM", "Non accompagné" ] }
     assert_response :success
     global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
     assert_match "115,000", global_cards # both AMs plus non-accompagné, explicitly re-checked
@@ -73,7 +73,7 @@ class GlobalSummaryFilterTest < ActionDispatch::IntegrationTest
     AppSetting.instance.update!(arr_non_accompagne: 5_000, taux_renouvellement_non_accompagne: 0)
 
     sign_in @admin
-    get pilotage_path, params: { summary_roles: ["Non accompagné"] }
+    get pilotage_path, params: { summary_roles: [ "Non accompagné" ] }
     assert_response :success
     global_cards = @response.body[/id="global-summary-cards">.*?(?=<div class="section-card">)/m]
     assert_match "5,000", global_cards

@@ -18,6 +18,6 @@ class RiskNoteTest < ActiveSupport::TestCase
     newer = RiskNote.create!(company: @company, user: @user, content: "Proposition de remise envoyée")
     newer.update_column(:created_at, 1.day.ago)
 
-    assert_equal [newer, older], @company.risk_notes.to_a
+    assert_equal [ newer, older ], @company.risk_notes.to_a
   end
 end

@@ -10,7 +10,7 @@ module ApplicationHelper
     "En cours" => "statut-inprogress",
     "Nouveau contrat" => "statut-newcontract",
     "Churné" => "statut-lost",
-    # Deliberately not "statut-lost" (red) — this churn isn't counted against the AM (see
+    # Deliberately not "statut-lost" (red) - this churn isn't counted against the AM (see
     # ProduitDeal::CHURNED_SUBI), so it gets the same neutral treatment as "not started" instead.
     "Churné (subi)" => "statut-notstarted"
   }.freeze
@@ -31,7 +31,7 @@ module ApplicationHelper
     RENEWAL_STATUT_CLASS[statut]
   end
 
-  # Row background for a produit deal or a HistoriqueQuery::Row — both respond to #churned?/#churn_subi?.
+  # Row background for a produit deal or a HistoriqueQuery::Row - both respond to #churned?/#churn_subi?.
   def churn_row_class(record)
     return "churn-subi" if record.churn_subi?
     "churn-yes" if record.churned?
@@ -58,31 +58,31 @@ module ApplicationHelper
     "#{request.path}?#{table_query(overrides).to_query}"
   end
 
-  # Hidden fields replaying every current query param except the ones listed — used inside a table's own
+  # Hidden fields replaying every current query param except the ones listed - used inside a table's own
   # search/filter/page-size <form> so submitting it doesn't wipe out the other two tables' state (or the
   # AM selector), while still letting this form's own visible fields override this table's params.
   def preserved_query_fields(*exclude_keys)
     exclude = exclude_keys.map(&:to_s)
     kept = request.query_parameters.reject { |k, _| exclude.include?(k.to_s) }
-    # A multi-value param (a checklist filter) must come back as name[] once per value — handing the array
+    # A multi-value param (a checklist filter) must come back as name[] once per value - handing the array
     # to a single hidden field would fuse the values into one space-separated string ("AM A AM B").
     safe_join(kept.flat_map do |k, v|
-      v.is_a?(Array) ? v.map { |item| hidden_field_tag("#{k}[]", item, id: nil) } : [hidden_field_tag(k, v, id: nil)]
+      v.is_a?(Array) ? v.map { |item| hidden_field_tag("#{k}[]", item, id: nil) } : [ hidden_field_tag(k, v, id: nil) ]
     end)
   end
 
   # One sortable <th> for a TablePager-backed table: clicking it re-sorts by `field` (flipping direction
   # if already sorted by it), everything else on the page stays put. The sort icon (design system's
   # TableHeading + Link pattern: a right-hand action icon, Font Awesome regular to stay visually secondary)
-  # only appears once actually sorted by this column — it's an active-state indicator, not decoration.
+  # only appears once actually sorted by this column - it's an active-state indicator, not decoration.
   def sortable_th(pager, field, label, col_class: nil)
-    classes = ["sortable", col_class, ("numeric" if NUMERIC_SORT_FIELDS.include?(field))].compact.join(" ")
+    classes = [ "sortable", col_class, ("numeric" if NUMERIC_SORT_FIELDS.include?(field)) ].compact.join(" ")
     path = table_query_path(pager.sort_param => field, pager.dir_param => pager.next_dir(field))
     arrow = if pager.sorted_by?(field)
       content_tag(:i, "", class: "fa-regular #{pager.sort_dir == "asc" ? "fa-arrow-up-short-wide" : "fa-arrow-down-wide-short"} sort-arrow")
     end
     content_tag(:th, class: classes) do
-      link_to(path) { safe_join([label, arrow]) }
+      link_to(path) { safe_join([ label, arrow ]) }
     end
   end
 
@@ -110,15 +110,15 @@ module ApplicationHelper
       safe_join([
         preserved_query_fields(pager.size_param, pager.page_param),
         content_tag(:label, class: "page-size-label") {
-          safe_join(["Lignes par page :",
-            select_tag(pager.size_param, options_for_select(TablePager::PAGE_SIZES, pager.page_size), onchange: "this.form.requestSubmit()")])
+          safe_join([ "Lignes par page :",
+            select_tag(pager.size_param, options_for_select(TablePager::PAGE_SIZES, pager.page_size), onchange: "this.form.requestSubmit()") ])
         }
       ])
     end
   end
 
   # Sensitive inline-edit fields (contract ARR, external ID…) start locked (grayed, read-only) so a stray
-  # click, scroll-wheel-over-number-input, or drag can't silently change them — a click unlocks the field,
+  # click, scroll-wheel-over-number-input, or drag can't silently change them - a click unlocks the field,
   # and the actual change still requires confirming, with an easy revert on cancel.
   def locked_field_attrs(confirm_message)
     {

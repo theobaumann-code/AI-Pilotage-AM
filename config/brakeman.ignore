@@ -1,0 +1,75 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "21f630015cf88f3d299a1f273837733a291fdc4d98ae2974038fea36ad334441",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/users_controller.rb",
+      "line": 75,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:name, :email, :role)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "UsersController",
+        "method": "update_credentials"
+      },
+      "user_input": ":role",
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": "Attribution volontaire des roles par le formulaire de gestion des utilisateurs. UsersController applique require_admin! avant chaque action (administrateurs et KAM uniquement) et ApplicationController refuse les mutations des lecteurs. Couvert par user_role_management_test, reader_role_test et kam_privileges_test."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "4f79b821d7794f9087e66e8bbdf589de7cc6a1454915a2ea2b11f57924fc047b",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/users_controller.rb",
+      "line": 89,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:name, :email, :admin, :kam, :role)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "UsersController",
+        "method": "user_params"
+      },
+      "user_input": ":role",
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": "Attribution volontaire des roles par le formulaire de gestion des utilisateurs. UsersController applique require_admin! avant chaque action (administrateurs et KAM uniquement) et ApplicationController refuse les mutations des lecteurs. Couvert par user_role_management_test, reader_role_test et kam_privileges_test."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "71e242edae7b409bec4123abec0c8df061c806aff8d053b72f5da796e7cfca55",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/users_controller.rb",
+      "line": 89,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:name, :email, :admin, :kam, :role)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "UsersController",
+        "method": "user_params"
+      },
+      "user_input": ":admin",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "Attribution volontaire des roles par le formulaire de gestion des utilisateurs. UsersController applique require_admin! avant chaque action (administrateurs et KAM uniquement) et ApplicationController refuse les mutations des lecteurs. Couvert par user_role_management_test, reader_role_test et kam_privileges_test."
+    }
+  ],
+  "updated": "2026-10-26",
+  "brakeman_version": "8.1.0"
+}

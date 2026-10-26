@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -46,6 +46,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
     t.index ["trash_batch_id"], name: "index_archive_entries_on_trash_batch_id"
     t.index ["user_id"], name: "index_archive_entries_on_user_id"
     t.index ["year"], name: "index_archive_entries_on_year"
+  end
+
+  create_table "bi_accounts", force: :cascade do |t|
+    t.string "am_email"
+    t.string "am_name"
+    t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_prevoyance", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_sante", precision: 12, scale: 2, default: "0.0", null: false
+    t.bigint "bi_id", null: false
+    t.integer "contracts_count", default: 0, null: false
+    t.integer "contracts_without_q1", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.integer "employees_count"
+    t.boolean "has_prevoyance", default: false, null: false
+    t.boolean "has_sante", default: false, null: false
+    t.boolean "has_standard_sante", default: false, null: false
+    t.string "kind", null: false
+    t.string "name"
+    t.string "siren"
+    t.datetime "synced_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_pros_count", default: 0, null: false
+    t.index ["am_email"], name: "index_bi_accounts_on_am_email"
+    t.index ["kind", "bi_id"], name: "index_bi_accounts_on_kind_and_bi_id", unique: true
   end
 
   create_table "companies", force: :cascade do |t|

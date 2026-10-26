@@ -18,7 +18,7 @@ class RenameChurnReasonsMigrationTest < ActiveSupport::TestCase
       deal = ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "rr-#{i}", college: "Cadre",
         assureur: ProduitDeal::ASSUREURS[i], arr: 1_000, statut_renouvellement: "Churné", churn_comment: "garde #{i}")
       deal.update_columns(churn_reason: old_reason)
-      [old_reason, deal.id]
+      [ old_reason, deal.id ]
     end
     untouched = ProduitDeal.create!(company: company, produit: "Prévoyance", identifiant: "rr-none", college: "Cadre",
       assureur: "AXA", arr: 1, statut_renouvellement: "En cours")
@@ -39,8 +39,8 @@ class RenameChurnReasonsMigrationTest < ActiveSupport::TestCase
   end
 
   test "the new list is the one requested" do
-    assert_equal ["Meilleure offre concurrente", "Qualité de la gestion", "Non conformité", "Conseil apporté",
-                  "Expérience client", "Rachat/Fusion", "Autre"], ProduitDeal::CHURN_REASONS
+    assert_equal [ "Meilleure offre concurrente", "Qualité de la gestion", "Non conformité", "Conseil apporté",
+                  "Expérience client", "Rachat/Fusion", "Autre" ], ProduitDeal::CHURN_REASONS
     assert_equal ProduitDeal::CHURN_REASONS, RenameChurnReasons::NEW_REASONS
   end
 end

@@ -23,15 +23,15 @@ class CreateDeals < ActiveRecord::Migration[8.1]
     end
 
     # Rule 1: identifiant unique per produit, ACTIVE data only (never checked against archive_entries,
-    # which lives in a completely separate table — so this partial index alone reproduces the original's
+    # which lives in a completely separate table - so this partial index alone reproduces the original's
     # "same identifiant may legitimately reappear after a company churns out and a new one reuses it" rule).
-    add_index :deals, [:produit, :identifiant], unique: true,
+    add_index :deals, [ :produit, :identifiant ], unique: true,
       where: "type = 'ProduitDeal' AND identifiant IS NOT NULL",
       name: "index_deals_on_produit_and_identifiant_active"
 
     # Rule 2: at most one produit+collège combo per company (e.g. "Mutuelle/Cadre" and "Mutuelle/Non cadre"
     # can coexist, but not two "Mutuelle/Cadre" rows for the same company).
-    add_index :deals, [:company_id, :produit, :college], unique: true,
+    add_index :deals, [ :company_id, :produit, :college ], unique: true,
       where: "type = 'ProduitDeal'",
       name: "index_deals_on_company_produit_college"
   end

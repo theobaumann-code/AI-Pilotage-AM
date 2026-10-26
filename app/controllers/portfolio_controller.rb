@@ -2,16 +2,16 @@ require "csv"
 
 class PortfolioController < ApplicationController
   def show
-    # A lecteur owns no portfolio — Mon portefeuille would just be an empty page, so Vue globale is their home.
+    # A lecteur owns no portfolio - Mon portefeuille would just be an empty page, so Vue globale is their home.
     return redirect_to pilotage_path if current_user.read_only?
 
     # produit_deals/upsell_deals are separate has_many associations from :deals (each scoped by `type`), so
-    # `includes(:deals)` wouldn't preload them — Company's own arr_initial/churned_arr/upsold_arr/final_arr
+    # `includes(:deals)` wouldn't preload them - Company's own arr_initial/churned_arr/upsold_arr/final_arr
     # (used per row below) and @produit_deals all call them directly, one query per company otherwise.
     @companies = viewed_user.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts).order(:name)
     @summary = PortfolioSummary.new(@companies, user: viewed_user)
     @produit_deals = @companies.flat_map(&:produit_deals).sort_by { |d| d.company.name }
-    # Effective ownership, not company ownership — an upsell explicitly reassigned to viewed_user shows up
+    # Effective ownership, not company ownership - an upsell explicitly reassigned to viewed_user shows up
     # here even for a company they don't otherwise own, and one reassigned away from them doesn't, even for
     # one of their own companies. See Deal#effective_user / PortfolioSummary.
     @upsell_deals = @summary.upsell_deals.sort_by { |d| d.company.name }
@@ -77,7 +77,7 @@ class PortfolioController < ApplicationController
   end
 
   # Mirrors the "Renouvellement" table exactly (same filters, same rows, just unpaginated) but with every
-  # ProduitDeal field, including identifiant — the table itself hides some of these behind sorting/paging.
+  # ProduitDeal field, including identifiant - the table itself hides some of these behind sorting/paging.
   def export_produits
     @produit_deals = viewed_user.companies.includes(:produit_deals).order(:name).flat_map(&:produit_deals).sort_by { |d| d.company.name }
     @ren_q = params[:ren_q].to_s.strip
@@ -88,20 +88,20 @@ class PortfolioController < ApplicationController
     @ren_statuts = Array(params[:ren_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      header = ["Nom", "Produit", "Collège", "Assureur"]
+      header = [ "Nom", "Produit", "Collège", "Assureur" ]
       header << "ID externe" if current_user.admin?
-      header.concat(["ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)", "AM"])
+      header.concat([ "ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)", "AM" ])
       csv << header
       filtered_produit_deals.each do |d|
-        row = [d.company.name, d.produit, d.college, d.assureur]
+        row = [ d.company.name, d.produit, d.college, d.assureur ]
         row << d.identifiant if current_user.admin?
-        row.concat([d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr, d.company.user.name])
+        row.concat([ d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr, d.company.user.name ])
         csv << row
       end
     end
 
     # Excel (the realistic destination for this file) assumes the system codepage without a BOM, which
-    # mangles every accented character ("Collège" → "CollÃ¨ge") — the export looked broken even though the
+    # mangles every accented character ("Collège" → "CollÃ¨ge") - the export looked broken even though the
     # data was correct. Prepending the UTF-8 BOM makes Excel detect the encoding correctly.
     send_data "\xEF\xBB\xBF" + csv, filename: "produits-#{viewed_user.name.parameterize}-#{Date.current.iso8601}.csv",
       type: "text/csv; charset=utf-8"

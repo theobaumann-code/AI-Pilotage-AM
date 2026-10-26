@@ -42,7 +42,7 @@ class RenewalRateKpiTest < ActionDispatch::IntegrationTest
     summary = @controller.instance_variable_get(:@global_summary)
     assert_match "#{ActionController::Base.helpers.number_with_precision(summary.renewal_rate_projected, precision: 1)}%", html
 
-    get pilotage_path, params: { summary_ams: [@am.name] }
+    get pilotage_path, params: { summary_ams: [ @am.name ] }
     html = card(@response.body, "global-summary-cards")
     assert_match(/7\.0%[\s\S]*?4\.5%/, html)
   end

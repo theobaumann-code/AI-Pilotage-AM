@@ -20,7 +20,7 @@ class OtherImpactTest < ActiveSupport::TestCase
   end
 
   test "an amount that isn't a number is refused instead of being read as 0" do
-    ["abc", "12abc", "1.2.3", "--5", "", "  ", "3000€€x"].each do |input|
+    [ "abc", "12abc", "1.2.3", "--5", "", "  ", "3000€€x" ].each do |input|
       impact = build(input)
       assert_not impact.valid?, "#{input.inspect} should be refused"
       assert impact.errors[:amount].any?

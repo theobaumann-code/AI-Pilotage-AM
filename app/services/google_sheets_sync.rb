@@ -1,18 +1,16 @@
 require "net/http"
 require "json"
-require "openssl"
-require "base64"
 require "cgi"
 
 # Mirrors every ProduitDeal into a Google Sheet so Sarra has a live, field-by-field export she can keep
-# open outside the app — no gem needed, just a service-account JWT exchanged for a Sheets API access token
+# open outside the app - no gem needed, just a service-account access token (see GoogleServiceAccount) for the Sheets API
 # (a hand-rolled Net::HTTP call, rather than pulling in the full google-apis-sheets_v4 client for two REST
 # calls).
 class GoogleSheetsSync
   class SyncError < StandardError; end
 
-  HEADERS = ["Nom", "AM", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)",
-             "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)"].freeze
+  HEADERS = [ "Nom", "AM", "Produit", "Collège", "Assureur", "ID externe", "ARR (€)",
+             "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)" ].freeze
 
   def self.sync_produits!
     new.sync_produits!
@@ -29,7 +27,7 @@ class GoogleSheetsSync
   def sync_produits!
     raise SyncError, "Synchronisation Google Sheets non configurée (identifiants ou ID de feuille manquants)" if @credentials_json.blank? || @spreadsheet_id.blank?
 
-    rows = [HEADERS] + ProduitDeal.includes(company: :user).order(:id).map { |deal| row_for(deal) }
+    rows = [ HEADERS ] + ProduitDeal.includes(company: :user).order(:id).map { |deal| row_for(deal) }
     write_rows(rows)
   end
 
@@ -43,7 +41,7 @@ class GoogleSheetsSync
     ]
   end
 
-  # Clears the whole tab first, then rewrites it in one shot — simplest way to guarantee the sheet exactly
+  # Clears the whole tab first, then rewrites it in one shot - simplest way to guarantee the sheet exactly
   # matches the DB (no stale trailing rows from a shrinking dataset) for a dataset this size.
   def write_rows(rows)
     token = access_token
@@ -72,32 +70,9 @@ class GoogleSheetsSync
     raise SyncError, "Google Sheets indisponible (#{error.class})"
   end
 
-  # Service-account JWT Bearer flow (RFC 7523): sign a short-lived claim with the account's private key,
-  # exchange it for an OAuth2 access token — no user consent screen, no refresh token to store.
   def access_token
-    credentials = JSON.parse(@credentials_json)
-    now = Time.now.to_i
-    segments = [
-      { alg: "RS256", typ: "JWT" },
-      { iss: credentials.fetch("client_email"), scope: "https://www.googleapis.com/auth/spreadsheets",
-        aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 }
-    ].map { |segment| Base64.urlsafe_encode64(JSON.generate(segment), padding: false) }
-
-    signing_input = segments.join(".")
-    private_key = OpenSSL::PKey::RSA.new(credentials.fetch("private_key"))
-    signature = Base64.urlsafe_encode64(private_key.sign(OpenSSL::Digest.new("SHA256"), signing_input), padding: false)
-
-    uri = URI("https://oauth2.googleapis.com/token")
-    req = Net::HTTP::Post.new(uri)
-    req.set_form_data(grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: "#{signing_input}.#{signature}")
-
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 15) { |http| http.request(req) }
-    raise SyncError, "Authentification Google a échoué (#{response.code})" unless response.is_a?(Net::HTTPSuccess)
-
-    JSON.parse(response.body).fetch("access_token")
-  rescue JSON::ParserError, KeyError, OpenSSL::PKey::RSAError => error
-    raise SyncError, "Identifiants Google Sheets invalides (#{error.message})"
-  rescue SocketError, SystemCallError, Timeout::Error => error
-    raise SyncError, "Google indisponible (#{error.class})"
+    GoogleServiceAccount.access_token(@credentials_json, scope: "https://www.googleapis.com/auth/spreadsheets")
+  rescue GoogleServiceAccount::Error => error
+    raise SyncError, error.message
   end
 end

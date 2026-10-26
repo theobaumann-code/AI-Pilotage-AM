@@ -1,12 +1,12 @@
 # A one-off, manually entered ARR impact on a client that fits none of the modelled categories (renewal
-# rate, churn, upsell) — e.g. "-3000" for a contract amendment. Entered by admins/KAMs on Mon portefeuille.
+# rate, churn, upsell) - e.g. "-3000" for a contract amendment. Entered by admins/KAMs on Mon portefeuille.
 #
 # "Validé" impacts count only on the actual side (ARR final actuel, NRR actuel, the section's Actuel total);
 # "En cours" ones only on the projected side (ARR final / NRR projeté, the section's Projeté total). Each row belongs to the year it was created in, so a year
 # closure leaves last year's impacts out of the new year's figures without deleting anything.
 class OtherImpact < ApplicationRecord
-  PRODUITS = ["Mutuelle", "Prévoyance", "Les deux"].freeze
-  STATUTS = ["En cours", "Validé"].freeze
+  PRODUITS = [ "Mutuelle", "Prévoyance", "Les deux" ].freeze
+  STATUTS = [ "En cours", "Validé" ].freeze
   EN_COURS = "En cours"
   VALIDE = "Validé"
 

@@ -74,7 +74,7 @@ class UsersController < ApplicationController
   def update_credentials(user)
     attrs = params.require(:user).permit(:name, :email, :role)
 
-    if attrs[:role].present? && ![ "Admin", User::ROLE_LABELS[:tl_am] ].include?(attrs[:role]) && last_active_admin?(user)
+    if attrs[:role].present? && !User::ADMIN_ROLE_LABELS.include?(attrs[:role]) && last_active_admin?(user)
       return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
     end
 

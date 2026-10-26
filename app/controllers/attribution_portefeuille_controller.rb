@@ -10,7 +10,7 @@ class AttributionPortefeuilleController < ApplicationController
   VUES = %w[bi brut].freeze
   RISQUES = [ "Santé", "Prévoyance", "Double risque" ].freeze
   OPEN_UPSELL_STATUTS = [ "Non démarré", "En cours" ].freeze
-  ROLES_ORDER = [ "KAM", "AM", "TL AM", "TL Customer Care", "Admin", "Hors outil" ].freeze
+  ROLES_ORDER = [ "KAM", "AM", "TL AM", "TL Customer Care", "Head of CSM", "Admin", "Hors outil" ].freeze
 
   def show
     @vue = VUES.include?(params[:vue]) ? params[:vue] : "bi"
@@ -42,7 +42,7 @@ class AttributionPortefeuilleController < ApplicationController
   # Everyone who carries - or could carry - a portfolio: AMs, KAMs and team leads, plus anyone who has
   # accounts (an admin with none isn't a portfolio holder and would only inflate the capacity).
   def portfolio_holder?(user, accounts)
-    user.role.in?([ :am, :kam, :tl_am, :tl_csm ]) || accounts.any?
+    user.role.in?(User::PORTFOLIO_ROLES) || accounts.any?
   end
 
   def brut_rows

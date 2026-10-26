@@ -188,7 +188,7 @@ class PortfolioProjection
     used = @entries.flat_map { |e| [ e.bo_key, e.key ] }.to_set
     people = @users.filter_map do |u|
       key = "user:#{u.id}"
-      next unless u.role.in?([ :am, :kam, :tl_am, :tl_csm ]) || used.include?(key)
+      next unless u.role.in?(User::PORTFOLIO_ROLES) || used.include?(key)
 
       Holder.new(key: key, name: u.name, role: u.role_label, limit: u.account_limit, user: u, departing: @departing_ids.include?(u.id))
     end

@@ -23,7 +23,7 @@
   <p class="section-sub">
     Campagne <%= @annee %> telle que saisie dans l'outil, conservée jusqu'à sa clôture dans l'Historique.
     Taille du portefeuille de chaque personne en nombre de comptes et en ARR, et capacité restante à attribuer.
-    Plafond de comptes par personne : <strong><%= User::ACCOUNT_LIMITS[:kam] %> pour un KAM, <%= User::DEFAULT_ACCOUNT_LIMIT %> pour un AM, <%= User::ACCOUNT_LIMITS[:tl_am] %> pour un TL AM, <%= User::ACCOUNT_LIMITS[:tl_csm] %> pour un TL Customer Care</strong>. Un compte est un client dont au moins un produit n'est pas churné
+    Plafond de comptes par personne : <strong><%= User::ACCOUNT_LIMITS[:kam] %> pour un KAM, <%= User::DEFAULT_ACCOUNT_LIMIT %> pour un AM, <%= User::ACCOUNT_LIMITS[:tl_am] %> pour un TL AM, <%= User::ACCOUNT_LIMITS[:tl_csm] %> pour un TL Customer Care, <%= User::ACCOUNT_LIMITS[:head_csm] %> pour un Head of CSM</strong>. Un compte est un client dont au moins un produit n'est pas churné
     (les clients entièrement churnés sont exclus) ; l'ARR est celui des produits encore actifs.
   </p>
 <% end %>

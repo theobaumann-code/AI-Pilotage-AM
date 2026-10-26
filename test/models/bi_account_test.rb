@@ -29,7 +29,8 @@ class BiAccountTest < ActiveSupport::TestCase
   end
 
   test "an account is active while it holds an active contract" do
-    assert account(contracts_count: 2).active?
-    assert_not account(contracts_count: 0).active?
+    live = account(contracts_count: 2)
+    account(contracts_count: 0)
+    assert_equal [ live ], BiAccount.active.to_a
   end
 end

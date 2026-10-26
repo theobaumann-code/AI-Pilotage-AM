@@ -9,6 +9,9 @@ class BiAccount < ApplicationRecord
   SANS_AM_MIN_ARR = 2_000
   SANS_AM_MIN_ARR_WITHOUT_STANDARD = 5_000
 
+  # A client the AM still has to look after: at least one active health or provident contract. Accounts whose
+  # contracts are all terminated are left out of the AMs' portfolios altogether.
+  scope :active, -> { where("contracts_count > 0") }
   scope :with_am, -> { where.not(am_email: nil) }
   scope :without_am, -> { where(am_email: nil) }
 
@@ -27,12 +30,6 @@ class BiAccount < ApplicationRecord
 
   def set?
     kind == "set"
-  end
-
-  # A client the AM still has to look after: at least one active health or provident contract. One whose
-  # contracts are all terminated is left out of the account count, like a fully churned client in the raw data.
-  def active?
-    contracts_count.positive?
   end
 
   def risque

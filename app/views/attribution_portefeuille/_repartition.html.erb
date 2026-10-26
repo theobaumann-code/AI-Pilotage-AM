@@ -1,6 +1,5 @@
 <% scale_max = [@rows.map { |r| [r[:comptes], r[:limit]].max }.max.to_i, 1].max * 1.08 %>
 <% bar_width = ->(n) { [n.to_f / scale_max * 100, 100].min.round(1) } %>
-<% inactive_label = bi ? "sans contrat actif" : "churnés" %>
 
 <div class="summary-cards">
   <div class="card"><div class="label">Comptes attribués</div><div class="value"><%= @totals[:comptes] %></div></div>
@@ -58,7 +57,7 @@
               <td><span class="badge <%= r[:user] ? role_badge_class(r[:user]) : "reader" %>"><%= r[:role] %></span></td>
               <td class="numeric">
                 <strong style="color:<%= r[:over] ? "var(--red)" : "inherit" %>"><%= r[:comptes] %></strong>
-                <% if r[:churned] > 0 %><span class="muted-count" title="Comptes <%= inactive_label %>, exclus du décompte">(+<%= r[:churned] %> <%= inactive_label %>)</span><% end %>
+                <% if r[:churned] > 0 %><span class="muted-count" title="Clients entièrement churnés, exclus du décompte">(+<%= r[:churned] %> churnés)</span><% end %>
               </td>
               <td class="numeric"><%= r[:limit] %></td>
               <td class="attribution-bar-col">

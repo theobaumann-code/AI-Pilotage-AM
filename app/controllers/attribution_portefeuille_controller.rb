@@ -67,7 +67,7 @@ class AttributionPortefeuilleController < ApplicationController
   # The BO names each account's AM by their e-mail, matched to the app's users. An AM the BO knows but the app
   # doesn't (or not as an active user) still gets a row - their accounts must not silently vanish from the totals.
   def bi_rows
-    accounts_by_email = BiAccount.with_am.group_by(&:am_email)
+    accounts_by_email = BiAccount.with_am.active.group_by(&:am_email)
     rows = User.assignable.order(:name).filter_map do |user|
       accounts = accounts_by_email.delete(user.email.downcase) || []
       next unless portfolio_holder?(user, accounts)
@@ -79,10 +79,9 @@ class AttributionPortefeuilleController < ApplicationController
     end
   end
 
-  # An account is one with at least one active contract; ARR is the BI's (see BiAccount).
+  # Accounts without any active contract never get here (BiAccount.active); ARR is the BI's (see BiAccount).
   def bi_row(accounts, **attrs)
-    active, inactive = accounts.partition(&:active?)
-    row(**attrs, comptes: active.size, churned: inactive.size, arr: active.sum { |a| a.arr.to_f })
+    row(**attrs, comptes: accounts.size, churned: 0, arr: accounts.sum { |a| a.arr.to_f })
   end
 
   def row(user:, name:, role:, limit:, comptes:, churned:, arr:)
@@ -170,14 +169,15 @@ class AttributionPortefeuilleController < ApplicationController
       upsell: open_upsells.any?, upsell_amount: open_upsells.sum(&:upsell_amount).to_f }
   end
 
-  # Every BI account that has an AM, with the same follow-up data as the raw view: ARR, risk covered, and the
-  # upsell opportunity - the risk it doesn't hold yet, valued on its headcount.
+  # Every BI account that has an AM and an active contract, with the same follow-up data as the raw view: ARR,
+  # risk covered, and the upsell opportunity - the risk it doesn't hold yet, valued on its headcount.
   def load_bi_entreprises
     read_entreprise_filters
-    names = User.where(email: BiAccount.with_am.distinct.pluck(:am_email)).to_h { |u| [ u.email.downcase, u.name ] }
-    page_entreprises(BiAccount.with_am.map do |account|
+    accounts = BiAccount.with_am.active.to_a
+    names = User.where(email: accounts.map(&:am_email).uniq).to_h { |u| [ u.email.downcase, u.name ] }
+    page_entreprises(accounts.map do |account|
       { account: account, name: account.name.to_s, am_name: names[account.am_email] || account.am_name || account.am_email,
-        arr: account.arr.to_f, risque: account.risque, churned: !account.active?,
+        arr: account.arr.to_f, risque: account.risque, churned: false,
         upsell: account.upsell?, upsell_produit: account.upsell_produit, upsell_amount: account.upsell_amount }
     end)
   end

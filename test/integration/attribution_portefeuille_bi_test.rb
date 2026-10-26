@@ -28,14 +28,16 @@ class AttributionPortefeuilleBiTest < ActionDispatch::IntegrationTest
 
   test "accounts land on the app user with the BO AM's e-mail; an unknown AM gets a Hors outil row" do
     account(am_email: "am-bi@sidecare.com", arr: 10_000, has_sante: true)
-    account(am_email: "am-bi@sidecare.com", arr: 4_000, has_prevoyance: true, contracts_count: 0)
+    account(name: "Sans Contrat Actif", am_email: "am-bi@sidecare.com", arr: 4_000, has_prevoyance: true, contracts_count: 0)
     account(am_email: "ancien@sidecare.com", am_name: "Ancien AM", arr: 6_000, has_sante: true)
 
     sign_in @admin
     get attribution_portefeuille_path
     assert_response :success
     am = rows["AM Bi"]
-    assert_equal [ 1, 1, 10_000.0 ], [ am[:comptes], am[:churned], am[:arr] ], "the account without an active contract is set aside"
+    assert_equal [ 1, 0, 10_000.0 ], [ am[:comptes], am[:churned], am[:arr] ], "the account without an active contract is dropped"
+    assert_not_includes @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:name] }, "Sans Contrat Actif"
+    assert_no_match "Sans Contrat Actif", @response.body
     assert_equal [ 1, "Hors outil", 54 ], [ rows["Ancien AM"][:comptes], rows["Ancien AM"][:role], rows["Ancien AM"][:limit] ]
     assert_equal 16_000.0, @controller.instance_variable_get(:@totals)[:arr]
     assert_match "Dernière synchronisation BI", @response.body

@@ -45,7 +45,7 @@
               <tr>
                 <td>
                   <strong><%= r[:name] %></strong>
-                  <% if r[:churned] %><span class="badge ko" style="margin-left:6px;"><%= bi ? "Aucun contrat actif" : "Churné" %></span><% end %>
+                  <% if r[:churned] %><span class="badge ko" style="margin-left:6px;">Churné</span><% end %>
                   <% if bi %>
                     <br><small style="color:var(--text-muted);"><%= r[:account].kind_label %><%= " · #{pluralize(r[:account].user_pros_count, "entreprise")}" if r[:account].set? %></small>
                   <% end %>

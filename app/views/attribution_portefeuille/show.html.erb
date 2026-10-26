@@ -4,10 +4,7 @@
 
 <h1 class="section-title">Attribution portefeuille</h1>
 
-<nav class="view-switch" aria-label="Campagne">
-  <%= link_to "Attribution #{@annee + 1} · données BI", attribution_portefeuille_path(vue: "bi"), class: ("active" if bi), aria: { current: ("page" if bi) } %>
-  <%= link_to "Campagne #{@annee} · données brutes", attribution_portefeuille_path(vue: "brut"), class: ("active" unless bi), aria: { current: ("page" unless bi) } %>
-</nav>
+<%= render "attribution_portefeuille/view_switch", annee: @annee, current: @vue %>
 
 <% if bi %>
   <p class="section-sub">

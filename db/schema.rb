@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_26_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_27_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -132,6 +132,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_100000) do
     t.index ["company_id"], name: "index_other_impacts_on_company_id"
   end
 
+  create_table "projection_departures", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_projection_departures_on_user_id", unique: true
+  end
+
+  create_table "projection_moves", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "bi_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.string "kind", null: false
+    t.string "original_am_email"
+    t.bigint "recruit_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["created_by_id"], name: "index_projection_moves_on_created_by_id"
+    t.index ["kind", "bi_id"], name: "index_projection_moves_on_kind_and_bi_id", unique: true
+    t.index ["recruit_id"], name: "index_projection_moves_on_recruit_id"
+    t.index ["user_id"], name: "index_projection_moves_on_user_id"
+  end
+
+  create_table "projection_recruits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "role", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "risk_notes", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.text "content", null: false
@@ -176,6 +206,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_100000) do
   add_foreign_key "deals", "companies"
   add_foreign_key "deals", "users"
   add_foreign_key "other_impacts", "companies"
+  add_foreign_key "projection_departures", "users", on_delete: :cascade
+  add_foreign_key "projection_moves", "projection_recruits", column: "recruit_id", on_delete: :cascade
+  add_foreign_key "projection_moves", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "projection_moves", "users", on_delete: :cascade
   add_foreign_key "risk_notes", "companies"
   add_foreign_key "risk_notes", "users"
   add_foreign_key "trash_batches", "users", column: "deleted_by_id"

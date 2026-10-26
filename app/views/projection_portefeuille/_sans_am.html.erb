@@ -1,0 +1,57 @@
+<div class="section-card" id="sans_am">
+  <div class="table-toolbar">
+    <h2>Comptes sans AM</h2>
+    <div class="table-toolbar-controls">
+      <%= form_with url: projection_portefeuille_path(anchor: "sans_am"), method: :get, data: { turbo_action: "replace" } do %>
+        <%= preserved_query_fields("ps_q", "ps_page") %>
+        <%= live_search_field :ps_q, @ps_q, placeholder: "Rechercher un compte…" %>
+      <% end %>
+    </div>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">
+    <strong><%= @ps_total[:count] %></strong> compte<%= "s" if @ps_total[:count] > 1 %> sans AM dans le BO, pas encore attribué<%= "s" if @ps_total[:count] > 1 %> dans la projection ·
+    ARR <strong><%= eur.call(@ps_total[:arr]) %></strong>. Mêmes critères que l'onglet BI (plus de 2 000 € d'ARR ; sous 5 000 €, avec un produit santé standard).
+    Seuls les AM de l'outil peuvent les recevoir, pas les recrues fictives.
+  </p>
+
+  <%= form_with url: bulk_projection_portefeuille_path, method: :post do %>
+    <%= render "bulk_bar", table: "sans_am", targets: @sans_am_targets, total: @ps_total[:count], extra: false %>
+    <div class="table-scroll">
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" aria-label="Tout cocher sur la page"
+                  onchange="this.closest('form').querySelectorAll('input[name=&quot;keys[]&quot;]').forEach((c) => { c.checked = this.checked })"></th>
+            <%= sortable_th(@ps_pager, :nom, "Compte", col_class: "col-nom") %>
+            <th>Type</th>
+            <%= sortable_th(@ps_pager, :arr, "ARR (€)", col_class: "col-arr") %>
+            <th>Risque couvert</th>
+            <th>Santé standard</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ps_pager.records.empty? %>
+            <tr><td colspan="6" class="empty-state">Aucun compte sans AM pour ce filtre.</td></tr>
+          <% else %>
+            <% @ps_pager.records.each do |e| %>
+              <% a = e.account %>
+              <tr>
+                <td class="col-check"><%= check_box_tag "keys[]", e.account_key, false, id: nil, aria: { label: "Sélectionner #{a.name}" } %></td>
+                <td>
+                  <strong><%= a.name %></strong>
+                  <% if a.siren.present? %><br><small style="color:var(--text-muted);">SIREN <%= a.siren %></small><% end %>
+                </td>
+                <td><%= a.kind_label %><%= " · #{pluralize(a.user_pros_count, "entreprise")}" if a.set? %></td>
+                <td class="numeric"><%= eur.call(a.arr) %></td>
+                <td><%= a.risque || "—" %></td>
+                <td><%= a.has_standard_sante ? "Oui" : "Non" %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+  <%= pagination_controls(@ps_pager) %>
+  <%= page_size_select(@ps_pager) %>
+</div>

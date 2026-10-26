@@ -1,0 +1,47 @@
+<% people = @projection.holders.select(&:user) %>
+<% recruits = @projection.holders.select(&:recruit?) %>
+<div class="section-card" id="equipe">
+  <div class="table-toolbar">
+    <h2>Équipe projetée</h2>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">
+    Un AM « sortant » ne compte plus de capacité et ses comptes du BO passent dans « À réattribuer ».
+    Une recrue est fictive : elle peut reprendre des comptes qui ont déjà un AM dans le BO, jamais des comptes sans AM.
+  </p>
+  <div class="projection-team">
+    <div>
+      <h3>AM de l'outil</h3>
+      <ul class="projection-team-list">
+        <% people.each do |h| %>
+          <li class="<%= "is-departing" if h.departing %>">
+            <span><strong><%= h.name %></strong> <span class="badge <%= role_badge_class(h.user) %>"><%= h.role %></span>
+              <% if h.departing %><span class="badge ko">Sortant</span><% end %></span>
+            <%= button_to (h.departing ? "Réintégrer" : "Marquer sortant"), toggle_departure_projection_portefeuille_path(user_id: h.user.id),
+                  class: "button #{h.departing ? "" : "ghost-danger"}", form: { style: "display:inline;" } %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    <div>
+      <h3>Recrues fictives</h3>
+      <% if recruits.empty? %>
+        <p class="muted-count">Aucune recrue pour l'instant.</p>
+      <% else %>
+        <ul class="projection-team-list">
+          <% recruits.each do |h| %>
+            <li>
+              <span><strong><%= h.name %></strong> <span class="badge tl"><%= h.role %></span> <small>plafond <%= h.limit %></small></span>
+              <%= button_to "Retirer", recruit_projection_portefeuille_path(recruit_id: h.recruit.id), method: :delete, class: "button ghost-danger",
+                    form: { style: "display:inline;", data: { turbo_confirm: "Retirer #{h.name} ? Ses comptes reviennent à leur AM du BO." } } %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+      <%= form_with url: recruits_projection_portefeuille_path, method: :post, class: "projection-recruit-form" do %>
+        <%= text_field_tag :name, nil, placeholder: "Nom (ex. Recrue AM 1)", required: true %>
+        <%= select_tag :role, options_for_select(Projection::Recruit::ROLES.keys, "AM") %>
+        <%= submit_tag "Ajouter une recrue", class: "button primary" %>
+      <% end %>
+    </div>
+  </div>
+</div>

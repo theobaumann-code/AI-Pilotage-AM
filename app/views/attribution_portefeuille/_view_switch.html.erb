@@ -1,0 +1,6 @@
+<%# The three views of next / current campaign's portfolios. current: "bi", "projection" or "brut". %>
+<nav class="view-switch" aria-label="Campagne">
+  <%= link_to "Attribution #{annee + 1} · données BI", attribution_portefeuille_path(vue: "bi"), class: ("active" if current == "bi"), aria: { current: ("page" if current == "bi") } %>
+  <%= link_to "Projection #{annee + 1}", projection_portefeuille_path, class: ("active" if current == "projection"), aria: { current: ("page" if current == "projection") } %>
+  <%= link_to "Campagne #{annee} · données brutes", attribution_portefeuille_path(vue: "brut"), class: ("active" if current == "brut"), aria: { current: ("page" if current == "brut") } %>
+</nav>

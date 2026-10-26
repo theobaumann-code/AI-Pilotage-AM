@@ -27,7 +27,8 @@
           <i class="fa-regular fa-address-card" aria-hidden="true"></i><span>Gestion des droits</span>
         <% end %>
         <% if current_user.admin? %>
-          <%= link_to attribution_portefeuille_path, class: "app-nav-link #{'active' if current_page?(attribution_portefeuille_path)}", aria: { current: ("page" if current_page?(attribution_portefeuille_path)) } do %>
+          <% attribution_active = current_page?(attribution_portefeuille_path) || current_page?(projection_portefeuille_path) %>
+          <%= link_to attribution_portefeuille_path, class: "app-nav-link #{'active' if attribution_active}", aria: { current: ("page" if attribution_active) } do %>
             <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i><span>Attribution portefeuille</span>
           <% end %>
         <% end %>

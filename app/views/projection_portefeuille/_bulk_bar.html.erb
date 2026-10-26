@@ -1,0 +1,22 @@
+<%# Bulk actions for the table whose <form> encloses this bar. table: "comptes" or "sans_am"; targets: holders that
+    can receive accounts; total: number of accounts the current filter returns; extra: show reserve/drop/revert. %>
+<div class="bulk-bar">
+  <%= hidden_field_tag :table, table, id: nil %>
+  <%= preserved_query_fields %>
+  <label class="bulk-scope">
+    <%= check_box_tag :all_filtered, "1", false, id: nil %>
+    Appliquer aux <strong><%= total %></strong> comptes du filtre (toutes pages), pas seulement aux cases cochées
+  </label>
+  <div class="bulk-actions">
+    <%= select_tag :target, grouped_options_for_select(
+          { "AM de l'outil" => targets.select(&:user).map { |h| [ "#{h.name} (#{h.role})", h.key ] },
+            "Recrues fictives" => targets.select(&:recruit?).map { |h| [ "#{h.name} (recrue #{h.role})", h.key ] } }.reject { |_, v| v.empty? }),
+          include_blank: "Choisir un AM…", id: nil %>
+    <%= button_tag "Attribuer", name: "bulk_action", value: "assign", class: "button primary" %>
+    <% if extra %>
+      <%= button_tag "Retirer (à réattribuer)", name: "bulk_action", value: "reserve", class: "button" %>
+      <%= button_tag "Ne plus accompagner", name: "bulk_action", value: "drop", class: "button ghost-danger" %>
+      <%= button_tag "Revenir au BO", name: "bulk_action", value: "revert", class: "button" %>
+    <% end %>
+  </div>
+</div>

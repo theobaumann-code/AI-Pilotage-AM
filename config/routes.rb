@@ -29,6 +29,13 @@ Rails.application.routes.draw do
   resource :attribution_portefeuille, only: [ :show ], controller: "attribution_portefeuille" do
     post :sync_bi
   end
+  resource :projection_portefeuille, only: [ :show, :destroy ], controller: "projection_portefeuille" do
+    post :bulk
+    get :export
+    post :toggle_departure
+    post :recruits, action: :create_recruit
+    delete "recruits/:recruit_id", action: :destroy_recruit, as: :recruit
+  end
   resource :autres_statistiques, only: [ :show ], controller: "autres_statistiques"
   resources :companies, only: [ :create, :update, :destroy ] do
     member { patch :reassign_am }

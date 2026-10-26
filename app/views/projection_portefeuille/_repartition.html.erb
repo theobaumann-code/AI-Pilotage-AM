@@ -1,0 +1,61 @@
+<div class="section-card" id="repartition">
+  <div class="table-toolbar">
+    <h2>Répartition projetée</h2>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">
+    Comptes et ARR dans le BO puis dans la projection, face au plafond de chacun (0 pour un AM sortant).
+  </p>
+  <div class="table-scroll">
+    <table class="deals-table attribution-table">
+      <thead>
+        <tr>
+          <%= sortable_th(@pager, :nom, "Nom") %>
+          <%= sortable_th(@pager, :role, "Rôle") %>
+          <th class="numeric">Comptes BO</th>
+          <%= sortable_th(@pager, :comptes, "Comptes projetés") %>
+          <th class="numeric">Plafond</th>
+          <%= sortable_th(@pager, :restant, "Restant à attribuer") %>
+          <th class="numeric">ARR BO (€)</th>
+          <%= sortable_th(@pager, :arr, "ARR projeté (€)") %>
+          <%= sortable_th(@pager, :part, "% de l'ARR") %>
+        </tr>
+      </thead>
+      <tbody>
+        <% @pager.records.each do |r| %>
+          <% h = r[:holder] %>
+          <tr class="<%= "row-over-capacity" if r[:over] %>">
+            <td>
+              <strong><%= h.name %></strong>
+              <% if h.departing %><span class="badge ko" style="margin-left:6px;">Sortant</span><% end %>
+              <% if h.recruit? %><span class="badge tl" style="margin-left:6px;">Recrue</span><% end %>
+            </td>
+            <td><span class="badge <%= h.user ? role_badge_class(h.user) : "reader" %>"><%= h.role %></span></td>
+            <td class="numeric"><%= r[:real_comptes] %></td>
+            <td class="numeric">
+              <strong style="color:<%= r[:over] ? "var(--red)" : "inherit" %>"><%= r[:comptes] %></strong>
+              <% d = r[:comptes] - r[:real_comptes] %>
+              <% if d != 0 %><span class="muted-count" style="color:<%= d > 0 ? "var(--green)" : "var(--red)" %>">(<%= delta.call(d) %>)</span><% end %>
+            </td>
+            <td class="numeric"><%= r[:limit] %></td>
+            <td class="numeric" style="color:<%= r[:remaining] < 0 ? "var(--red)" : "inherit" %>;font-weight:<%= r[:remaining] < 0 ? 700 : 400 %>;"><%= r[:remaining] %></td>
+            <td class="numeric"><%= eur.call(r[:real_arr]) %></td>
+            <td class="numeric"><%= eur.call(r[:arr]) %></td>
+            <td class="numeric"><%= number_with_precision(r[:part], precision: 1) %> %</td>
+          </tr>
+        <% end %>
+      </tbody>
+      <tfoot>
+        <tr class="table-footer-row">
+          <td colspan="2">Total</td>
+          <td class="numeric"><%= @totals[:real_comptes] %></td>
+          <td class="numeric"><%= @totals[:comptes] %></td>
+          <td class="numeric"><%= @totals[:capacity] %></td>
+          <td class="numeric"><%= @totals[:remaining] %></td>
+          <td class="numeric"><%= eur.call(@totals[:real_arr]) %></td>
+          <td class="numeric"><%= eur.call(@totals[:arr]) %></td>
+          <td class="numeric">100 %</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

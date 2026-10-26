@@ -41,6 +41,8 @@ class AttributionPortefeuilleBiTest < ActionDispatch::IntegrationTest
     assert_equal [ 1, "Hors outil", 54 ], [ rows["Ancien AM"][:comptes], rows["Ancien AM"][:role], rows["Ancien AM"][:limit] ]
     assert_equal 16_000.0, @controller.instance_variable_get(:@totals)[:arr]
     assert_match "Dernière synchronisation BI", @response.body
+    assert_no_match "tels que le BO les attribue", @response.body, "no intro text on the BI view"
+    assert_no_match "dépasse", @response.body, "no over-ceiling banner on the BI view"
   end
 
   test "the accounts table shows ARR, risk and the missing risk as the upsell; filters still work" do

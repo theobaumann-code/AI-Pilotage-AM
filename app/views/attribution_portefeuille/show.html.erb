@@ -7,12 +7,6 @@
 <%= render "attribution_portefeuille/view_switch", annee: @annee, current: @vue %>
 
 <% if bi %>
-  <p class="section-sub">
-    Portefeuilles de la campagne <%= @annee + 1 %>, tels que le BO les attribue : un compte est un company set, ou une entreprise (user pro) rattachée à aucun set.
-    Son AM est le responsable AM du company set s'il y en a un, sinon celui du user pro. Seuls les comptes ayant au moins un contrat santé ou prévoyance actif sont retenus ; les autres sont écartés.
-    L'ARR est la commission SideCare sur la facturation du T1 2026 annualisée (× 4) ; un contrat démarré depuis est annualisé sur ses derniers mois facturés.
-    Plafond de comptes par personne : <strong><%= User::ACCOUNT_LIMITS[:kam] %> pour un KAM, <%= User::DEFAULT_ACCOUNT_LIMIT %> pour un AM, <%= User::ACCOUNT_LIMITS[:tl_am] %> pour un TL AM, <%= User::ACCOUNT_LIMITS[:tl_csm] %> pour un TL Customer Care</strong>.
-  </p>
   <div class="bi-sync-bar">
     <span>
       <% if @last_synced_at %>

@@ -13,7 +13,9 @@
   <% end %>
 </div>
 
-<% if @over.any? %>
+<% if bi %>
+  <%# BI view: the "Dans le rouge" card and the red rows already say who is over their ceiling. %>
+<% elsif @over.any? %>
   <p class="alert" style="border-radius:var(--radius-sm);">
     <strong><%= @over.size %> <%= @over.size > 1 ? "personnes dépassent" : "personne dépasse" %> leur plafond de comptes :</strong>
     <%= safe_join(@over.map { |r| "#{r[:name]} (#{r[:comptes]} comptes pour #{r[:limit]} max, +#{r[:comptes] - r[:limit]})" }, " · ") %>

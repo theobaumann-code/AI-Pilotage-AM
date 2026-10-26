@@ -140,7 +140,9 @@ scalingo --app ai-pilotage-am scale worker:1
 scalingo --app ai-pilotage-am ps
 ```
 
-Le `predeploy` applique les migrations avec `bin/rails db:prepare`. Vérifier
+Le hook `postdeploy` du `Procfile` applique les migrations avec
+`bin/rails db:prepare` avant que Scalingo ne bascule le trafic vers la nouvelle
+version. Un échec de migration fait échouer le déploiement. Vérifier
 que `web` et `worker` sont tous deux démarrés, puis ouvrir « Attribution
 portefeuille » et lancer « Synchroniser maintenant ». Le message de succès
 doit indiquer le nombre de comptes importés et la page afficher la date de

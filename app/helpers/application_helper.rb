@@ -54,6 +54,12 @@ module ApplicationHelper
     request.query_parameters.merge(overrides.transform_keys(&:to_s))
   end
 
+  # Vue globale's Équipe / AM filters of the summary cards, to put on an inline-edit form's URL: the response
+  # refreshes those cards, and must compute them for the same filters as the page (see DealsController).
+  def summary_filter_params
+    params.permit(summary_ams: [], summary_roles: []).to_h.symbolize_keys
+  end
+
   def table_query_path(overrides)
     "#{request.path}?#{table_query(overrides).to_query}"
   end

@@ -101,26 +101,34 @@ class DealsController < ApplicationController
     if params[:row_context] == "global"
       [
         turbo_stream.replace(@deal, partial: "pilotage/global_upsell_row", locals: { deal: @deal }, method: :morph),
-        turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" }, method: :morph)
+        global_summary_stream
       ]
     elsif params[:row_context] == "global_churn"
       [ turbo_stream.replace(dom_id(@deal, :churn), partial: "pilotage/churned_produit_row", locals: { deal: @deal }, method: :morph) ]
     elsif params[:row_context] == "global_produit"
       [
         turbo_stream.replace(@deal, partial: "pilotage/global_produit_row", locals: { deal: @deal }, method: :morph),
-        turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(Company.includes(:produit_deals, :upsell_deals)), dom_id: "global-summary-cards" }, method: :morph)
+        global_summary_stream
       ]
     else
       owner = viewed_user
       [
         turbo_stream.replace(@deal, partial: row_partial, locals: { deal: @deal }, method: :morph),
         turbo_stream.replace(@deal.company, partial: "companies/evolution_row", locals: { company: @deal.company }, method: :morph),
+        # Same summary as Mon portefeuille's own page load: upsells by effective owner, other impacts included.
         turbo_stream.replace("portfolio-summary-cards", partial: "shared/summary_cards",
-          locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals)), dom_id: "portfolio-summary-cards" }, method: :morph)
+          locals: { summary: PortfolioSummary.new(owner.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts), user: owner),
+                    dom_id: "portfolio-summary-cards" }, method: :morph)
       ]
     end
+  end
+
+  # Vue globale's cards after an inline edit, for the Équipe/AM filters the page is showing (carried by the row
+  # forms' URLs, see ApplicationHelper#summary_filter_params) - identical to what reloading the page would show.
+  def global_summary_stream
+    turbo_stream.replace("global-summary-cards", partial: "shared/summary_cards", method: :morph,
+      locals: { summary: PortfolioSummary.vue_globale(ams: params[:summary_ams], roles: params[:summary_roles]),
+                dom_id: "global-summary-cards" })
   end
 
   # A rejected inline edit must still hand Turbo a real body to swap in - an empty 422 (the previous

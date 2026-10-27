@@ -22,6 +22,24 @@ class PortfolioSummary
   # below, as if it were one more aggregate "deal" - see PilotageController, which passes this only for Vue
   # globale's top summary cards, gated by the Équipe filter's "Non accompagné" option. Every other
   # PortfolioSummary caller (Mon portefeuille, the AM roster) omits it and is completely unaffected.
+  # Vue globale's top summary cards, for the Équipe (`roles`) / AM (`ams`) filters picked above them - built here,
+  # in one place, so the page and every inline edit that refreshes the cards (DealsController) agree. A filter
+  # narrows to the companies owned by the matching active AMs; the non-accompagné book counts with no team filter,
+  # or when "Non accompagné" is among the picked teams.
+  def self.vue_globale(ams: [], roles: [])
+    ams = Array(ams).reject(&:blank?)
+    roles = Array(roles).reject(&:blank?)
+    companies = Company.includes(:produit_deals, :upsell_deals, :current_other_impacts)
+    if ams.present? || roles.present?
+      users = User.assignable.to_a
+      users = users.select { |am| roles.include?(am.team_label) } if roles.present?
+      users = users.select { |am| ams.include?(am.name) } if ams.present?
+      companies = companies.where(user_id: users.map(&:id))
+    end
+    include_non_accompagne = roles.empty? || roles.include?("Non accompagné")
+    new(companies, non_accompagne: (include_non_accompagne ? AppSetting.instance : nil))
+  end
+
   def initialize(companies, user: nil, non_accompagne: nil)
     @companies = companies.to_a
     @user = user

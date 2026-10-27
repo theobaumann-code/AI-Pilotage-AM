@@ -18,19 +18,10 @@ class PilotageController < ApplicationController
     @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
 
-    filtered_ams = @active_ams
-    filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.team_label) } if @summary_roles.present?
-    filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
-    team_filter_active = @summary_ams.present? || @summary_roles.present?
-
     # No filter at all → the non-accompagné book counts toward the total by default (that's the point of
     # this toggle). The moment any Équipe/AM filter narrows the view, it drops out unless "Non accompagné"
     # is explicitly checked back in - same as narrowing to one AM naturally excludes every other AM's book.
-    include_non_accompagne = @summary_roles.empty? || @summary_roles.include?("Non accompagné")
-
-    summary_companies = Company.includes(:produit_deals, :upsell_deals, :current_other_impacts)
-    summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
-    @global_summary = PortfolioSummary.new(summary_companies, non_accompagne: (include_non_accompagne ? @app_setting : nil))
+    @global_summary = PortfolioSummary.vue_globale(ams: @summary_ams, roles: @summary_roles)
 
     @risque_q = params[:risque_q].to_s.strip
     @risque_ams = Array(params[:risque_ams]).reject(&:blank?)

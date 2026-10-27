@@ -369,4 +369,22 @@ class PortfolioSummaryTest < ActiveSupport::TestCase
     assert_in_delta 37_800 + 19_400, s.renewed_arr_projected, 0.01
     assert_in_delta 37_800 + 19_400, s.arr_final, 0.01
   end
+
+  test "non_accompagne: an actual churn within the yearly projection moves from projected to actual, not on top" do
+    deal("Mutuelle", arr: 100_000, taux: 0, risque: 0)
+    projected_only = PortfolioSummary.new(@am.companies.includes(:deals),
+      non_accompagne: NonAccompagne.new(50_000, 0, 8_000, 0))
+    with_churn = PortfolioSummary.new(@am.companies.includes(:deals),
+      non_accompagne: NonAccompagne.new(50_000, 2_300, 8_000, 0))
+
+    assert_in_delta 2_300, with_churn.churned, 0.01
+    assert_in_delta 5_700, with_churn.churn_projete, 0.01, "only the 8 000 € projection's remainder is still projected"
+    assert_in_delta projected_only.churn_total, with_churn.churn_total, 0.01, "the projected total doesn't move"
+    assert_in_delta projected_only.arr_final, with_churn.arr_final, 0.01, "nor does the projected ARR final"
+
+    beyond = PortfolioSummary.new(@am.companies.includes(:deals),
+      non_accompagne: NonAccompagne.new(50_000, 9_000, 8_000, 0))
+    assert_in_delta 0, beyond.churn_projete, 0.01, "past the projection, nothing more is projected"
+    assert_in_delta 9_000, beyond.churn_total, 0.01, "and the total follows the actual churn"
+  end
 end

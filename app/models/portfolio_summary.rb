@@ -222,11 +222,15 @@ class PortfolioSummary
   end
 
   # No individual deals behind the non-accompagné book, so there's no risque_churn % to weight - just the
-  # same manually-tracked € figure everything else here uses, added straight into churn_projete (and, via
-  # arr_final = renewed_arr - churn_projete + upsold, into the projected NRR/ARR final cards only - the
-  # "actuel" variants never subtract churn_projete, matching how a real deal's risque_churn works too).
+  # manually-tracked € figure, which is the whole year's expected churn of that book. What has already churned
+  # (the "Détail churn" lines, in `churned`) is part of it: only the remainder is still projected, never below
+  # zero - like a real deal moving from churn_projete to churned when it churns, so an actual churn within the
+  # projection leaves churn_total unchanged instead of being counted twice. It feeds churn_projete and, via
+  # arr_final, the projected NRR/ARR final cards only - the "actuel" variants never subtract churn_projete.
   def non_accompagne_churn_projete
-    non_accompagne ? non_accompagne.churn_projete_non_accompagne.to_f : 0
+    return 0 unless non_accompagne
+
+    [ non_accompagne.churn_projete_non_accompagne.to_f - non_accompagne_churn, 0 ].max
   end
 
   # What's left of the non-accompagné book once its own actual churn comes out - never negative, in case

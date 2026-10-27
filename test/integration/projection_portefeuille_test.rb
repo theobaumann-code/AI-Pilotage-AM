@@ -158,6 +158,33 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal [ 0, 0, 0 ], [ Projection::Move.count, Projection::Departure.count, Projection::Recruit.count ]
   end
 
+  test "the accounts table filters by AM concerned (either side) and by movement, bulk actions included" do
+    bulk("assign", keys: [ key(@a1) ], target: "user:#{@bob.id}")     # Alice -> Bob
+    bulk("reserve", keys: [ key(@a2) ])                                  # taken off Alice
+    bulk("assign", keys: [ key(@free) ], target: "user:#{@alice.id}")   # unassigned -> Alice
+
+    names = ->(params) {
+      get projection_portefeuille_path(params)
+      @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }.sort
+    }
+    assert_equal [ "Compte Proj 1", "Compte Proj 2", "Compte Proj 4" ], names.call(pc_concerned: [ "Alice" ]),
+      "Alice's accounts in the BO (kept or lost) and the one she gains"
+    assert_equal [ "Compte Proj 1", "Compte Proj 3" ], names.call(pc_concerned: [ "Bob" ])
+    assert_equal [ "Compte Proj 1" ], names.call(pc_movements: [ "Réattribué" ])
+    assert_equal [ "Compte Proj 2" ], names.call(pc_movements: [ "Retiré à l'AM" ])
+    assert_equal [ "Compte Proj 4" ], names.call(pc_movements: [ "Attribué (était sans AM)" ])
+    assert_equal [ "Compte Proj 3" ], names.call(pc_movements: [ ProjectionPortefeuilleController::NO_MOVEMENT ])
+    assert_equal [ "Compte Proj 1", "Compte Proj 4" ], names.call(pc_concerned: [ "Alice" ], pc_movements: [ "Réattribué", "Attribué (était sans AM)" ])
+    options = @controller.instance_variable_get(:@pc_concerned_options)
+    assert_includes options, "Alice"
+    assert_not_includes options, "À réattribuer", "places are not people"
+
+    # "Tout le filtre" follows the new filters too, and the page comes back with them.
+    bulk("revert", all_filtered: "1", pc_movements: [ "Retiré à l'AM" ])
+    assert_redirected_to projection_portefeuille_path(pc_movements: [ "Retiré à l'AM" ], anchor: "comptes")
+    assert_equal "Alice", owner_of(@a2)
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

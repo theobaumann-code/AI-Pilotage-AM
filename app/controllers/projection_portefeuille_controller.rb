@@ -7,7 +7,7 @@ class ProjectionPortefeuilleController < ApplicationController
   before_action :require_strict_admin!
 
   # Query params kept across a bulk action, so the page comes back with the same filters / sort / page.
-  KEPT_PARAMS = %w[pc_q pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_modified pc_sort pc_dir pc_page
+  KEPT_PARAMS = %w[pc_q pc_arr_min pc_arr_max pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_modified pc_sort pc_dir pc_page
                    pc_size ps_q ps_sort ps_dir ps_page ps_size].freeze
   KEPT_ARRAY_PARAMS = %i[pc_concerned pc_movements pc_owners pc_bo].freeze
 
@@ -149,6 +149,8 @@ class ProjectionPortefeuilleController < ApplicationController
     @pc_q = params[:pc_q].to_s.strip
     @pc_concerned = Array(params[:pc_concerned]).reject(&:blank?)
     @pc_movements = Array(params[:pc_movements]).reject(&:blank?)
+    @pc_arr_min = numeric_param(params[:pc_arr_min])
+    @pc_arr_max = numeric_param(params[:pc_arr_max])
     @pc_owners = Array(params[:pc_owners]).reject(&:blank?)
     @pc_bo = Array(params[:pc_bo]).reject(&:blank?)
     @pc_modified = params[:pc_modified].present?
@@ -161,6 +163,8 @@ class ProjectionPortefeuilleController < ApplicationController
     # An AM is concerned by an account they hold in the BO or are given in the projection - gained or lost.
     rows = rows.select { |e| (@pc_concerned & [ projection.label(e.bo_key), projection.label(e.key) ]).any? } if @pc_concerned.present?
     rows = rows.select { |e| @pc_movements.include?(movement_filter_label(e)) } if @pc_movements.present?
+    rows = rows.select { |e| e.account.arr.to_f >= @pc_arr_min } if @pc_arr_min
+    rows = rows.select { |e| e.account.arr.to_f <= @pc_arr_max } if @pc_arr_max
     rows = rows.select { |e| @pc_owners.include?(projection.label(e.key)) } if @pc_owners.present?
     rows = rows.select { |e| @pc_bo.include?(projection.label(e.bo_key)) } if @pc_bo.present?
     rows = rows.select(&:moved?) if @pc_modified

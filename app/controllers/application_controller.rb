@@ -60,7 +60,8 @@ class ApplicationController < ActionController::Base
   # A numeric filter bound from the query string — nil when blank or not a number, so a typo never raises
   # and simply leaves that side of the range open. Accepts a comma as decimal separator.
   def numeric_param(value)
-    Float(value.to_s.strip.tr(",", "."))
+    # Amounts are often typed French-style: "5 000" or "5 000,50" (spaces, non-breaking ones included).
+    Float(value.to_s.gsub(/[[:space:]]/, "").tr(",", "."))
   rescue ArgumentError
     nil
   end

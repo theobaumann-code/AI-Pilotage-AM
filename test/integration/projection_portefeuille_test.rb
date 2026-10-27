@@ -185,6 +185,22 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal "Alice", owner_of(@a2)
   end
 
+  test "the accounts table filters by ARR, minimum and / or maximum, bulk actions included" do
+    names = ->(params) {
+      get projection_portefeuille_path(params)
+      @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }.sort
+    }
+    assert_equal [ "Compte Proj 1", "Compte Proj 3" ], names.call(pc_arr_min: "5000")
+    assert_equal [ "Compte Proj 2", "Compte Proj 3" ], names.call(pc_arr_max: "8000")
+    assert_equal [ "Compte Proj 3" ], names.call(pc_arr_min: "5 000", pc_arr_max: "6000"), "bounds included, spaces tolerated"
+    assert_equal [ "Compte Proj 1", "Compte Proj 2", "Compte Proj 3" ], names.call(pc_arr_min: "abc"), "an unreadable bound is ignored"
+    assert_match 'name="pc_arr_min"', @response.body
+
+    bulk("reserve", all_filtered: "1", pc_arr_max: "5000")
+    assert_redirected_to projection_portefeuille_path(pc_arr_max: "5000", anchor: "comptes")
+    assert_equal [ "À réattribuer", "Alice", "Bob" ], [ owner_of(@a2), owner_of(@a1), owner_of(@b1) ]
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

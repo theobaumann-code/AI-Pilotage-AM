@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_27_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,10 +52,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_100000) do
     t.string "am_email"
     t.string "am_name"
     t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_billed", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_estimated", precision: 12, scale: 2, default: "0.0", null: false
     t.decimal "arr_prevoyance", precision: 12, scale: 2, default: "0.0", null: false
     t.decimal "arr_sante", precision: 12, scale: 2, default: "0.0", null: false
     t.bigint "bi_id", null: false
     t.integer "contracts_count", default: 0, null: false
+    t.integer "contracts_estimated", default: 0, null: false
     t.integer "contracts_without_q1", default: 0, null: false
     t.datetime "created_at", null: false
     t.integer "employees_count"

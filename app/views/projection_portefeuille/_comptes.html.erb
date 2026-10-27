@@ -49,7 +49,7 @@
                 </td>
                 <td><%= @projection.label(e.bo_key) %></td>
                 <td><strong><%= @projection.label(e.key) %></strong></td>
-                <td class="numeric"><%= eur.call(e.account.arr) %></td>
+                <%= render "attribution_portefeuille/arr_cell", account: e.account, eur: eur %>
                 <td><%= e.account.risque || "—" %></td>
                 <td>
                   <% if e.moved? %>

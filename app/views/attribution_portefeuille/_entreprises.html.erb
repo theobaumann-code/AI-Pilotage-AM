@@ -20,7 +20,9 @@
       <strong><%= @ent_total[:count] %></strong> <%= noun %><%= "s" if @ent_total[:count] > 1 %> · enjeu ARR <strong><%= eur.call(@ent_total[:arr]) %></strong> ·
       <strong><%= @ent_total[:upsell] %></strong> avec une opportunité d'upsell (<%= eur.call(@ent_total[:upsell_amount]) %>).
       <% if bi %>
-        Enjeu ARR = contrats santé et prévoyance actifs. Opportunité d'upsell = le risque que le compte n'a pas encore (prévoyance pour un compte santé seul, et inversement),
+        Enjeu ARR = contrats santé et prévoyance signés et envoyés à l'assureur, au statut ops revu, en onboarding, onboardé ou suspendu :
+        facturation du T1 2026 × 4, remplacée contrat par contrat par l'estimation du moteur Analytics si le T1 n'est pas facturé en entier
+        ou s'il s'écarte de 30 % ou plus de l'estimation. Opportunité d'upsell = le risque que le compte n'a pas encore (prévoyance pour un compte santé seul, et inversement),
         estimé avec la formule par salarié des upsells sur l'effectif du BO.
       <% else %>
         Enjeu ARR = produits encore actifs. Opportunité d'upsell = au moins un upsell « Non démarré » ou « En cours ».
@@ -51,7 +53,11 @@
                   <% end %>
                 </td>
                 <td><%= r[:am_name] %></td>
-                <td class="numeric"><%= eur.call(r[:arr]) %></td>
+                <% if bi %>
+                  <%= render "attribution_portefeuille/arr_cell", account: r[:account], eur: eur %>
+                <% else %>
+                  <td class="numeric"><%= eur.call(r[:arr]) %></td>
+                <% end %>
                 <td>
                   <% if r[:risque] %>
                     <span class="badge <%= { "Double risque" => "ok", "Santé" => "warn", "Prévoyance" => "warn" }[r[:risque]] %>"><%= r[:risque] %></span>

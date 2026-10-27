@@ -61,6 +61,18 @@ class AttributionPortefeuilleBiTest < ActionDispatch::IntegrationTest
     assert_equal [ "Sante Seule Bi" ], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:name] }
   end
 
+  test "an account partly valued at the engine's estimate says so, with both figures" do
+    account(name: "Estime Bi", am_email: "am-bi@sidecare.com", arr: 9_000, arr_billed: 4_000, arr_estimated: 9_000,
+      contracts_estimated: 1, has_sante: true)
+    account(name: "Facture Bi", am_email: "am-bi@sidecare.com", arr: 5_000, arr_billed: 5_000, has_sante: true)
+
+    sign_in @admin
+    get attribution_portefeuille_path
+    assert_match(/Estime Bi[\s\S]*?dont estimé · 1 contrat/, @response.body)
+    assert_match "Facturé (T1 2026 × 4) : 4,000 € · Estimé (moteur Analytics) : 9,000 €", @response.body
+    assert_no_match(/Facture Bi[\s\S]*?dont estimé[\s\S]*?Estime Bi/, @response.body)
+  end
+
   test "the Comptes sans AM table lists unassigned accounts over the thresholds, biggest first" do
     account(name: "Gros Sans AM", arr: 7_000, has_prevoyance: true)
     account(name: "Petit Standard", kind: "user_pro", siren: "123456789", arr: 2_500, has_sante: true, has_standard_sante: true)

@@ -5,7 +5,8 @@
 class BiPortfolioSync
   QUERY_PATH = Rails.root.join("app/services/bi_portfolio_query.sql")
   COLUMNS = %w[kind name siren user_pros_count am_email am_name arr arr_sante arr_prevoyance has_sante has_prevoyance
-               has_standard_sante contracts_count contracts_without_q1 employees_count].freeze
+               has_standard_sante contracts_count contracts_without_q1 employees_count arr_billed arr_estimated
+               contracts_estimated].freeze
 
   def self.sync!
     new.sync!
@@ -33,7 +34,8 @@ class BiPortfolioSync
   end
 
   def sql
-    format(File.read(QUERY_PATH), dataset: "`#{project_id}.#{@dataset}`")
+    dataset = "`#{project_id}.#{@dataset}`"
+    format(File.read(QUERY_PATH), dataset: dataset, arr_estimate_ctes: BiArrEstimateSql.ctes(dataset))
   end
 
   private
@@ -51,7 +53,8 @@ class BiPortfolioSync
     attrs = row.slice(*COLUMNS).symbolize_keys
     attrs[:am_email] = attrs[:am_email].to_s.strip.downcase.presence
     attrs[:am_name] = attrs[:am_name].to_s.strip.presence
-    %i[arr arr_sante arr_prevoyance].each { |key| attrs[key] = attrs[key].to_f.round(2) }
+    %i[arr arr_sante arr_prevoyance arr_billed arr_estimated].each { |key| attrs[key] = attrs[key].to_f.round(2) }
+    attrs[:contracts_estimated] = attrs[:contracts_estimated].to_i
     attrs.merge(bi_id: row["account_id"], synced_at: now, created_at: now, updated_at: now)
   end
 end

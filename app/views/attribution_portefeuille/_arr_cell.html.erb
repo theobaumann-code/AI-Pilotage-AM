@@ -1,0 +1,10 @@
+<%# A BI account's ARR, flagged when some of its contracts are valued at the Analytics engine's estimate instead of
+    their Q1 2026 invoices (Q1 not invoiced in full, or invoiced and estimated 30 % apart). %>
+<td class="numeric">
+  <%= eur.call(account.arr) %>
+  <% if account.contracts_estimated.positive? %>
+    <br><small class="muted-count" title="Facturé (T1 2026 × 4) : <%= eur.call(account.arr_billed) %> · Estimé (moteur Analytics) : <%= eur.call(account.arr_estimated) %>">
+      dont estimé · <%= pluralize(account.contracts_estimated, "contrat") %>
+    </small>
+  <% end %>
+</td>

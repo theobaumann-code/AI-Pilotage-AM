@@ -42,7 +42,7 @@
                   <% if a.siren.present? %><br><small style="color:var(--text-muted);">SIREN <%= a.siren %></small><% end %>
                 </td>
                 <td><%= a.kind_label %><%= " · #{pluralize(a.user_pros_count, "entreprise")}" if a.set? %></td>
-                <td class="numeric"><%= eur.call(a.arr) %></td>
+                <%= render "attribution_portefeuille/arr_cell", account: a, eur: eur %>
                 <td><%= a.risque || "—" %></td>
                 <td><%= a.has_standard_sante ? "Oui" : "Non" %></td>
               </tr>

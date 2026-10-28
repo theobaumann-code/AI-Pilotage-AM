@@ -7,9 +7,9 @@ class ProjectionPortefeuilleController < ApplicationController
   before_action :require_strict_admin!
 
   # Query params kept across a bulk action, so the page comes back with the same filters / sort / page.
-  KEPT_PARAMS = %w[pc_q pc_arr_min pc_arr_max pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_modified pc_sm pc_sort pc_dir pc_page
-                   pc_size ps_q ps_sm ps_sort ps_dir ps_page ps_size].freeze
-  KEPT_ARRAY_PARAMS = %i[pc_concerned pc_movements pc_owners pc_bo].freeze
+  KEPT_PARAMS = %w[pc_q pc_arr_min pc_arr_max pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_risques_open pc_modified pc_sm pc_sort pc_dir pc_page
+                   pc_size ps_q ps_risques_open ps_sm ps_sort ps_dir ps_page ps_size].freeze
+  KEPT_ARRAY_PARAMS = %i[pc_concerned pc_movements pc_owners pc_bo pc_risques ps_risques].freeze
 
   # The movements an account can show in "Comptes en projection", in the order of the Mouvement filter.
   NO_MOVEMENT = "Aucun mouvement".freeze
@@ -178,6 +178,7 @@ class ProjectionPortefeuilleController < ApplicationController
     @pc_bo = Array(params[:pc_bo]).reject(&:blank?)
     @pc_modified = params[:pc_modified].present?
     @pc_sm = params[:pc_sm].present?
+    @pc_risques = Array(params[:pc_risques]).reject(&:blank?)
   end
 
   def filtered_comptes(projection)
@@ -197,6 +198,7 @@ class ProjectionPortefeuilleController < ApplicationController
     rows = rows.select { |e| @pc_bo.include?(projection.label(e.bo_key)) } if @pc_bo.present?
     rows = rows.select(&:moved?) if @pc_modified
     rows = rows.select { |e| e.account.has_sur_mesure_sante } if @pc_sm
+    rows = rows.select { |e| @pc_risques.include?(e.account.risque) } if @pc_risques.present?
     rows
   end
 
@@ -223,9 +225,11 @@ class ProjectionPortefeuilleController < ApplicationController
   def filtered_sans_am(projection)
     @ps_q = params[:ps_q].to_s.strip
     @ps_sm = params[:ps_sm].present?
+    @ps_risques = Array(params[:ps_risques]).reject(&:blank?)
     rows = projection.sans_am_entries
     rows = rows.select { |e| e.account.name.to_s.downcase.include?(@ps_q.downcase) } if @ps_q.present?
     rows = rows.select { |e| e.account.has_sur_mesure_sante } if @ps_sm
+    rows = rows.select { |e| @ps_risques.include?(e.account.risque) } if @ps_risques.present?
     rows
   end
 

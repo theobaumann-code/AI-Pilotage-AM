@@ -5,10 +5,11 @@
     <div class="table-toolbar-controls">
       <%= form_with url: projection_portefeuille_path(anchor: "comptes"), method: :get, data: { turbo_action: "replace" } do %>
         <%= preserved_query_fields("pc_q", "pc_arr_min", "pc_arr_max", "pc_concerned", "pc_concerned_open", "pc_movements", "pc_movements_open",
-              "pc_owners", "pc_owners_open", "pc_bo", "pc_bo_open", "pc_modified", "pc_sm", "pc_page") %>
+              "pc_owners", "pc_owners_open", "pc_bo", "pc_bo_open", "pc_risques", "pc_risques_open", "pc_modified", "pc_sm", "pc_page") %>
         <%= live_search_field :pc_q, @pc_q, placeholder: "Rechercher un compte…" %>
         <%= render "shared/checklist_filter", param_name: "pc_concerned", options: @pc_concerned_options, selected: @pc_concerned, legend: "AM concerné" %>
         <%= render "shared/checklist_filter", param_name: "pc_movements", options: @pc_movement_options, selected: @pc_movements, legend: "Mouvement" %>
+        <%= render "shared/checklist_filter", param_name: "pc_risques", options: AttributionPortefeuilleController::RISQUES, selected: @pc_risques, legend: "Risque" %>
         <%= render "shared/range_filter", min_name: "pc_arr_min", max_name: "pc_arr_max", min: @pc_arr_min, max: @pc_arr_max, legend: "ARR (€)" %>
         <%= render "shared/checklist_filter", param_name: "pc_owners", options: @pc_owner_options, selected: @pc_owners, legend: "AM projeté" %>
         <%= render "shared/checklist_filter", param_name: "pc_bo", options: @pc_bo_options, selected: @pc_bo, legend: "AM dans le BO" %>

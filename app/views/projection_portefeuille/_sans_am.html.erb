@@ -3,8 +3,9 @@
     <h2>Comptes sans AM</h2>
     <div class="table-toolbar-controls">
       <%= form_with url: projection_portefeuille_path(anchor: "sans_am"), method: :get, data: { turbo_action: "replace" } do %>
-        <%= preserved_query_fields("ps_q", "ps_sm", "ps_page") %>
+        <%= preserved_query_fields("ps_q", "ps_risques", "ps_risques_open", "ps_sm", "ps_page") %>
         <%= live_search_field :ps_q, @ps_q, placeholder: "Rechercher un compte…" %>
+        <%= render "shared/checklist_filter", param_name: "ps_risques", options: AttributionPortefeuilleController::RISQUES, selected: @ps_risques, legend: "Risque" %>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
           <%= check_box_tag :ps_sm, "1", @ps_sm, onchange: "this.form.requestSubmit()" %>
           Sur mesure mutuelle

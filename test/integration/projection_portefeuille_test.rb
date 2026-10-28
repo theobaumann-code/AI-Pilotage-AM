@@ -258,6 +258,27 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal [ "Alice", "Sans AM" ], [ owner_of(@a2), owner_of(@free) ], "removing the team gives the accounts back"
   end
 
+  test "both tables filter by risk, bulk actions included" do
+    @a1.update!(has_sante: true)
+    @a2.update!(has_prevoyance: true)
+    @b1.update!(has_sante: true, has_prevoyance: true)
+    @free.update!(has_sante: true, has_prevoyance: true)
+
+    names = ->(params, pager = :@pc_pager) {
+      get projection_portefeuille_path(params)
+      @controller.instance_variable_get(pager).records.map { |e| e.account.name }.sort
+    }
+    assert_equal [ "Compte Proj 1" ], names.call(pc_risques: [ "Santé" ])
+    assert_equal [ "Compte Proj 2", "Compte Proj 3" ], names.call(pc_risques: [ "Prévoyance", "Double risque" ])
+    assert_match 'name="pc_risques[]"', @response.body
+    assert_equal [], names.call({ ps_risques: [ "Santé" ] }, :@ps_pager)
+    assert_equal [ "Compte Proj 4" ], names.call({ ps_risques: [ "Double risque" ] }, :@ps_pager)
+
+    bulk("reserve", all_filtered: "1", pc_risques: [ "Santé" ])
+    assert_redirected_to projection_portefeuille_path(pc_risques: [ "Santé" ], anchor: "comptes")
+    assert_equal [ "À réattribuer", "Alice", "Bob" ], [ owner_of(@a1), owner_of(@a2), owner_of(@b1) ]
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

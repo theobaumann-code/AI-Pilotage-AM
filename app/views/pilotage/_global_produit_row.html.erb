@@ -72,6 +72,15 @@
       <%= deal.risque_churn %>%
     <% end %>
   </td>
+  <td class="col-a-resilier" style="text-align:center;">
+    <% if current_user.privileged? %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global_produit", **summary_filter_params), method: :patch do |f| %>
+        <%= f.check_box :a_resilier, onchange: "this.form.requestSubmit()", title: "A résilier", aria: { label: "A résilier" } %>
+      <% end %>
+    <% else %>
+      <%= deal.a_resilier ? "Oui" : "-" %>
+    <% end %>
+  </td>
   <td class="computed"><%= number_to_currency(deal.final_arr, unit: "€", format: "%n %u", precision: 0) %></td>
   <td class="rowaction">
     <% if current_user.privileged? %>

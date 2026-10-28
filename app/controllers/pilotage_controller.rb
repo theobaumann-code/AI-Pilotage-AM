@@ -69,6 +69,7 @@ class PilotageController < ApplicationController
         taux: ->(d) { TablePager.key(d.taux.to_f) },
         statut_renouvellement: ->(d) { TablePager.key(d.statut_renouvellement) },
         risque_churn: ->(d) { TablePager.key(d.risque_churn) },
+        a_resilier: ->(d) { TablePager.key(d.a_resilier ? 1 : 0) },
         final_arr: ->(d) { TablePager.key(d.final_arr) }
       }, default_sort: :nom)
 
@@ -147,12 +148,12 @@ class PilotageController < ApplicationController
     csv = CSV.generate(col_sep: ";") do |csv|
       header = [ "Nom", "AM", "Produit", "Collège", "Assureur" ]
       header << "ID externe" if current_user.admin?
-      header.concat([ "ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)" ])
+      header.concat([ "ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "A résilier", "ARR final (€)" ])
       csv << header
       filtered_global_produits.each do |d|
         row = [ d.company.name, d.company.user.name, d.produit, d.college, d.assureur ]
         row << d.identifiant if current_user.admin?
-        row.concat([ d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr ])
+        row.concat([ d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.a_resilier ? "Oui" : "Non", d.final_arr ])
         csv << row
       end
     end

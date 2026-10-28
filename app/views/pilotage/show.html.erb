@@ -245,13 +245,14 @@
             <%= sortable_th(@gprod_pager, :taux, "Taux négocié (%)", col_class: "col-taux") %>
             <%= sortable_th(@gprod_pager, :statut_renouvellement, "Statut de renouvellement", col_class: "col-churn") %>
             <%= sortable_th(@gprod_pager, :risque_churn, "% risque churn", col_class: "col-taux") %>
+            <%= sortable_th(@gprod_pager, :a_resilier, "A résilier") %>
             <%= sortable_th(@gprod_pager, :final_arr, "ARR final", col_class: "col-final") %>
             <th class="col-action"></th>
           </tr>
         </thead>
         <tbody>
           <% if @gprod_pager.records.empty? %>
-            <tr><td colspan="<%= current_user.admin? ? 12 : 11 %>" class="empty-state">Aucun produit configuré.</td></tr>
+            <tr><td colspan="<%= current_user.admin? ? 13 : 12 %>" class="empty-state">Aucun produit configuré.</td></tr>
           <% else %>
             <%= render partial: "pilotage/global_produit_row", collection: @gprod_pager.records, as: :deal %>
           <% end %>

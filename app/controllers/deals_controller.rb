@@ -203,7 +203,7 @@ class DealsController < ApplicationController
 
   def produit_fields
     [ :produit, :college, :assureur, :arr, :taux, :identifiant, :statut_renouvellement, :risque_churn,
-     :churn_reason, :churn_comment ]
+     :churn_reason, :churn_comment, :a_resilier ]
   end
 
   def upsell_fields

@@ -42,7 +42,6 @@ class ResiliationsEnAttenteController < ApplicationController
         am: ->(r) { TablePager.key(r[:deal].company.user.name) },
         risque: ->(r) { TablePager.key(r[:deal].produit) },
         college: ->(r) { TablePager.key(r[:deal].college) },
-        arr: ->(r) { TablePager.key(r[:deal].arr.to_f) },
         statut: ->(r) { TablePager.key(statut(r)) },
         cree_le: ->(r) { TablePager.key(r[:termination]&.created_on) },
         date_effet: ->(r) { TablePager.key(r[:termination]&.termination_date) }
@@ -65,7 +64,6 @@ class ResiliationsEnAttenteController < ApplicationController
 
   def totals(rows)
     with = rows.count { |r| r[:termination] }
-    { count: rows.size, with_termination: with, without_termination: rows.size - with,
-      arr: rows.sum { |r| r[:deal].arr.to_f } }
+    { count: rows.size, with_termination: with, without_termination: rows.size - with }
   end
 end

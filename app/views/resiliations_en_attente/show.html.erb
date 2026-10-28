@@ -1,5 +1,4 @@
 <% content_for :title, "Suivi des résiliations - Pilotage NRR" %>
-<% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
 <% day = ->(d) { d ? l(d, format: "%d/%m/%Y") : "-" } %>
 
 <h1 class="section-title">Suivi des résiliations</h1>
@@ -47,8 +46,7 @@
     </div>
   </div>
   <p class="section-sub" style="margin-top:-8px;">
-    <strong><%= @total[:count] %></strong> produit<%= "s" if @total[:count] > 1 %>, dont <strong><%= @total[:with_termination] %></strong> avec une résiliation 2026
-    · ARR <strong><%= eur.call(@total[:arr]) %></strong>.
+    <strong><%= @total[:count] %></strong> produit<%= "s" if @total[:count] > 1 %>, dont <strong><%= @total[:with_termination] %></strong> avec une résiliation 2026.
     Produits cochés « A résilier » ou au statut « Nouveau contrat ». Pour chacun, la résiliation BO la plus récente créée en 2026
     sur la même entreprise (retrouvée par son nom ; pour un groupe, sur tous ses user pros), le même risque et le même collège.
   </p>
@@ -61,16 +59,15 @@
           <%= sortable_th(@pager, :risque, "Risque") %>
           <%= sortable_th(@pager, :college, "Collège") %>
           <th>Suivi</th>
-          <%= sortable_th(@pager, :arr, "ARR (€)") %>
-          <th>Résiliation BO</th>
           <%= sortable_th(@pager, :statut, "Statut de résiliation") %>
+          <th>Résiliation BO</th>
           <%= sortable_th(@pager, :cree_le, "Créée le") %>
           <%= sortable_th(@pager, :date_effet, "Date d'effet") %>
         </tr>
       </thead>
       <tbody>
         <% if @pager.records.empty? %>
-          <tr><td colspan="10" class="empty-state">Aucun produit à résilier ni nouveau contrat pour ce filtre.</td></tr>
+          <tr><td colspan="9" class="empty-state">Aucun produit à résilier ni nouveau contrat pour ce filtre.</td></tr>
         <% else %>
           <% @pager.records.each do |r| %>
             <% d = r[:deal]; t = r[:termination] %>
@@ -83,15 +80,14 @@
                 <% if d.a_resilier %><span class="badge ko">A résilier</span><% end %>
                 <% if d.statut_renouvellement == "Nouveau contrat" %><span class="badge reader">Nouveau contrat</span><% end %>
               </td>
-              <td class="numeric"><%= eur.call(d.arr) %></td>
               <% if t %>
-                <td><%= t.name.presence || "-" %><br><small style="color:var(--text-muted);"><%= t.type_label %> · <%= t.product_label %></small></td>
                 <td><span class="badge kam"><%= t.status_label %></span></td>
+                <td><%= t.name.presence || "-" %><br><small style="color:var(--text-muted);"><%= t.type_label %> · <%= t.product_label %></small></td>
                 <td><%= day.call(t.created_on) %></td>
                 <td><%= day.call(t.termination_date) %></td>
               <% else %>
-                <td>-</td>
                 <td><span class="badge ko">Aucune résiliation 2026 en cours</span></td>
+                <td>-</td>
                 <td>-</td>
                 <td>-</td>
               <% end %>

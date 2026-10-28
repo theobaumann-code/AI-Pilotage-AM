@@ -43,8 +43,10 @@ class ResiliationsEnAttenteTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal({ @flagged.id => 2, @nouveau.id => 4, @without.id => nil }, listed,
       "same company by name, same risk (santé et prévoyance covers both) and collège; the latest one wins")
-    assert_equal({ count: 3, with_termination: 2, without_termination: 1, arr: 3_000.0 },
+    assert_equal({ count: 3, with_termination: 2, without_termination: 1 },
       @controller.instance_variable_get(:@all_total))
+    assert_select "table.deals-table th", text: "Statut de résiliation"
+    assert_select "table.deals-table th", text: /ARR/, count: 0
     assert_match "En attente de signature", @response.body
     assert_match "Statut BO 8", @response.body
     assert_match "Aucune résiliation 2026 en cours", @response.body

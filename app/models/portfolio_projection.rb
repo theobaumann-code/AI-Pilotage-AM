@@ -101,8 +101,11 @@ class PortfolioProjection
       real_accounts = real.fetch(h.key, [])
       projected_accounts = projected.fetch(h.key, [])
       comptes = projected_accounts.size
+      arr = arr_of(projected_accounts)
+      # Upsell potential: the risk each projected account doesn't hold yet, valued on its headcount (BiAccount).
       { holder: h, real_comptes: real_accounts.size, real_arr: arr_of(real_accounts),
-        comptes: comptes, arr: arr_of(projected_accounts), limit: h.projected_limit,
+        comptes: comptes, arr: arr, basket: comptes > 0 ? arr / comptes : nil,
+        upsell: projected_accounts.sum { |e| e.account.upsell_amount }, limit: h.projected_limit,
         remaining: h.projected_limit && h.projected_limit - comptes, over: !h.projected_limit.nil? && comptes > h.projected_limit }
     end
   end

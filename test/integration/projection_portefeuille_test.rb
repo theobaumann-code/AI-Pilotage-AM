@@ -279,6 +279,27 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal [ "À réattribuer", "Alice", "Bob" ], [ owner_of(@a1), owner_of(@a2), owner_of(@b1) ]
   end
 
+  test "the projected distribution shows each holder's average basket and upsell potential" do
+    @a1.update!(has_sante: true, employees_count: 10)                       # missing prévoyance
+    @a2.update!(has_sante: true, has_prevoyance: true, employees_count: 50) # nothing to sell
+    bulk("assign", keys: [ key(@b1) ], target: "user:#{@alice.id}")
+    @b1.update!(has_prevoyance: true, employees_count: 20)                  # missing mutuelle
+
+    alice = rows["Alice"]
+    assert_in_delta 20_000.0 / 3, alice[:basket], 0.01
+    expected = UpsellDeal.rate_per_employee_for("Prévoyance") * 10 + UpsellDeal.rate_per_employee_for("Mutuelle") * 20
+    assert_in_delta expected, alice[:upsell], 0.01
+    assert_nil rows["Bob"][:basket], "no projected account, no basket"
+    totals = @controller.instance_variable_get(:@totals)
+    assert_in_delta expected, totals[:upsell], 0.01
+    assert_in_delta 20_000.0 / 3, totals[:basket], 0.01
+    assert_match "Panier moyen (€)", @response.body
+    assert_match "Potentiel d&#39;upsell (€)", @response.body
+
+    get projection_portefeuille_path(proj_sort: "upsell_amount", proj_dir: "desc")
+    assert_equal "Alice", @controller.instance_variable_get(:@pager).records.first[:holder].name
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

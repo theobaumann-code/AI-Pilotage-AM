@@ -148,8 +148,10 @@ class ProjectionPortefeuilleController < ApplicationController
     @over = @rows.select { |r| r[:over] }
     @totals = {
       real_comptes: @rows.sum { |r| r[:real_comptes] }, real_arr: @rows.sum { |r| r[:real_arr] },
-      comptes: @rows.sum { |r| r[:comptes] }, arr: total_arr, capacity: @rows.sum { |r| r[:limit].to_i }
+      comptes: @rows.sum { |r| r[:comptes] }, arr: total_arr, capacity: @rows.sum { |r| r[:limit].to_i },
+      upsell: @rows.sum { |r| r[:upsell] }
     }
+    @totals[:basket] = @totals[:comptes] > 0 ? total_arr / @totals[:comptes] : nil
     # Teams have no ceiling: their accounts don't use up the AMs' capacity.
     @totals[:remaining] = @totals[:capacity] - @rows.reject { |r| r[:limit].nil? }.sum { |r| r[:comptes] }
     @reserve = @projection.place_total(PortfolioProjection::RESERVE)
@@ -164,7 +166,9 @@ class ProjectionPortefeuilleController < ApplicationController
         comptes: ->(r) { TablePager.key(r[:comptes]) },
         restant: ->(r) { TablePager.key(r[:remaining]) },
         arr: ->(r) { TablePager.key(r[:arr]) },
-        part: ->(r) { TablePager.key(r[:part]) }
+        part: ->(r) { TablePager.key(r[:part]) },
+        panier: ->(r) { TablePager.key(r[:basket]) },
+        upsell_amount: ->(r) { TablePager.key(r[:upsell]) }
       }, default_sort: :comptes, default_dir: "desc")
   end
 

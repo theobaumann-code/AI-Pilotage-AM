@@ -4,6 +4,8 @@
   </div>
   <p class="section-sub" style="margin-top:-8px;">
     Comptes et ARR dans le BO puis dans la projection, face au plafond de chacun (0 pour un AM sortant).
+    Panier moyen = ARR projeté ÷ comptes projetés. Potentiel d'upsell = pour chaque compte projeté, le risque qu'il n'a pas encore
+    (prévoyance pour un compte santé seul, et inversement), estimé avec la formule par salarié des upsells sur l'effectif du BO.
   </p>
   <div class="table-scroll">
     <table class="deals-table attribution-table">
@@ -18,6 +20,8 @@
           <th class="numeric">ARR BO (€)</th>
           <%= sortable_th(@pager, :arr, "ARR projeté (€)") %>
           <%= sortable_th(@pager, :part, "% de l'ARR") %>
+          <%= sortable_th(@pager, :panier, "Panier moyen (€)") %>
+          <%= sortable_th(@pager, :upsell_amount, "Potentiel d'upsell (€)") %>
         </tr>
       </thead>
       <tbody>
@@ -47,6 +51,8 @@
             <td class="numeric"><%= eur.call(r[:real_arr]) %></td>
             <td class="numeric"><%= eur.call(r[:arr]) %></td>
             <td class="numeric"><%= number_with_precision(r[:part], precision: 1) %> %</td>
+            <td class="numeric"><%= r[:basket] ? eur.call(r[:basket]) : "-" %></td>
+            <td class="numeric"><%= eur.call(r[:upsell]) %></td>
           </tr>
         <% end %>
       </tbody>
@@ -60,6 +66,8 @@
           <td class="numeric"><%= eur.call(@totals[:real_arr]) %></td>
           <td class="numeric"><%= eur.call(@totals[:arr]) %></td>
           <td class="numeric">100 %</td>
+          <td class="numeric"><%= @totals[:basket] ? eur.call(@totals[:basket]) : "-" %></td>
+          <td class="numeric"><%= eur.call(@totals[:upsell]) %></td>
         </tr>
       </tfoot>
     </table>

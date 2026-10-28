@@ -1,5 +1,5 @@
--- Temporary "Résiliations en attente": one row per BO contract termination waiting for the client's signature
--- (operation_status 1, as of the latest snapshot), with the account it belongs to. Read by BiPendingTerminationSync.
+-- Temporary "Suivi des résiliations": one row per BO contract termination created in 2026, whatever its status
+-- (as of the latest snapshot), with the account it belongs to. Read by BiPendingTerminationSync.
 WITH
 terminations AS (
   SELECT *
@@ -26,7 +26,7 @@ q1_entries AS (
   WHERE e.purpose IN ('Facture réelle', 'Facture factice')
     AND e.invoice_start_date BETWEEN '2026-01-01' AND '2026-03-31'
     AND e.internal_contract_id IN (SELECT terminable_id FROM terminations
-                                   WHERE operation_status = 1 AND terminable_type = 'InternalContract')
+                                   WHERE created_at >= '2026-01-01' AND terminable_type = 'InternalContract')
   GROUP BY 1, 2
 ),
 q1_arr AS (
@@ -34,7 +34,8 @@ q1_arr AS (
   FROM q1_entries
   GROUP BY 1
 )
-SELECT t.id AS bi_id, t.name, t.terminable_type, t.terminable_id, t.product_type, t.user_pro_id, up.social_name,
+SELECT t.id AS bi_id, t.name, t.terminable_type, t.terminable_id, t.product_type, t.college_type, t.operation_status,
+       t.user_pro_id, up.social_name,
        IF(m.company_set_id IS NULL, 'user_pro', 'set') AS account_kind,
        IFNULL(m.company_set_id, t.user_pro_id) AS account_bi_id,
        DATE(t.created_at) AS created_on, t.termination_date,
@@ -44,4 +45,4 @@ FROM terminations t
 LEFT JOIN user_pros up ON up.id = t.user_pro_id
 LEFT JOIN memberships m ON m.user_pro_id = t.user_pro_id
 LEFT JOIN q1_arr q ON t.terminable_type = 'InternalContract' AND q.contract_id = t.terminable_id
-WHERE t.operation_status = 1 AND t.user_pro_id IS NOT NULL
+WHERE t.created_at >= '2026-01-01' AND t.user_pro_id IS NOT NULL

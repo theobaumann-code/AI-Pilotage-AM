@@ -1,10 +1,10 @@
-# Temporary "Résiliations en attente": pulls the BO's contract terminations waiting for signature into
+# Temporary "Suivi des résiliations": pulls the BO's 2026 contract terminations (any status) into
 # bi_pending_terminations, on the same schedule as BiPortfolioSync (see BiPortfolioSyncJob). A full replace each run.
-# Unlike the accounts, an empty answer is a valid one (no termination waiting) and empties the table.
+# Unlike the accounts, an empty answer is a valid one (no termination this year) and empties the table.
 class BiPendingTerminationSync
   QUERY_PATH = Rails.root.join("app/services/bi_pending_terminations_query.sql")
-  COLUMNS = %w[bi_id name terminable_type terminable_id product_type user_pro_id social_name account_kind account_bi_id
-               created_on termination_date contract_arr].freeze
+  COLUMNS = %w[bi_id name terminable_type terminable_id product_type college_type operation_status user_pro_id
+               social_name account_kind account_bi_id created_on termination_date contract_arr].freeze
 
   def self.sync!
     new.sync!

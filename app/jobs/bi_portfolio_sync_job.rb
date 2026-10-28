@@ -7,9 +7,9 @@ class BiPortfolioSyncJob < ApplicationJob
   def perform
     count = BiPortfolioSync.sync!
     Rails.logger.info("[BiPortfolioSync] #{count} comptes synchronisés")
-    # Temporary "Résiliations en attente" rubric.
+    # Temporary "Suivi des résiliations" rubric.
     terminations = BiPendingTerminationSync.sync!
-    Rails.logger.info("[BiPendingTerminationSync] #{terminations} résiliations en attente synchronisées")
+    Rails.logger.info("[BiPendingTerminationSync] #{terminations} résiliations 2026 synchronisées")
   rescue BigQueryClient::QueryError => error
     Rails.logger.error("[BiPortfolioSync] #{error.message}")
   end

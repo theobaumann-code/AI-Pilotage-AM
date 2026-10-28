@@ -104,10 +104,10 @@ class PortfolioSummary
     produit_deals.reject(&:churned?).sum(&:final_arr) + non_accompagne_renewed_contribution
   end
 
-  # "Autres impacts" (manual, one-off ARR impacts), each side counted on its own: "Validé" lines feed only
-  # the actual figures (ARR final actuel, NRR actuel), "En cours" lines only the projected ones (ARR final
-  # projeté, NRR projeté) - a line never counts on both sides, matching the Actuel / Projeté totals of the
-  # "Autres impacts" section.
+  # "Autres impacts" (manual, one-off ARR impacts): "Validé" lines feed the actual figures (ARR final actuel,
+  # NRR actuel); the projected ones (ARR final projeté, NRR projeté) take every line, "Validé" and "En cours" -
+  # like a signed upsell, a validated impact is still there at the end of the year. Matches the Actuel /
+  # Projeté totals of the "Autres impacts" card.
   def other_impacts
     @other_impacts ||= companies.flat_map(&:current_other_impacts)
   end
@@ -118,6 +118,10 @@ class PortfolioSummary
 
   def other_impacts_pending
     other_impacts.reject(&:validated?).sum { |i| i.amount.to_f }
+  end
+
+  def other_impacts_projected
+    other_impacts_validated + other_impacts_pending
   end
 
   # Behind the "ARR final" card - renewed ARR plus only the upsells actually signed so far.
@@ -137,7 +141,7 @@ class PortfolioSummary
   # upsell's probability-weighted projection. Forward-looking, unlike `arr_final_actual`: an account that might
   # churn counts only for its chance of staying, so its renewal-rate increase isn't counted as if it were certain.
   def arr_final
-    renewed_arr_projected + upsold + other_impacts_pending
+    renewed_arr_projected + upsold + other_impacts_projected
   end
 
   def nrr_actual

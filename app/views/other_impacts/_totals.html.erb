@@ -1,5 +1,5 @@
 <%# locals: summary — the "Autres impacts" KPI card, laid out like its neighbours: Actuel = "Validé" lines (the
-    ones already in the actual figures), Projeté = lines still "En cours". %>
+    ones already in the actual figures), Projeté = every line, "Validé" and "En cours". %>
 <% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
 <div class="metric-card metric-card--compact" id="other-impacts-totals">
   <div class="metric-card-title">Autres impacts</div>
@@ -10,7 +10,7 @@
     </div>
     <div class="metric-col">
       <div class="metric-col-label">Projeté</div>
-      <div class="metric-col-value"><%= eur.call(summary.other_impacts_pending) %></div>
+      <div class="metric-col-value"><%= eur.call(summary.other_impacts_projected) %></div>
     </div>
   </div>
 </div>

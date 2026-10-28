@@ -31,6 +31,7 @@ class BiPortfolioSyncTest < ActiveSupport::TestCase
     assert_match "LOGICAL_OR(risque = 'sante' AND NOT standard) AS has_sur_mesure_sante", client.sql
     assert_nil BiAccount.find_by!(bi_id: 2).am_email
     assert_match "`dogwood-method-256009.BI_EU`.s_company_sets", client.sql
+    assert_match "IF(c.risque = 'sante', 1 + 0.1532, 1) AS tsa_divisor", client.sql, "health ARR is brought back to net"
   end
 
   test "an empty answer raises and keeps the accounts already there" do

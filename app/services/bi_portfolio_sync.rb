@@ -4,6 +4,8 @@
 # sync, one that lost its AM drops into "Comptes sans AM". The query itself lives in bi_portfolio_query.sql.
 class BiPortfolioSync
   QUERY_PATH = Rails.root.join("app/services/bi_portfolio_query.sql")
+  # TSA on health premiums, removed so that health ARR is net - the 2026 rate, the same as the upsell formula.
+  HEALTH_TSA_RATE = UpsellDeal::MUTUELLE_TAXE
   COLUMNS = %w[kind name siren user_pros_count am_email am_name arr arr_sante arr_prevoyance has_sante has_prevoyance
                has_standard_sante has_sur_mesure_sante contracts_count contracts_without_q1 employees_count arr_billed arr_estimated
                contracts_estimated].freeze
@@ -35,7 +37,8 @@ class BiPortfolioSync
 
   def sql
     dataset = "`#{project_id}.#{@dataset}`"
-    format(File.read(QUERY_PATH), dataset: dataset, arr_estimate_ctes: BiArrEstimateSql.ctes(dataset))
+    format(File.read(QUERY_PATH), dataset: dataset, arr_estimate_ctes: BiArrEstimateSql.ctes(dataset),
+                                   health_tsa_rate: HEALTH_TSA_RATE)
   end
 
   private

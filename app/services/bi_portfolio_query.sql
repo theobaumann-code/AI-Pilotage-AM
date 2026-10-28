@@ -61,7 +61,7 @@ contracts AS (
 ),
 -- Estimated ARR of every active contract, from the estimation engine of SideCare Analytics (see BiArrEstimateSql).
 %{arr_estimate_ctes},
--- ARR = SideCare's commission on the contract's premiums (HT × total commission rate), annualised from Q1 2026
+-- ARR = SideCare's commission on the contract's premiums (× total commission rate), annualised from Q1 2026
 -- invoicing - the most reliable billing period. A contract not invoiced in Q1 (started since) is annualised from
 -- its last three months invoiced after Q1 instead. Real invoices win over "factice" ones when a contract has both.
 entries AS (
@@ -98,13 +98,19 @@ contract_arr AS (
   FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY contract_id ORDER BY month DESC) AS recent_rank FROM contract_months)
   GROUP BY 1
 ),
+-- Health premiums - invoiced as well as estimated - include the TSA (taxe de solidarité additionnelle): health ARR is
+-- brought back to net by dividing it by (1 + TSA), as SideCare Analytics does. Provident carries no TSA.
+contract_net AS (
+  SELECT c.*, IF(c.risque = 'sante', 1 + %{health_tsa_rate}, 1) AS tsa_divisor FROM contracts c
+),
 -- Per contract, the estimate replaces the invoiced ARR when Q1 2026 was not invoiced in full, or when the two differ by
 -- 30 per cent of the estimate or more. Without a usable estimate, the invoiced ARR stays.
 contract_choice AS (
-  SELECT c.id, c.user_pro_id, c.risque, c.standard, IFNULL(ca.arr, 0) AS billed_arr, ca.basis, e.estimated_arr,
+  SELECT c.id, c.user_pro_id, c.risque, c.standard, IFNULL(ca.arr, 0) / c.tsa_divisor AS billed_arr, ca.basis,
+         e.estimated_arr / c.tsa_divisor AS estimated_arr,
          IFNULL(e.estimated_arr > 0 AND (NOT IFNULL(q.q1_complete, FALSE)
            OR ABS(IFNULL(ca.arr, 0) - e.estimated_arr) >= 0.3 * e.estimated_arr), FALSE) AS use_estimate
-  FROM contracts c
+  FROM contract_net c
   LEFT JOIN contract_arr ca ON ca.contract_id = c.id
   LEFT JOIN q1_coverage q ON q.contract_id = c.id
   LEFT JOIN contract_arr_estimates e ON e.contract_id = c.id

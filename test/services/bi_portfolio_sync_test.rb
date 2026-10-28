@@ -10,28 +10,44 @@ class BiPortfolioSyncTest < ActiveSupport::TestCase
     end
   end
 
-  def bi_row(id, **attrs)
+  def bi_row(id, contract_id = nil, **attrs)
     { "kind" => "set", "account_id" => id, "name" => "Set #{id}", "siren" => nil, "user_pros_count" => 3,
-      "am_email" => " AM@SideCare.com ", "am_name" => "Am Bi", "arr" => 1234.567, "arr_sante" => 1000.0, "arr_prevoyance" => 234.567,
-      "has_sante" => true, "has_prevoyance" => true, "has_standard_sante" => true, "contracts_count" => 2,
-      "contracts_without_q1" => 0, "employees_count" => 12, "arr_billed" => 900.004, "arr_estimated" => 1500.0,
-      "contracts_estimated" => 1, "has_sur_mesure_sante" => true }.merge(attrs)
+      "am_email" => " AM@SideCare.com ", "am_name" => "Am Bi", "employees_count" => 12,
+      "account_contract_id" => contract_id, "risque" => "sante", "standard" => true }
+      .merge(contract_id ? engine_row(contract_id) : {}).merge(attrs)
   end
 
-  test "replaces every account with what the BI returns, e-mails normalised" do
+  # A health contract the engine values at its tariff: 100 visibles × 80/98,85 % × 50 € × 12 × 10 %.
+  def engine_row(contract_id)
+    { "contract_id" => contract_id, "contract_type" => "CompanyHealthMutualInternalContract", "start_date" => "2025-01-01",
+      "visible_employees" => 100, "effective_salaries" => 100, "group_risk_visibles" => 100, "group_risk_signed" => 100,
+      "total_commission_rate" => 0.1, "source_detail" => "fee", "calculation_confidence" => "medium",
+      "pricing_reference" => "Tarif simple du contrat", "monthly_premium_per_employee" => 50.0, "months_invoiced" => 0,
+      "has_readiness" => false, "observed_on" => "2026-10-28" }
+  end
+
+  test "replaces every account with what the BI returns, its ARR added up contract by contract" do
     BiAccount.create!(kind: "set", bi_id: 999, name: "Ancien", synced_at: 1.day.ago)
-    client = FakeClient.new([ bi_row(1), bi_row(2, "kind" => "user_pro", "am_email" => nil, "am_name" => nil) ])
+    provident = engine_row(11).merge("contract_type" => "CompanyProvidentInsuranceInternalContract", "risque" => "prevoyance",
+                                     "source_detail" => "dsn_recent", "monthly_premium_per_employee" => 20.0)
+    client = FakeClient.new([ bi_row(1, 10, "standard" => false), bi_row(1, 11).merge(provident),
+                              bi_row(2, nil, "kind" => "user_pro", "am_email" => nil, "am_name" => nil) ])
 
     assert_equal 2, BiPortfolioSync.new(client: client).sync!
     assert_equal [ 1, 2 ], BiAccount.order(:bi_id).pluck(:bi_id), "the stale account is gone"
     first = BiAccount.find_by!(bi_id: 1)
-    assert_equal [ "am@sidecare.com", 1234.57 ], [ first.am_email, first.arr.to_f ]
-    assert_equal [ 900.0, 1500.0, 1 ], [ first.arr_billed.to_f, first.arr_estimated.to_f, first.contracts_estimated ]
+    sante = (100 * 0.80 / 0.9885 * 600 * 0.1 / 1.1532).round(2)
+    prevoyance = (100 * 0.95 / 0.973 * 240 * 0.1).round(2)
+    assert_equal [ "am@sidecare.com", sante, prevoyance ], [ first.am_email, first.arr_sante.to_f, first.arr_prevoyance.to_f ]
+    assert_equal [ 2, 2, "estimation" ], [ first.contracts_count, first.contracts_estimated, first.arr_source ]
+    assert_equal %w[fee dsn_recent], first.arr_calculation["source_details"]
     assert first.has_sur_mesure_sante
-    assert_match "LOGICAL_OR(risque = 'sante' AND NOT standard) AS has_sur_mesure_sante", client.sql
-    assert_nil BiAccount.find_by!(bi_id: 2).am_email
+    assert_not first.has_standard_sante
+
+    second = BiAccount.find_by!(bi_id: 2)
+    assert_nil second.am_email
+    assert_equal [ 0, nil ], [ second.contracts_count, second.arr_calculation ]
     assert_match "`dogwood-method-256009.BI_EU`.s_company_sets", client.sql
-    assert_match "IF(c.risque = 'sante', 1 + 0.1532, 1) AS tsa_divisor", client.sql, "health ARR is brought back to net"
   end
 
   test "an empty answer raises and keeps the accounts already there" do

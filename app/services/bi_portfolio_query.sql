@@ -59,103 +59,27 @@ contracts AS (
     AND ic.subscription_status = 5
     AND ic.operation_status IN (2, 3, 4, 7)
 ),
--- Estimated ARR of every active contract, from the estimation engine of SideCare Analytics (see BiArrEstimateSql).
-%{arr_estimate_ctes},
--- ARR = SideCare's commission on the contract's premiums (× total commission rate), annualised from Q1 2026
--- invoicing - the most reliable billing period. A contract not invoiced in Q1 (started since) is annualised from
--- its last three months invoiced after Q1 instead. Real invoices win over "factice" ones when a contract has both.
-entries AS (
-  SELECT e.internal_contract_id AS contract_id, DATE_TRUNC(e.invoice_start_date, MONTH) AS month, e.purpose,
-         DATE_TRUNC(IFNULL(e.invoice_end_date, e.invoice_start_date), MONTH) AS last_month,
-         e.price * e.quantity * IFNULL(e.total_commission_rate, 0) AS commission
-  FROM %{dataset}.invoice_entries e
-  JOIN contracts c ON c.id = e.internal_contract_id
-  WHERE e.purpose IN ('Facture réelle', 'Facture factice')
-),
-entries_kept AS (
-  SELECT *
-  FROM entries
-  QUALIFY purpose = IF(LOGICAL_OR(purpose = 'Facture réelle') OVER (PARTITION BY contract_id), 'Facture réelle', 'Facture factice')
-),
-contract_months AS (
-  SELECT contract_id, month, SUM(commission) AS commission FROM entries_kept GROUP BY 1, 2
-),
--- Q1 2026 is a complete quarter when January, February and March are all covered by invoices (a quarterly invoice
--- covers the three at once).
-q1_coverage AS (
-  SELECT contract_id, COUNT(DISTINCT covered) = 3 AS q1_complete
-  FROM entries_kept, UNNEST(GENERATE_DATE_ARRAY(month, GREATEST(month, last_month), INTERVAL 1 MONTH)) covered
-  WHERE covered BETWEEN '2026-01-01' AND '2026-03-01' AND commission != 0
-  GROUP BY 1
-),
-contract_arr AS (
-  SELECT contract_id,
-         IF(COUNTIF(month BETWEEN '2026-01-01' AND '2026-03-01') > 0,
-            SUM(IF(month BETWEEN '2026-01-01' AND '2026-03-01', commission, 0)) * 4,
-            SAFE_DIVIDE(SUM(IF(month > '2026-03-01' AND recent_rank <= 3, commission, 0)) * 12,
-                        COUNTIF(month > '2026-03-01' AND recent_rank <= 3))) AS arr,
-         IF(COUNTIF(month BETWEEN '2026-01-01' AND '2026-03-01') > 0, 'T1 2026', 'après T1') AS basis
-  FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY contract_id ORDER BY month DESC) AS recent_rank FROM contract_months)
-  GROUP BY 1
-),
--- Health premiums - invoiced as well as estimated - include the TSA (taxe de solidarité additionnelle): health ARR is
--- brought back to net by dividing it by (1 + TSA), as SideCare Analytics does. Provident carries no TSA.
-contract_net AS (
-  SELECT c.*, IF(c.risque = 'sante', 1 + %{health_tsa_rate}, 1) AS tsa_divisor FROM contracts c
-),
--- Per contract, the estimate replaces the invoiced ARR when Q1 2026 was not invoiced in full, or when the two differ by
--- 30 per cent of the estimate or more. Without a usable estimate, the invoiced ARR stays.
-contract_choice AS (
-  SELECT c.id, c.user_pro_id, c.risque, c.standard, IFNULL(ca.arr, 0) / c.tsa_divisor AS billed_arr, ca.basis,
-         e.estimated_arr / c.tsa_divisor AS estimated_arr,
-         IFNULL(e.estimated_arr > 0 AND (NOT IFNULL(q.q1_complete, FALSE)
-           OR ABS(IFNULL(ca.arr, 0) - e.estimated_arr) >= 0.3 * e.estimated_arr), FALSE) AS use_estimate
-  FROM contract_net c
-  LEFT JOIN contract_arr ca ON ca.contract_id = c.id
-  LEFT JOIN q1_coverage q ON q.contract_id = c.id
-  LEFT JOIN contract_arr_estimates e ON e.contract_id = c.id
-),
-account_contracts AS (
-  SELECT mb.kind, mb.account_id, c.risque, c.standard, c.basis, c.billed_arr, c.estimated_arr, c.use_estimate,
-         IF(c.use_estimate, c.estimated_arr, c.billed_arr) AS arr
-  FROM contract_choice c
-  JOIN members mb ON mb.user_pro_id = c.user_pro_id
-),
-accounts AS (
-  SELECT kind, account_id,
-         SUM(arr) AS arr,
-         SUM(IF(risque = 'sante', arr, 0)) AS arr_sante,
-         SUM(IF(risque = 'prevoyance', arr, 0)) AS arr_prevoyance,
-         LOGICAL_OR(risque = 'sante') AS has_sante,
-         LOGICAL_OR(risque = 'prevoyance') AS has_prevoyance,
-         LOGICAL_OR(risque = 'sante' AND standard) AS has_standard_sante,
-         LOGICAL_OR(risque = 'sante' AND NOT standard) AS has_sur_mesure_sante,
-         COUNT(*) AS contracts_count,
-         COUNTIF(basis = 'après T1') AS contracts_without_q1,
-         SUM(billed_arr) AS arr_billed,
-         SUM(IFNULL(estimated_arr, 0)) AS arr_estimated,
-         COUNTIF(use_estimate) AS contracts_estimated
-  FROM account_contracts
-  GROUP BY 1, 2
-)
+-- The ARR engine of SideCare Analytics, one row per active contract (see BiArrEstimateSql). AnalyticsArr chooses,
+-- contract by contract and as Analytics does, between the invoiced ARR and the estimate.
+%{arr_estimate_ctes}
+-- One row per account and contract (one row with no contract for an account without any); BiPortfolioSync adds the
+-- contracts of an account up.
 SELECT am.kind, am.account_id,
        IF(am.kind = 'set', cs.name, up.social_name) AS name,
        IF(am.kind = 'user_pro', up.siren, NULL) AS siren,
        am.user_pros_count,
        a.email AS am_email, a.name AS am_name,
-       IFNULL(acc.arr, 0) AS arr, IFNULL(acc.arr_sante, 0) AS arr_sante, IFNULL(acc.arr_prevoyance, 0) AS arr_prevoyance,
-       IFNULL(acc.has_sante, FALSE) AS has_sante, IFNULL(acc.has_prevoyance, FALSE) AS has_prevoyance,
-       IFNULL(acc.has_standard_sante, FALSE) AS has_standard_sante,
-       IFNULL(acc.has_sur_mesure_sante, FALSE) AS has_sur_mesure_sante,
-       IFNULL(acc.contracts_count, 0) AS contracts_count, IFNULL(acc.contracts_without_q1, 0) AS contracts_without_q1,
-       IFNULL(acc.arr_billed, 0) AS arr_billed, IFNULL(acc.arr_estimated, 0) AS arr_estimated,
-       IFNULL(acc.contracts_estimated, 0) AS contracts_estimated,
-       IFNULL(g.visible_employees_count, g.employees_count) AS employees_count
+       IFNULL(g.visible_employees_count, g.employees_count) AS employees_count,
+       c.id AS account_contract_id, c.risque, c.standard, e.*
 FROM account_am am
 LEFT JOIN administrators a ON a.id = am.am_id
-LEFT JOIN accounts acc ON acc.kind = am.kind AND acc.account_id = am.account_id
 LEFT JOIN company_sets cs ON am.kind = 'set' AND cs.id = am.account_id
 LEFT JOIN user_pros up ON am.kind = 'user_pro' AND up.id = am.account_id
 LEFT JOIN %{dataset}.groups_bo g ON g.group_type = am.kind AND g.group_id = am.account_id
--- Only what the page shows: every account with an AM, and unassigned accounts big enough for the "sans AM" list.
-WHERE am.am_id IS NOT NULL OR IFNULL(acc.arr, 0) > 2000
+LEFT JOIN (
+  SELECT c.*, mb.kind, mb.account_id FROM contracts c JOIN members mb ON mb.user_pro_id = c.user_pro_id
+) c ON c.kind = am.kind AND c.account_id = am.account_id
+LEFT JOIN contract_arr_engine e ON e.contract_id = c.id
+-- Only what the page can show: every account with an AM, and unassigned accounts with a contract (the "sans AM"
+-- list keeps the big enough ones).
+WHERE am.am_id IS NOT NULL OR c.id IS NOT NULL

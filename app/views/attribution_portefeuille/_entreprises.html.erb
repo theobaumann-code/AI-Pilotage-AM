@@ -21,8 +21,9 @@
       <strong><%= @ent_total[:upsell] %></strong> avec une opportunité d'upsell (<%= eur.call(@ent_total[:upsell_amount]) %>).
       <% if bi %>
         Enjeu ARR = contrats santé et prévoyance signés et envoyés à l'assureur, au statut ops revu, en onboarding, onboardé ou suspendu :
-        facturation du T1 2026 × 4, remplacée contrat par contrat par l'estimation du moteur Analytics si le T1 n'est pas facturé en entier
-        ou s'il s'écarte de 30 % ou plus de l'estimation. Opportunité d'upsell = le risque que le compte n'a pas encore (prévoyance pour un compte santé seul, et inversement),
+        ARR calculé contrat par contrat par le moteur de SideCare Analytics - « Facturé » : dernière période facturée complète et représentative,
+        annualisée selon sa fréquence ; « Estimé » sinon : affiliés attendus × prime par affilié × taux de commission, avec la méthode et la fiabilité
+        du prix (détail au survol) ; « Mixte » : une partie facturée, une partie estimée. ARR santé net de TSA. Opportunité d'upsell = le risque que le compte n'a pas encore (prévoyance pour un compte santé seul, et inversement),
         estimé avec la formule par salarié des upsells sur l'effectif du BO.
       <% else %>
         Enjeu ARR = produits encore actifs. Opportunité d'upsell = au moins un upsell « Non démarré » ou « En cours ».

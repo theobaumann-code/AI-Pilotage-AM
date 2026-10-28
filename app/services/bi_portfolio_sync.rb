@@ -1,14 +1,14 @@
 # Pulls the BI's view of every account (company set, or user pro outside any set) - its "responsable AM" in the
 # BO, its ARR and the risks it is covered for - into bi_accounts, which "Attribution portefeuille" reads for the
 # next campaign. A full replace each run: an account reassigned in the BO shows up under its new AM on the next
-# sync, one that lost its AM drops into "Comptes sans AM". The query itself lives in bi_portfolio_query.sql.
+# sync, one that lost its AM drops into "Comptes sans AM". The query itself lives in bi_portfolio_query.sql and
+# returns one row per account and contract; the ARR of each contract is chosen by the Analytics engine (AnalyticsArr).
 class BiPortfolioSync
   QUERY_PATH = Rails.root.join("app/services/bi_portfolio_query.sql")
-  # TSA on health premiums, removed so that health ARR is net - the 2026 rate, the same as the upsell formula.
+  # TSA on health premiums, removed so that health ARR is net - the 2026 rate, the same as the upsell formula. Health
+  # premiums, invoiced as well as estimated, include it; provident carries none.
   HEALTH_TSA_RATE = UpsellDeal::MUTUELLE_TAXE
-  COLUMNS = %w[kind name siren user_pros_count am_email am_name arr arr_sante arr_prevoyance has_sante has_prevoyance
-               has_standard_sante has_sur_mesure_sante contracts_count contracts_without_q1 employees_count arr_billed arr_estimated
-               contracts_estimated].freeze
+  ACCOUNT_COLUMNS = %w[kind name siren user_pros_count am_email am_name employees_count].freeze
 
   def self.sync!
     new.sync!
@@ -27,7 +27,8 @@ class BiPortfolioSync
     raise BigQueryClient::QueryError, "BigQuery n'a renvoyé aucun compte" if rows.empty?
 
     now = Time.current
-    records = rows.map { |row| record_for(row, now) }
+    today = Time.find_zone("Europe/Paris").today.iso8601
+    records = rows.group_by { |row| [ row["kind"], row["account_id"] ] }.map { |_, account_rows| record_for(account_rows, now, today) }
     BiAccount.transaction do
       BiAccount.delete_all
       BiAccount.insert_all!(records)
@@ -37,8 +38,7 @@ class BiPortfolioSync
 
   def sql
     dataset = "`#{project_id}.#{@dataset}`"
-    format(File.read(QUERY_PATH), dataset: dataset, arr_estimate_ctes: BiArrEstimateSql.ctes(dataset),
-                                   health_tsa_rate: HEALTH_TSA_RATE)
+    format(File.read(QUERY_PATH), dataset: dataset, arr_estimate_ctes: BiArrEstimateSql.ctes(dataset))
   end
 
   private
@@ -52,12 +52,43 @@ class BiPortfolioSync
     ENV.fetch("BI_BIGQUERY_PROJECT_ID", "dogwood-method-256009")
   end
 
-  def record_for(row, now)
-    attrs = row.slice(*COLUMNS).symbolize_keys
+  def record_for(rows, now, today)
+    first = rows.first
+    attrs = first.slice(*ACCOUNT_COLUMNS).symbolize_keys
     attrs[:am_email] = attrs[:am_email].to_s.strip.downcase.presence
     attrs[:am_name] = attrs[:am_name].to_s.strip.presence
-    %i[arr arr_sante arr_prevoyance arr_billed arr_estimated].each { |key| attrs[key] = attrs[key].to_f.round(2) }
-    attrs[:contracts_estimated] = attrs[:contracts_estimated].to_i
-    attrs.merge(bi_id: row["account_id"], synced_at: now, created_at: now, updated_at: now)
+
+    contracts = rows.select { |row| row["account_contract_id"] }
+    results = contracts.map do |row|
+      result = row["contract_id"] ? AnalyticsArr.contract(row, today: today) : unknown_contract(row)
+      net = row["risque"] == "sante" ? 1 + HEALTH_TSA_RATE : 1
+      result.merge(arr: result[:arr].to_f / net, risque: row["risque"], standard: row["standard"])
+    end
+    arr_of = ->(list) { list.sum { |r| r[:arr] }.round(2) }
+    calculation = AnalyticsArr.account_calculation(results) if results.any?
+
+    attrs.merge(
+      bi_id: first["account_id"],
+      arr: arr_of.call(results),
+      arr_sante: arr_of.call(results.select { |r| r[:risque] == "sante" }),
+      arr_prevoyance: arr_of.call(results.select { |r| r[:risque] == "prevoyance" }),
+      arr_billed: arr_of.call(results.select { |r| r[:source] == "invoice" }),
+      arr_estimated: arr_of.call(results.reject { |r| r[:source] == "invoice" }),
+      contracts_count: results.size,
+      contracts_estimated: results.count { |r| r[:source] != "invoice" },
+      has_sante: results.any? { |r| r[:risque] == "sante" },
+      has_prevoyance: results.any? { |r| r[:risque] == "prevoyance" },
+      has_standard_sante: results.any? { |r| r[:risque] == "sante" && r[:standard] },
+      has_sur_mesure_sante: results.any? { |r| r[:risque] == "sante" && !r[:standard] },
+      arr_source: calculation&.dig("source"),
+      arr_calculation: calculation,
+      synced_at: now, created_at: now, updated_at: now
+    )
+  end
+
+  # An account contract the engine doesn't see (an external affiliation): nothing to value it with.
+  def unknown_contract(row)
+    { contract_id: row["account_contract_id"], arr: nil, source: "estimation", source_detail: "none", confidence: "very_low",
+      pricing_reference: nil, pricing_sample_size: 0, pricing_reference_groups: 0, months_invoiced: 0, population_projections: [] }
   end
 end

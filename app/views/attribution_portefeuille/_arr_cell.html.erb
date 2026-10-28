@@ -1,10 +1,17 @@
-<%# A BI account's ARR, flagged when some of its contracts are valued at the Analytics engine's estimate instead of
-    their Q1 2026 invoices (Q1 not invoiced in full, or invoiced and estimated 30 % apart). %>
+<%# A BI account's ARR and how the Analytics engine obtained it, worded as in Analytics: "Facturé" (last complete
+    invoiced period, annualised), "Estimé" with its methods, or "Mixte"; the price reliability and, on hover, the
+    methods, the population and the references behind it. %>
+<% source = account.arr_calculation.present? ? AnalyticsArr.source_label(account.arr_calculation) : nil %>
 <td class="numeric">
   <%= eur.call(account.arr) %>
-  <% if account.contracts_estimated.positive? %>
-    <br><small class="muted-count" title="Facturé (T1 2026 × 4) : <%= eur.call(account.arr_billed) %> · Estimé (moteur Analytics) : <%= eur.call(account.arr_estimated) %>">
-      dont estimé · <%= pluralize(account.contracts_estimated, "contrat") %>
+  <% if source %>
+    <br><span class="badge <%= source[:css] %>" style="font-size:11px;padding:1px 8px;margin-top:3px;" title="<%= source[:title] %>"><%= source[:compact] %></span>
+    <small class="muted-count" title="<%= source[:title] %>">
+      <%= source[:detail] %>
+      <%= " · fiabilité #{source[:reliability]}" if source[:reliability] %>
     </small>
+    <% if account.arr_source == "mixed" %>
+      <br><small class="muted-count">facturé <%= eur.call(account.arr_billed) %> · estimé <%= eur.call(account.arr_estimated) %></small>
+    <% end %>
   <% end %>
 </td>

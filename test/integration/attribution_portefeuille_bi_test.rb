@@ -61,16 +61,22 @@ class AttributionPortefeuilleBiTest < ActionDispatch::IntegrationTest
     assert_equal [ "Sante Seule Bi" ], @controller.instance_variable_get(:@ent_pager).records.map { |r| r[:name] }
   end
 
-  test "an account partly valued at the engine's estimate says so, with both figures" do
-    account(name: "Estime Bi", am_email: "am-bi@sidecare.com", arr: 9_000, arr_billed: 4_000, arr_estimated: 9_000,
-      contracts_estimated: 1, has_sante: true)
-    account(name: "Facture Bi", am_email: "am-bi@sidecare.com", arr: 5_000, arr_billed: 5_000, has_sante: true)
+  test "each account says whether its ARR is invoiced, estimated or mixed, and how, as in Analytics" do
+    estimated = { "source" => "estimation", "source_details" => %w[fee_occurrence], "confidence" => "very_high",
+                  "pricing_references" => [ "Affiliations du contrat" ], "population_projections" => [] }
+    account(name: "Estime Bi", am_email: "am-bi@sidecare.com", arr: 9_000, arr_estimated: 9_000, contracts_estimated: 1,
+      has_sante: true, arr_source: "estimation", arr_calculation: estimated)
+    account(name: "Mixte Bi", am_email: "am-bi@sidecare.com", arr: 7_000, arr_billed: 4_000, arr_estimated: 3_000,
+      has_sante: true, arr_source: "mixed", arr_calculation: estimated.merge("source" => "mixed", "source_details" => %w[invoice dsn_recent]))
+    account(name: "Facture Bi", am_email: "am-bi@sidecare.com", arr: 5_000, arr_billed: 5_000, has_sante: true,
+      arr_source: "invoice", arr_calculation: { "source" => "invoice", "source_details" => %w[invoice], "months_invoiced" => 9 })
 
     sign_in @admin
     get attribution_portefeuille_path
-    assert_match(/Estime Bi[\s\S]*?dont estimé · 1 contrat/, @response.body)
-    assert_match "Facturé (T1 2026 × 4) : 4,000 € · Estimé (moteur Analytics) : 9,000 €", @response.body
-    assert_no_match(/Facture Bi[\s\S]*?dont estimé[\s\S]*?Estime Bi/, @response.body)
+    assert_match(/Estime Bi[\s\S]*?Estimé<\/span>\s*<small[^>]*>\s*affiliations du contrat\s*· fiabilité très élevée/, @response.body)
+    assert_match(/Mixte Bi[\s\S]*?Mixte<\/span>[\s\S]*?DSN du contrat[\s\S]*?facturé 4,000 € · estimé 3,000 €/, @response.body)
+    assert_match(/Facture Bi[\s\S]*?Facturé<\/span>\s*<small[^>]*>\s*dernière période complète/, @response.body)
+    assert_match "9 périodes disponibles", @response.body
   end
 
   test "the Comptes sans AM table lists unassigned accounts over the thresholds, biggest first" do

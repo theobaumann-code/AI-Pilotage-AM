@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 production:
+  # The BI tables finish their own refresh mid-morning (Paris); a second run in the afternoon picks up later fixes.
+  bi_portfolio_sync:
+    class: BiPortfolioSyncJob
+    schedule: "0 11,17 * * * Europe/Paris"
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12

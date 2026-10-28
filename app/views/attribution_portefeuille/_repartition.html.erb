@@ -1,0 +1,142 @@
+<% scale_max = [@rows.map { |r| [r[:comptes], r[:limit]].max }.max.to_i, 1].max * 1.08 %>
+<% bar_width = ->(n) { [n.to_f / scale_max * 100, 100].min.round(1) } %>
+
+<div class="summary-cards">
+  <div class="card"><div class="label">Comptes attribués</div><div class="value"><%= @totals[:comptes] %></div></div>
+  <div class="card"><div class="label">ARR en portefeuille</div><div class="value"><%= eur.call(@totals[:arr]) %></div></div>
+  <div class="card"><div class="label">Panier moyen</div><div class="value"><%= eur.call(@totals[:basket]) %></div></div>
+  <div class="card"><div class="label">Capacité max (<%= @totals[:people] %> personnes)</div><div class="value"><%= @totals[:capacity] %></div></div>
+  <div class="card"><div class="label">Capacité restante</div><div class="value" style="color:<%= @totals[:remaining] < 0 ? "var(--red)" : "var(--green)" %>"><%= @totals[:remaining] %></div></div>
+  <div class="card"><div class="label">Dans le rouge</div><div class="value" style="color:<%= @over.any? ? "var(--red)" : "var(--green)" %>"><%= @over.size %> / <%= @totals[:people] %></div></div>
+  <% if bi %>
+    <div class="card"><div class="label">Comptes sans AM à attribuer</div><div class="value" style="color:<%= @sam_all_total[:count] > 0 ? "var(--burgundy)" : "var(--green)" %>"><%= @sam_all_total[:count] %></div></div>
+  <% end %>
+</div>
+
+<% if bi %>
+  <%# BI view: the "Dans le rouge" card and the red rows already say who is over their ceiling. %>
+<% elsif @over.any? %>
+  <p class="alert" style="border-radius:var(--radius-sm);">
+    <strong><%= @over.size %> <%= @over.size > 1 ? "personnes dépassent" : "personne dépasse" %> leur plafond de comptes :</strong>
+    <%= safe_join(@over.map { |r| "#{r[:name]} (#{r[:comptes]} comptes pour #{r[:limit]} max, +#{r[:comptes] - r[:limit]})" }, " · ") %>
+  </p>
+<% else %>
+  <p class="notice" style="border-radius:var(--radius-sm);">Personne ne dépasse son plafond de comptes.</p>
+<% end %>
+
+<div class="section-card">
+  <div class="table-toolbar">
+    <h2>Répartition du portefeuille</h2>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">
+    La barre représente le nombre de comptes ; le trait bordeaux marque le plafond de la personne. Rouge au-delà du plafond, vert en dessous.
+    « Restant à attribuer » = plafond − comptes (négatif = surcharge).
+    <% if bi %>« Hors outil » = AM renseigné dans le BO sans compte actif dans l'outil (rapprochement par e-mail).<% end %>
+  </p>
+  <div class="table-scroll">
+    <table class="deals-table attribution-table">
+      <thead>
+        <tr>
+          <%= sortable_th(@pager, :nom, "Nom") %>
+          <%= sortable_th(@pager, :role, "Rôle") %>
+          <%= sortable_th(@pager, :comptes, "Comptes") %>
+          <th class="numeric">Plafond</th>
+          <th class="attribution-bar-col">Charge / plafond</th>
+          <%= sortable_th(@pager, :restant, "Restant à attribuer") %>
+          <th>Statut</th>
+          <%= sortable_th(@pager, :arr, "ARR (€)") %>
+          <%= sortable_th(@pager, :panier, "Panier moyen (€)") %>
+          <%= sortable_th(@pager, :part, "% de l'ARR") %>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @pager.records.empty? %>
+          <tr><td colspan="10" class="empty-state">Aucun AM ni KAM actif.</td></tr>
+        <% else %>
+          <% @pager.records.each do |r| %>
+            <tr class="<%= "row-over-capacity" if r[:over] %>">
+              <td><strong><%= r[:name] %></strong></td>
+              <td><span class="badge <%= r[:user] ? role_badge_class(r[:user]) : "reader" %>"><%= r[:role] %></span></td>
+              <td class="numeric">
+                <strong style="color:<%= r[:over] ? "var(--red)" : "inherit" %>"><%= r[:comptes] %></strong>
+                <% if r[:churned] > 0 %><span class="muted-count" title="Clients entièrement churnés, exclus du décompte">(+<%= r[:churned] %> churnés)</span><% end %>
+              </td>
+              <td class="numeric"><%= r[:limit] %></td>
+              <td class="attribution-bar-col">
+                <div class="bar-track" style="height:14px;">
+                  <div class="bar-fill" style="width:<%= bar_width.call(r[:comptes]) %>%;background:<%= r[:over] ? "var(--red)" : "var(--green)" %>;"></div>
+                  <div class="risque-limit" style="left:<%= bar_width.call(r[:limit]) %>%;"></div>
+                </div>
+              </td>
+              <td class="numeric" style="color:<%= r[:remaining] < 0 ? "var(--red)" : "inherit" %>;font-weight:<%= r[:remaining] < 0 ? 700 : 400 %>;"><%= r[:remaining] %></td>
+              <td>
+                <% if r[:over] %>
+                  <span class="badge ko">✗ +<%= r[:comptes] - r[:limit] %> en trop</span>
+                <% else %>
+                  <span class="badge ok">✓ <%= r[:remaining] %> restant<%= "s" if r[:remaining] > 1 %></span>
+                <% end %>
+              </td>
+              <td class="numeric"><%= eur.call(r[:arr]) %></td>
+              <td class="numeric"><%= r[:comptes] > 0 ? eur.call(r[:basket]) : "-" %></td>
+              <td class="numeric"><%= number_with_precision(r[:part], precision: 1) %> %</td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+      <% if @rows.any? %>
+        <tfoot>
+          <tr class="table-footer-row">
+            <td colspan="2">Total</td>
+            <td class="numeric"><%= @totals[:comptes] %></td>
+            <td class="numeric"></td>
+            <td></td>
+            <td class="numeric"><%= @totals[:remaining] %></td>
+            <td></td>
+            <td class="numeric"><%= eur.call(@totals[:arr]) %></td>
+            <td class="numeric"><%= eur.call(@totals[:basket]) %></td>
+            <td class="numeric">100 %</td>
+          </tr>
+        </tfoot>
+      <% end %>
+    </table>
+  </div>
+</div>
+
+<% if @by_role.any? %>
+  <div class="section-card">
+    <div class="table-toolbar">
+      <h2>Capacité par rôle</h2>
+    </div>
+    <div class="table-scroll">
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <th>Rôle</th>
+            <th class="numeric">Personnes</th>
+            <th class="numeric">Plafond / pers.</th>
+            <th class="numeric">Capacité max</th>
+            <th class="numeric">Comptes</th>
+            <th class="numeric">Restant à attribuer</th>
+            <th class="numeric">Dans le rouge</th>
+            <th class="numeric">ARR (€)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @by_role.each do |g| %>
+            <% remaining = g[:capacity] - g[:comptes] %>
+            <tr>
+              <td><strong><%= g[:role] %></strong></td>
+              <td class="numeric"><%= g[:people] %></td>
+              <td class="numeric"><%= g[:limit] %></td>
+              <td class="numeric"><%= g[:capacity] %></td>
+              <td class="numeric"><%= g[:comptes] %></td>
+              <td class="numeric" style="color:<%= remaining < 0 ? "var(--red)" : "inherit" %>"><%= remaining %></td>
+              <td class="numeric" style="color:<%= g[:over] > 0 ? "var(--red)" : "inherit" %>"><%= g[:over] %></td>
+              <td class="numeric"><%= eur.call(g[:arr]) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

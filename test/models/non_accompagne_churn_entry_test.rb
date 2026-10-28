@@ -23,6 +23,6 @@ class NonAccompagneChurnEntryTest < ActiveSupport::TestCase
     NonAccompagneChurnEntry.create!(company_name: "Autre", amount: 50)
     NonAccompagneChurnEntry.create!(company_name: "Acme", amount: 25)
 
-    assert_equal ["Acme", "Autre", "Zeta"], NonAccompagneChurnEntry.all.map(&:company_name)
+    assert_equal [ "Acme", "Autre", "Zeta" ], NonAccompagneChurnEntry.all.map(&:company_name)
   end
 end

@@ -8,12 +8,12 @@ class HistoriqueController < ApplicationController
     @assureurs = Array(params[:assureurs])
     @taux_min = numeric_param(params[:taux_min])
     @taux_max = numeric_param(params[:taux_max])
-    @years = params[:years].present? ? Array(params[:years]).map(&:to_i) : [@current_year]
+    @years = params[:years].present? ? Array(params[:years]).map(&:to_i) : [ @current_year ]
 
     @query = HistoriqueQuery.new(current_year: @current_year, produit: @produit, noms: @noms,
       statuts: @statuts, ams: @ams, assureurs: @assureurs, years: @years,
       taux_min: @taux_min, taux_max: @taux_max)
-    @rows = @query.rows.sort_by { |r| [r.nom, r.produit, r.annee] }
+    @rows = @query.rows.sort_by { |r| [ r.nom, r.produit, r.annee ] }
     @hist_pager = TablePager.new(@rows, params: params, prefix: "hist",
       sort_procs: {
         nom: ->(r) { TablePager.key(r.nom) },
@@ -27,7 +27,7 @@ class HistoriqueController < ApplicationController
       }, default_sort: :nom)
 
     archived_years = ArchiveEntry.where(deal_type: "ProduitDeal").distinct.pluck(:year)
-    @available_years = (archived_years + [@current_year]).uniq.sort.reverse
+    @available_years = (archived_years + [ @current_year ]).uniq.sort.reverse
     @archivable_years = archived_years.reject { |y| y == @current_year }.sort.reverse
 
     archived_noms = ArchiveEntry.where(deal_type: "ProduitDeal").distinct.pluck(:company_name)

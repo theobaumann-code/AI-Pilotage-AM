@@ -3,7 +3,7 @@
   <td><%= deal.effective_user.name %></td>
   <td>
     <% if current_user.privileged? %>
-      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global", **summary_filter_params), method: :patch do |f| %>
         <%= f.select :produit, UpsellDeal::PRODUITS, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
@@ -12,7 +12,7 @@
   </td>
   <td>
     <% if current_user.privileged? %>
-      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global", **summary_filter_params), method: :patch do |f| %>
         <%= f.select :college, ProduitDeal::COLLEGES, {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
@@ -21,7 +21,7 @@
   </td>
   <td class="numeric">
     <% if current_user.privileged? %>
-      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global", **summary_filter_params), method: :patch do |f| %>
         <%= f.number_field :nombre_salaries, min: 0, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
@@ -33,7 +33,7 @@
   </td>
   <td class="numeric">
     <% if current_user.privileged? %>
-      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global", **summary_filter_params), method: :patch do |f| %>
         <%= f.number_field :probabilite_signature, min: 0, max: 100, disabled: deal.decided?, onchange: "this.form.requestSubmit()" %>
       <% end %>
     <% else %>
@@ -43,7 +43,7 @@
   <td class="numeric"><%= deal.arr_estimable? ? number_to_currency(deal.projection, unit: "€", format: "%n %u", precision: 0) : "—" %></td>
   <td>
     <% if current_user.privileged? %>
-      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global"), method: :patch do |f| %>
+      <%= form_with model: deal, scope: :deal, url: deal_path(deal, row_context: "global", **summary_filter_params), method: :patch do |f| %>
         <%= f.select :statut_signature, UpsellDeal::STATUTS_SIGNATURE, {},
               class: "statut-select #{signature_statut_class(deal.statut_signature)}", onchange: "this.form.requestSubmit()" %>
       <% end %>

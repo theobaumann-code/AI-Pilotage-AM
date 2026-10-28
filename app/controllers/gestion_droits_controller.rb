@@ -20,7 +20,7 @@ class GestionDroitsController < ApplicationController
     @am_pager = TablePager.new(am_rows_filtered, params: params, prefix: "am",
       sort_procs: {
         nom: ->(r) { TablePager.key(r[:am].name) },
-        role: ->(r) { TablePager.key({ admin: 0, tl_am: 1, kam: 2, tl_csm: 3, am: 4, reader: 5 }[r[:am].role]) },
+        role: ->(r) { TablePager.key({ admin: 0, head_csm: 1, tl_am: 2, kam: 3, tl_csm: 4, am: 5, reader: 6 }[r[:am].role]) },
         count: ->(r) { TablePager.key(r[:summary].count) },
         arr_initial: ->(r) { TablePager.key(r[:summary].arr_initial) },
         churned: ->(r) { TablePager.key(r[:summary].churned) },

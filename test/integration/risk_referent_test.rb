@@ -9,7 +9,7 @@ class RiskReferentTest < ActionDispatch::IntegrationTest
     @am = User.create!(email: "am-ref@example.com", name: "AM Ref", active: true)
     @company = Company.create!(name: "Client Référent", user: @am)
     @other = Company.create!(name: "Client Sans Référent", user: @am)
-    [@company, @other].each_with_index do |c, i|
+    [ @company, @other ].each_with_index do |c, i|
       ProduitDeal.create!(company: c, produit: "Mutuelle", identifiant: "ref-#{i}", college: "Cadre",
         assureur: "AXA", arr: 10_000, statut_renouvellement: "En cours", risque_churn: 30)
     end
@@ -56,11 +56,13 @@ class RiskReferentTest < ActionDispatch::IntegrationTest
     sign_in @admin
     get pilotage_path
     assert_response :success
-    select = risk_table[/<select[^>]*referent_id.*?<\/select>/m]
+    company_row = Nokogiri::HTML.fragment(risk_table).css("tr").find { |row| row.text.include?(@company.name) }
+    referent_select = company_row.at_css("select[name='company[referent_id]']")
+    select = referent_select.to_html
     assert_match "Admin Ref", select
     assert_match "KAM Ref", select
     assert_no_match ">AM Ref<", select
-    assert_match(/selected="selected" value="#{@kam.id}"/, select)
+    assert_equal @kam.id.to_s, referent_select.at_css("option[selected]")["value"]
 
     sign_out @admin
     sign_in @am
@@ -81,11 +83,11 @@ class RiskReferentTest < ActionDispatch::IntegrationTest
     @company.update!(referent: @kam)
     sign_in @admin
 
-    get pilotage_path, params: { risque_referents: ["KAM Ref"] }
+    get pilotage_path, params: { risque_referents: [ "KAM Ref" ] }
     assert_match "Client Référent", risk_table
     assert_no_match "Client Sans Référent", risk_table
 
-    get pilotage_path, params: { risque_referents: ["Non attribué"] }
+    get pilotage_path, params: { risque_referents: [ "Non attribué" ] }
     assert_no_match "Client Référent", risk_table
     assert_match "Client Sans Référent", risk_table
 
@@ -96,7 +98,7 @@ class RiskReferentTest < ActionDispatch::IntegrationTest
     assert_match "Référent", @response.body
     assert_match(/Client Référent;.*;KAM Ref/, @response.body)
 
-    get export_risque_pilotage_path, params: { risque_referents: ["KAM Ref"] }
+    get export_risque_pilotage_path, params: { risque_referents: [ "KAM Ref" ] }
     assert_no_match "Client Sans Référent", @response.body
   end
 end

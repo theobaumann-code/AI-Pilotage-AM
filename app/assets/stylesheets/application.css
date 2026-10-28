@@ -2,14 +2,14 @@
  * Ported from the original single-file HTML tool's <style> block, then aligned to SideCare's design
  * system (github.com/lounna-team/ai-SideCare-design-system): same variable names throughout (so every
  * inline var(--x) in the views keeps working), but values and a few patterns (table headers, badges,
- * action icons, radii, shadows, Fraunces titles) now follow that system's tokens and component notes —
+ * action icons, radii, shadows, Fraunces titles) now follow that system's tokens and component notes -
  * see each section below for the specific rule it's implementing. The published component gallery and
  * the repository's written tokens are the references for this application-specific layout.
  */
 :root{
   --page-gutter:28px;
   --control-height:36px;
-  /* ---- Brand palette (unchanged — already exactly the design system's tz-primary/tz-secondary) ---- */
+  /* ---- Brand palette (unchanged - already exactly the design system's tz-primary/tz-secondary) ---- */
   --primary:#ff7b44;
   --primary-dark:#e85f2a;
   --burgundy:#6d092a;
@@ -33,9 +33,9 @@
   --violet:#7c4dff;
   --violet-bg:#f2edff;
 
-  /* ---- Neutrals (== tz-dark scale — the design system's borders/text are neutral gray, not warm-tinted).
+  /* ---- Neutrals (== tz-dark scale - the design system's borders/text are neutral gray, not warm-tinted).
      Pulled directly from the design system repo's tokens.css now that it's actually readable: --tz-border
-     is dark-05 (very light hairline), --tz-border-strong is dark-10 — previously this used dark-10 for the
+     is dark-05 (very light hairline), --tz-border-strong is dark-10 - previously this used dark-10 for the
      default border and an invented #d4d4d4 (not a real token at all) for "strong". ---- */
   --surface:#ffffff;
   --border:#f3f3f3;
@@ -49,12 +49,12 @@
   --radius:14px;
   --radius-lg:22px;
 
-  /* ---- Shadows (== tz-shadow-sm/tz-shadow-lg — the source token's rgba base is a warm near-black
+  /* ---- Shadows (== tz-shadow-sm/tz-shadow-lg - the source token's rgba base is a warm near-black
      (48,17,17), not neutral gray; matches the warm brand palette instead of a generic drop shadow). ---- */
   --shadow-sm:0 1px 2px rgba(48,17,17,.06);
   --shadow-lg:0 24px 60px -20px rgba(48,17,17,.22);
 
-  /* Fraunces for titles, Satoshi for everything else — see layout's <head> for the actual font loading. */
+  /* Fraunces for titles, Satoshi for everything else - see layout's <head> for the actual font loading. */
   --font-fraunces:"Fraunces","Georgia","Times New Roman",serif;
   font-family:"Satoshi","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
 }
@@ -129,7 +129,7 @@ main{padding:24px var(--page-gutter) 60px;max-width:1400px;margin:0 auto;}
 
 .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
 .toolbar label{font-size:13px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:8px;}
-/* Inputs: always-visible label is handled at the view layer (every field lives inside a <label>) — this
+/* Inputs: always-visible label is handled at the view layer (every field lives inside a <label>) - this
    just gives every field the same border/focus states the design system's Inputs guide calls for. */
 select, input[type=text], input[type=number], input[type=email], input[type=password]{
   font-family:inherit;
@@ -158,7 +158,7 @@ select:focus, input[type=text]:focus, input[type=number]:focus, input[type=email
 .year-chip:hover{background:var(--hover-tint);}
 .year-chip.active{background:var(--primary);border-color:var(--primary);color:#fff;}
 
-/* Accordéon (design system): filters/forms tucked behind a <summary> toggle — subtle border + radius so
+/* Accordéon (design system): filters/forms tucked behind a <summary> toggle - subtle border + radius so
    the closed state reads as a self-contained, tappable section rather than a bare link. */
 .checklist-filter{position:relative;display:inline-flex;vertical-align:middle;}
 .checklist-filter-toggle{
@@ -225,7 +225,7 @@ select:focus, input[type=text]:focus, input[type=number]:focus, input[type=email
 .unmanaged-portfolio-card .metric-col-value{text-align:left;font-size:22px;}
 .metric-card-actions{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px;}
 
-/* Badges (design system): pill-shaped, bg-light by default (neutral gray bg + dark text) — status colors
+/* Badges (design system): pill-shaped, bg-light by default (neutral gray bg + dark text) - status colors
    (ok/ko/warn) are our own semantic layer on top of that same shape, kam reuses the brand cream tint. */
 .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--track-bg);color:var(--text);}
 .badge.ok{background:var(--green-bg);color:var(--green);}
@@ -269,7 +269,7 @@ tfoot .table-footer-row td{background:var(--cream-light);font-weight:700;padding
 td.rowaction{width:72px;text-align:center;white-space:nowrap;}
 td.rowaction form{display:inline-flex;vertical-align:middle;}
 /* TableActions (design system): row-action icons keep a background + hover state by default, so they
-   read as clickable at a glance rather than blending into the row — color is neutral on hover for ordinary
+   read as clickable at a glance rather than blending into the row - color is neutral on hover for ordinary
    actions (reassign, restore, comment) and "danger" is reserved for genuinely destructive ones (delete),
    per the design system's own explicit rule against using danger on a neutral action. */
 .icon-btn{border:none;background:var(--track-bg);color:var(--text-muted);font-size:13px;width:28px;height:28px;min-height:28px;
@@ -277,7 +277,7 @@ td.rowaction form{display:inline-flex;vertical-align:middle;}
 .icon-btn:hover{background:var(--border-strong);color:var(--text);}
 .icon-btn.danger:hover{background:var(--red-bg);color:var(--red);}
 .churn-yes{background:var(--red-bg) !important;}
-/* "Subi" churn (company liquidated/acquired) isn't counted against the AM — neutral gray instead of the
+/* "Subi" churn (company liquidated/acquired) isn't counted against the AM - neutral gray instead of the
    alarming red of ordinary churn, so the row reads as "ended" rather than "lost". */
 .churn-subi{background:var(--track-bg) !important;}
 .statut-select{font-weight:700;border-radius:var(--radius-sm);border:1px solid transparent;}
@@ -347,7 +347,7 @@ table.client-evo-table{min-width:900px;}
 
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;}
 /* Typography (design system): H1-level page titles use Fraunces; every smaller heading/label below it
-   stays Satoshi (the "two fonts, two roles" rule — titles are editorial, UI stays sans). */
+   stays Satoshi (the "two fonts, two roles" rule - titles are editorial, UI stays sans). */
 .section-title{font-family:var(--font-fraunces);font-size:26px;font-weight:600;margin:0 0 4px;color:var(--text);}
 .section-sub{font-size:13px;color:var(--text-muted);margin:0 0 18px;}
 footer{text-align:center;padding:24px;font-size:12px;color:var(--text-muted);}
@@ -659,8 +659,8 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*,*::before,*::after{transition:none!important;animation:none!important;}}
 
-/* Mon portefeuille: the summary cards plus "Autres impacts" make two rows of three — NRR / Churn / Upsell, then
-   ARR final / Taux de renouvellement / Autres impacts — at every width above the phone layouts. */
+/* Mon portefeuille: the summary cards plus "Autres impacts" make two rows of three - NRR / Churn / Upsell, then
+   ARR final / Taux de renouvellement / Autres impacts - at every width above the phone layouts. */
 @media (min-width:701px){
   .summary-cards.with-other-impacts:has(.metric-card){grid-template-columns:repeat(3,minmax(0,1fr));}
   .summary-cards.with-other-impacts:has(.metric-card) .metric-card,
@@ -701,3 +701,21 @@ tfoot .table-footer-row td{background:var(--cream-light);border-color:#ffe7bf;}
 .attribution-table tr.row-over-capacity td{background:var(--red-bg);}
 .attribution-table .attribution-bar-col{min-width:200px;width:26%;}
 .attribution-table .bar-track{overflow:visible;}
+/* Attribution portefeuille: switch between the next campaign (BI) and the current one (raw data). */
+.view-switch{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin:0 0 16px;}
+.view-switch a{padding:10px 16px;font-size:14px;color:var(--text-muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.view-switch a.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
+.view-switch a:hover{background:var(--cream-light);}
+/* Projection portefeuille: team panel, bulk action bar and rows that differ from the BO. */
+.projection-team{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.projection-team h3{font-size:14px;margin:0 0 8px;}
+.projection-team-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px;}
+.projection-team-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);}
+.projection-team-list li.is-departing{background:var(--red-bg);}
+.projection-recruit-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.bulk-bar{display:flex;flex-direction:column;gap:8px;padding:10px 12px;margin-bottom:10px;background:var(--cream-light);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.bulk-scope{display:flex;align-items:center;gap:6px;font-size:13px;}
+.bulk-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.deals-table .col-check{width:32px;text-align:center;}
+.deals-table tr.row-moved td{background:var(--cream-light);}
+.bi-sync-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-muted);margin:0 0 16px;}

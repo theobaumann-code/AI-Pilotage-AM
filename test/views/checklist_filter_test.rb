@@ -1,7 +1,7 @@
 require "test_helper"
 
 # The shared checklist-filter dropdown submits on every checkbox change (see onchange in the partial),
-# which reloads the whole page — a plain <details> defaults back to closed on that reload, forcing a
+# which reloads the whole page - a plain <details> defaults back to closed on that reload, forcing a
 # re-click before the next box could be checked. It must render <details open> whenever something is
 # already selected, so picking several options in a row doesn't require reopening the filter each time.
 class ChecklistFilterTest < ActionDispatch::IntegrationTest
@@ -23,16 +23,16 @@ class ChecklistFilterTest < ActionDispatch::IntegrationTest
   end
 
   test "a filter with an active selection renders its <details> open" do
-    get pilotage_path, params: { summary_roles: ["KAM"] }
+    get pilotage_path, params: { summary_roles: [ "KAM" ] }
     assert_response :success
     assert_match(/\bopen\b/, equipe_filter_block(@response.body))
   end
 
   # Regression test: a reload triggered by something else entirely (search, another filter, sorting) used
-  # to reopen every filter that still had a selection, even one the user had just closed themselves — since
+  # to reopen every filter that still had a selection, even one the user had just closed themselves - since
   # openness was inferred purely from "something is selected". The client-tracked "_open=0" must win.
   test "an explicit _open=0 stays closed even though something is selected" do
-    get pilotage_path, params: { summary_roles: ["KAM"], summary_roles_open: "0" }
+    get pilotage_path, params: { summary_roles: [ "KAM" ], summary_roles_open: "0" }
     assert_response :success
     assert_no_match(/\bopen\b/, equipe_filter_block(@response.body))
   end

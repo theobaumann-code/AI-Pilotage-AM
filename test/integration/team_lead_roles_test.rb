@@ -12,11 +12,11 @@ class TeamLeadRolesTest < ActionDispatch::IntegrationTest
   test "an admin creates a TL AM (admin rights) and a TL Customer Care (user rights)" do
     post users_path, params: { user: { name: "Nouveau TL AM", email: "nouveau-tlam@example.com", role: "TL AM" } }
     tl_am = User.find_by!(email: "nouveau-tlam@example.com")
-    assert_equal [true, "TL AM", :tl_am], [tl_am.admin?, tl_am.poste, tl_am.role]
+    assert_equal [ true, "TL AM", :tl_am ], [ tl_am.admin?, tl_am.poste, tl_am.role ]
 
     post users_path, params: { user: { name: "Nouveau TL CC", email: "nouveau-tlcc@example.com", role: "TL Customer Care" } }
     tl_cc = User.find_by!(email: "nouveau-tlcc@example.com")
-    assert_equal [false, false, "TL Customer Care"], [tl_cc.admin?, tl_cc.kam?, tl_cc.poste]
+    assert_equal [ false, false, "TL Customer Care" ], [ tl_cc.admin?, tl_cc.kam?, tl_cc.poste ]
   end
 
   test "an existing user is switched to a team-lead role from the edit panel, and back" do
@@ -24,10 +24,10 @@ class TeamLeadRolesTest < ActionDispatch::IntegrationTest
     assert_equal "TL Customer Care", @am.reload.poste
 
     patch user_path(@am), params: { user: { name: @am.name, email: @am.email, role: "TL AM" } }
-    assert_equal [true, "TL AM"], [@am.reload.admin?, @am.poste]
+    assert_equal [ true, "TL AM" ], [ @am.reload.admin?, @am.poste ]
 
     patch user_path(@am), params: { user: { name: @am.name, email: @am.email, role: "AM" } }
-    assert_equal [false, nil], [@am.reload.admin?, @am.poste]
+    assert_equal [ false, nil ], [ @am.reload.admin?, @am.poste ]
   end
 
   test "a TL AM counts as an admin for the last-admin safeguard" do
@@ -84,7 +84,7 @@ class TeamLeadRolesTest < ActionDispatch::IntegrationTest
     tl_am = User.create!(email: "tlam-filter@example.com", name: "TL AM Filter", role: "TL AM", active: true)
     tl_cc = User.create!(email: "tlcc-filter@example.com", name: "TL CC Filter", role: "TL Customer Care", active: true)
     kam = User.create!(email: "kam-filter@example.com", name: "KAM Filter", kam: true, active: true)
-    [tl_am, tl_cc, kam, @am].each do |owner|
+    [ tl_am, tl_cc, kam, @am ].each do |owner|
       company = Company.create!(name: "Client #{owner.name}", user: owner)
       ProduitDeal.create!(company: company, produit: "Mutuelle", identifiant: "tlf-#{owner.id}", college: "Cadre", assureur: "AXA",
         arr: 1_000, statut_renouvellement: "En cours", risque_churn: 10)
@@ -93,27 +93,27 @@ class TeamLeadRolesTest < ActionDispatch::IntegrationTest
     # only the three teams are offered
     get pilotage_path
     assert_response :success
-    assert_equal ["Admin", "KAM", "AM", "Non accompagné"], @response.body.scan(/name="summary_roles\[\]" value="([^"]+)"/).flatten,
-      "the three teams plus the existing Non accompagné option — no team-lead entries"
+    assert_equal [ "Admin", "KAM", "AM", "Non accompagné" ], @response.body.scan(/name="summary_roles\[\]" value="([^"]+)"/).flatten,
+      "the three teams plus the existing Non accompagné option - no team-lead entries"
     assert_no_match(/value="TL AM"/, @response.body)
-    assert_equal ["AM", "KAM", "Admin", "AM", "AM"], [tl_am, kam, @admin, tl_cc, @am].map(&:team_label)
+    assert_equal [ "AM", "KAM", "Admin", "AM", "AM" ], [ tl_am, kam, @admin, tl_cc, @am ].map(&:team_label)
 
     # Autres statistiques: team AM = the AM and both team leads
-    get autres_statistiques_path, params: { roles: ["AM"] }
-    assert_equal [@am.id, tl_am.id, tl_cc.id].sort, @controller.instance_variable_get(:@scoped_user_ids).sort
-    get autres_statistiques_path, params: { roles: ["Admin"] }
-    assert_equal [@admin.id, @second_admin.id].sort, @controller.instance_variable_get(:@scoped_user_ids).sort,
+    get autres_statistiques_path, params: { roles: [ "AM" ] }
+    assert_equal [ @am.id, tl_am.id, tl_cc.id ].sort, @controller.instance_variable_get(:@scoped_user_ids).sort
+    get autres_statistiques_path, params: { roles: [ "Admin" ] }
+    assert_equal [ @admin.id, @second_admin.id ].sort, @controller.instance_variable_get(:@scoped_user_ids).sort,
       "the real admins only: a TL AM has admin rights but sits in the AM team"
-    get autres_statistiques_path, params: { roles: ["KAM"] }
-    assert_equal [kam.id], @controller.instance_variable_get(:@scoped_user_ids)
+    get autres_statistiques_path, params: { roles: [ "KAM" ] }
+    assert_equal [ kam.id ], @controller.instance_variable_get(:@scoped_user_ids)
 
     # Vue globale: the summary cards and each table follow the same rule
-    get pilotage_path, params: { summary_roles: ["AM"] }
+    get pilotage_path, params: { summary_roles: [ "AM" ] }
     assert_equal 3, @controller.instance_variable_get(:@global_summary).companies.size
-    get pilotage_path, params: { produit_roles: ["AM"] }
-    assert_equal ["Client AM TL", "Client TL AM Filter", "Client TL CC Filter"], @controller.instance_variable_get(:@global_produits).map { |d| d.company.name }.sort
-    get pilotage_path, params: { risque_roles: ["KAM"] }
-    assert_equal ["Client KAM Filter"], @controller.instance_variable_get(:@at_risk_companies).map { |r| r[:company].name }
+    get pilotage_path, params: { produit_roles: [ "AM" ] }
+    assert_equal [ "Client AM TL", "Client TL AM Filter", "Client TL CC Filter" ], @controller.instance_variable_get(:@global_produits).map { |d| d.company.name }.sort
+    get pilotage_path, params: { risque_roles: [ "KAM" ] }
+    assert_equal [ "Client KAM Filter" ], @controller.instance_variable_get(:@at_risk_companies).map { |r| r[:company].name }
   end
 
 

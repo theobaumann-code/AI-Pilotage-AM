@@ -1,9 +1,9 @@
 # In-memory sort + paginate for one table on "Mon portefeuille". Each of the three tables gets its own
 # instance with a distinct param prefix (e.g. "ren" for Renouvellement), so their sort/page state never
-# collides in the query string — filtering/searching happens before this (see PortfolioController), this
+# collides in the query string - filtering/searching happens before this (see PortfolioController), this
 # class only orders and slices whatever records it's handed.
 class TablePager
-  PAGE_SIZES = [10, 20, 50, 100].freeze
+  PAGE_SIZES = [ 10, 20, 50, 100 ].freeze
   DEFAULT_PAGE_SIZE = 10
 
   attr_reader :prefix, :page, :page_size, :sort_field, :sort_dir, :total_count, :total_pages
@@ -19,8 +19,8 @@ class TablePager
     sorted = records.sort_by(&@sort_procs.fetch(@sort_field))
     sorted = sorted.reverse if @sort_dir == "desc"
     @total_count = sorted.size
-    @total_pages = [(@total_count.to_f / @page_size).ceil, 1].max
-    @page = [[params[page_param].to_i, 1].max, @total_pages].min
+    @total_pages = [ (@total_count.to_f / @page_size).ceil, 1 ].max
+    @page = [ [ params[page_param].to_i, 1 ].max, @total_pages ].min
     @records = sorted.each_slice(@page_size).to_a[@page - 1] || []
   end
 
@@ -58,8 +58,8 @@ class TablePager
   # (matches how the original app's manual sort handled missing values, e.g. a company with no produit
   # deals yet has no augmentation moyenne to rank by).
   def self.key(value)
-    return [1, nil] if value.nil?
+    return [ 1, nil ] if value.nil?
     value = value.downcase if value.is_a?(String)
-    [0, value]
+    [ 0, value ]
   end
 end

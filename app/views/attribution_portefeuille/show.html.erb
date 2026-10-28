@@ -1,215 +1,37 @@
-<% content_for :title, "Attribution portefeuille — Pilotage NRR" %>
+<% content_for :title, "Attribution portefeuille - Pilotage NRR" %>
 <% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
-<% scale_max = [@rows.map { |r| [r[:comptes], r[:limit]].max }.max.to_i, 1].max * 1.08 %>
-<% bar_width = ->(n) { [n.to_f / scale_max * 100, 100].min.round(1) } %>
+<% bi = @vue == "bi" %>
 
 <h1 class="section-title">Attribution portefeuille</h1>
-<p class="section-sub">
-  Taille du portefeuille de chaque personne en nombre de comptes et en ARR, et capacité restante à attribuer.
-  Plafond de comptes par personne : <strong><%= User::ACCOUNT_LIMITS[:kam] %> pour un KAM, <%= User::DEFAULT_ACCOUNT_LIMIT %> pour un AM, <%= User::ACCOUNT_LIMITS[:tl_am] %> pour un TL AM, <%= User::ACCOUNT_LIMITS[:tl_csm] %> pour un TL Customer Care</strong>. Un compte est un client dont au moins un produit n'est pas churné
-  (les clients entièrement churnés sont exclus) ; l'ARR est celui des produits encore actifs.
-</p>
 
-<div class="summary-cards">
-  <div class="card"><div class="label">Comptes attribués</div><div class="value"><%= @totals[:comptes] %></div></div>
-  <div class="card"><div class="label">ARR en portefeuille</div><div class="value"><%= eur.call(@totals[:arr]) %></div></div>
-  <div class="card"><div class="label">Panier moyen</div><div class="value"><%= eur.call(@totals[:basket]) %></div></div>
-  <div class="card"><div class="label">Capacité max (<%= @totals[:people] %> personnes)</div><div class="value"><%= @totals[:capacity] %></div></div>
-  <div class="card"><div class="label">Capacité restante</div><div class="value" style="color:<%= @totals[:remaining] < 0 ? "var(--red)" : "var(--green)" %>"><%= @totals[:remaining] %></div></div>
-  <div class="card"><div class="label">Dans le rouge</div><div class="value" style="color:<%= @over.any? ? "var(--red)" : "var(--green)" %>"><%= @over.size %> / <%= @totals[:people] %></div></div>
-</div>
+<%= render "attribution_portefeuille/view_switch", annee: @annee, current: @vue %>
 
-<% if @over.any? %>
-  <p class="alert" style="border-radius:var(--radius-sm);">
-    <strong><%= @over.size %> <%= @over.size > 1 ? "personnes dépassent" : "personne dépasse" %> leur plafond de comptes :</strong>
-    <%= safe_join(@over.map { |r| "#{r[:user].name} (#{r[:comptes]} comptes pour #{r[:limit]} max, +#{r[:comptes] - r[:limit]})" }, " · ") %>
-  </p>
-<% else %>
-  <p class="notice" style="border-radius:var(--radius-sm);">Personne ne dépasse son plafond de comptes.</p>
-<% end %>
-
-<div class="section-card">
-  <div class="table-toolbar">
-    <h2>Répartition du portefeuille</h2>
-  </div>
-  <p class="section-sub" style="margin-top:-8px;">
-    La barre représente le nombre de comptes ; le trait bordeaux marque le plafond de la personne. Rouge au-delà du plafond, vert en dessous.
-    « Restant à attribuer » = plafond − comptes (négatif = surcharge).
-  </p>
-  <div class="table-scroll">
-    <table class="deals-table attribution-table">
-      <thead>
-        <tr>
-          <%= sortable_th(@pager, :nom, "Nom") %>
-          <%= sortable_th(@pager, :role, "Rôle") %>
-          <%= sortable_th(@pager, :comptes, "Comptes") %>
-          <th class="numeric">Plafond</th>
-          <th class="attribution-bar-col">Charge / plafond</th>
-          <%= sortable_th(@pager, :restant, "Restant à attribuer") %>
-          <th>Statut</th>
-          <%= sortable_th(@pager, :arr, "ARR (€)") %>
-          <%= sortable_th(@pager, :panier, "Panier moyen (€)") %>
-          <%= sortable_th(@pager, :part, "% de l'ARR") %>
-        </tr>
-      </thead>
-      <tbody>
-        <% if @pager.records.empty? %>
-          <tr><td colspan="10" class="empty-state">Aucun AM ni KAM actif.</td></tr>
-        <% else %>
-          <% @pager.records.each do |r| %>
-            <tr class="<%= "row-over-capacity" if r[:over] %>">
-              <td><strong><%= r[:user].name %></strong></td>
-              <td><span class="badge <%= role_badge_class(r[:user]) %>"><%= r[:role] %></span></td>
-              <td class="numeric">
-                <strong style="color:<%= r[:over] ? "var(--red)" : "inherit" %>"><%= r[:comptes] %></strong>
-                <% if r[:churned] > 0 %><span class="muted-count" title="Clients entièrement churnés, exclus du décompte">(+<%= r[:churned] %> churnés)</span><% end %>
-              </td>
-              <td class="numeric"><%= r[:limit] %></td>
-              <td class="attribution-bar-col">
-                <div class="bar-track" style="height:14px;">
-                  <div class="bar-fill" style="width:<%= bar_width.call(r[:comptes]) %>%;background:<%= r[:over] ? "var(--red)" : "var(--green)" %>;"></div>
-                  <div class="risque-limit" style="left:<%= bar_width.call(r[:limit]) %>%;"></div>
-                </div>
-              </td>
-              <td class="numeric" style="color:<%= r[:remaining] < 0 ? "var(--red)" : "inherit" %>;font-weight:<%= r[:remaining] < 0 ? 700 : 400 %>;"><%= r[:remaining] %></td>
-              <td>
-                <% if r[:over] %>
-                  <span class="badge ko">✗ +<%= r[:comptes] - r[:limit] %> en trop</span>
-                <% else %>
-                  <span class="badge ok">✓ <%= r[:remaining] %> restant<%= "s" if r[:remaining] > 1 %></span>
-                <% end %>
-              </td>
-              <td class="numeric"><%= eur.call(r[:arr]) %></td>
-              <td class="numeric"><%= r[:comptes] > 0 ? eur.call(r[:basket]) : "—" %></td>
-              <td class="numeric"><%= number_with_precision(r[:part], precision: 1) %> %</td>
-            </tr>
-          <% end %>
-        <% end %>
-      </tbody>
-      <% if @rows.any? %>
-        <tfoot>
-          <tr class="table-footer-row">
-            <td colspan="2">Total</td>
-            <td class="numeric"><%= @totals[:comptes] %></td>
-            <td class="numeric"></td>
-            <td></td>
-            <td class="numeric"><%= @totals[:remaining] %></td>
-            <td></td>
-            <td class="numeric"><%= eur.call(@totals[:arr]) %></td>
-            <td class="numeric"><%= eur.call(@totals[:basket]) %></td>
-            <td class="numeric">100 %</td>
-          </tr>
-        </tfoot>
+<% if bi %>
+  <div class="bi-sync-bar">
+    <span>
+      <% if @last_synced_at %>
+        Dernière synchronisation BI : <strong><%= l(@last_synced_at.in_time_zone("Europe/Paris"), format: "%d/%m/%Y à %Hh%M") %></strong>
+        · mise à jour automatique chaque jour à 11h et 17h.
+      <% else %>
+        <strong>Aucune donnée BI synchronisée pour l'instant.</strong>
       <% end %>
-    </table>
+    </span>
+    <%= button_to "Synchroniser maintenant", sync_bi_attribution_portefeuille_path, class: "button", form: { style: "display:inline;" },
+          data: { turbo_submits_with: "Synchronisation…" } %>
   </div>
-</div>
-
-<% if @by_role.any? %>
-  <div class="section-card">
-    <div class="table-toolbar">
-      <h2>Capacité par rôle</h2>
-    </div>
-    <div class="table-scroll">
-      <table class="deals-table">
-        <thead>
-          <tr>
-            <th>Rôle</th>
-            <th class="numeric">Personnes</th>
-            <th class="numeric">Plafond / pers.</th>
-            <th class="numeric">Capacité max</th>
-            <th class="numeric">Comptes</th>
-            <th class="numeric">Restant à attribuer</th>
-            <th class="numeric">Dans le rouge</th>
-            <th class="numeric">ARR (€)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @by_role.each do |g| %>
-            <% remaining = g[:capacity] - g[:comptes] %>
-            <tr>
-              <td><strong><%= g[:role] %></strong></td>
-              <td class="numeric"><%= g[:people] %></td>
-              <td class="numeric"><%= g[:limit] %></td>
-              <td class="numeric"><%= g[:capacity] %></td>
-              <td class="numeric"><%= g[:comptes] %></td>
-              <td class="numeric" style="color:<%= remaining < 0 ? "var(--red)" : "inherit" %>"><%= remaining %></td>
-              <td class="numeric" style="color:<%= g[:over] > 0 ? "var(--red)" : "inherit" %>"><%= g[:over] %></td>
-              <td class="numeric"><%= eur.call(g[:arr]) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  </div>
+<% else %>
+  <p class="section-sub">
+    Campagne <%= @annee %> telle que saisie dans l'outil, conservée jusqu'à sa clôture dans l'Historique.
+    Taille du portefeuille de chaque personne en nombre de comptes et en ARR, et capacité restante à attribuer.
+    Plafond de comptes par personne : <strong><%= User::ACCOUNT_LIMITS[:kam] %> pour un KAM, <%= User::DEFAULT_ACCOUNT_LIMIT %> pour un AM, <%= User::ACCOUNT_LIMITS[:tl_am] %> pour un TL AM, <%= User::ACCOUNT_LIMITS[:tl_csm] %> pour un TL Customer Care, <%= User::ACCOUNT_LIMITS[:head_csm] %> pour un Head of CSM</strong>. Un compte est un client dont au moins un produit n'est pas churné
+    (les clients entièrement churnés sont exclus) ; l'ARR est celui des produits encore actifs.
+  </p>
 <% end %>
 
-<div class="section-card">
-  <%= turbo_frame_tag "ent-table-frame" do %>
-    <div class="table-toolbar">
-      <h2>Entreprises</h2>
-      <div class="table-toolbar-controls">
-        <%= form_with url: request.path, method: :get do %>
-          <%= preserved_query_fields("ent_q", "ent_ams", "ent_ams_open", "ent_risques", "ent_risques_open", "ent_upsell", "ent_page") %>
-          <%= live_search_field :ent_q, @ent_q %>
-          <%= render "shared/checklist_filter", param_name: "ent_ams", options: @ent_available_ams, selected: @ent_ams, legend: "AM" %>
-          <%= render "shared/checklist_filter", param_name: "ent_risques", options: AttributionPortefeuilleController::RISQUES, selected: @ent_risques, legend: "Risque" %>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
-            <%= check_box_tag :ent_upsell, "1", @ent_upsell, onchange: "this.form.requestSubmit()" %>
-            Opportunité d'upsell
-          </label>
-        <% end %>
-      </div>
-    </div>
-    <p class="section-sub" style="margin-top:-8px;">
-      <strong><%= @ent_total[:count] %></strong> entreprise<%= "s" if @ent_total[:count] > 1 %> · enjeu ARR <strong><%= eur.call(@ent_total[:arr]) %></strong> ·
-      <strong><%= @ent_total[:upsell] %></strong> avec une opportunité d'upsell (<%= eur.call(@ent_total[:upsell_amount]) %>).
-      Enjeu ARR = produits encore actifs. Opportunité d'upsell = au moins un upsell « Non démarré » ou « En cours ».
-    </p>
-    <div class="table-scroll">
-      <table class="deals-table">
-        <thead>
-          <tr>
-            <%= sortable_th(@ent_pager, :nom, "Entreprise", col_class: "col-nom") %>
-            <%= sortable_th(@ent_pager, :am, "AM") %>
-            <%= sortable_th(@ent_pager, :arr, "Enjeu ARR (€)", col_class: "col-arr") %>
-            <%= sortable_th(@ent_pager, :risque, "Risque couvert") %>
-            <%= sortable_th(@ent_pager, :upsell, "Opportunité d'upsell") %>
-          </tr>
-        </thead>
-        <tbody>
-          <% if @ent_pager.records.empty? %>
-            <tr><td colspan="5" class="empty-state">Aucune entreprise pour ce filtre.</td></tr>
-          <% else %>
-            <% @ent_pager.records.each do |r| %>
-              <tr>
-                <td>
-                  <strong><%= r[:company].name %></strong>
-                  <% if r[:churned] %><span class="badge ko" style="margin-left:6px;">Churné</span><% end %>
-                </td>
-                <td><%= r[:am].name %></td>
-                <td class="numeric"><%= eur.call(r[:arr]) %></td>
-                <td>
-                  <% if r[:risque] %>
-                    <span class="badge <%= { "Double risque" => "ok", "Santé" => "warn", "Prévoyance" => "warn" }[r[:risque]] %>"><%= r[:risque] %></span>
-                  <% else %>
-                    —
-                  <% end %>
-                </td>
-                <td>
-                  <% if r[:upsell] %>
-                    <span class="badge ok">✓ Oui</span> <small style="color:var(--text-muted);"><%= eur.call(r[:upsell_amount]) %></small>
-                  <% else %>
-                    <span style="color:var(--text-muted);">Non</span>
-                  <% end %>
-                </td>
-              </tr>
-            <% end %>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-    <%= pagination_controls(@ent_pager) %>
-    <%= page_size_select(@ent_pager) %>
-  <% end %>
-</div>
+<% if bi && @last_synced_at.nil? %>
+  <p class="notice" style="border-radius:var(--radius-sm);">Lancez une synchronisation pour charger les portefeuilles depuis la BI.</p>
+<% else %>
+  <%= render "repartition", eur: eur, bi: bi %>
+  <%= render "entreprises", eur: eur, bi: bi %>
+  <%= render "sans_am", eur: eur if bi %>
+<% end %>

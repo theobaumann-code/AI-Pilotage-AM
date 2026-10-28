@@ -12,7 +12,7 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
       college: "Cadre", assureur: "AXA", arr: 10_000, taux: 2, statut_renouvellement: "En cours", risque_churn: 10)
   end
 
-  # Scoped to the produits table's own frame, not the whole page — "Client Gprod" also has a nonzero
+  # Scoped to the produits table's own frame, not the whole page - "Client Gprod" also has a nonzero
   # risque_churn on this same deal, so it legitimately shows up in the separate "Entreprises à risque"
   # table too (a different, independent set of risque_* filters) regardless of this filter.
   def produits_table(body)
@@ -26,17 +26,17 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
     assert_match "Client Gprod", produits_table(@response.body)
     assert_match "10%", produits_table(@response.body)
 
-    get pilotage_path, params: { produit_ams: [@admin.name] }
+    get pilotage_path, params: { produit_ams: [ @admin.name ] }
     assert_no_match "Client Gprod", produits_table(@response.body)
   end
 
   test "the produits table is also filterable by team (role), not just by named AM" do
     sign_in @am
-    get pilotage_path, params: { produit_roles: ["Admin"] }
+    get pilotage_path, params: { produit_roles: [ "Admin" ] }
     assert_response :success
     assert_no_match "Client Gprod", produits_table(@response.body)
 
-    get pilotage_path, params: { produit_roles: ["AM"] }
+    get pilotage_path, params: { produit_roles: [ "AM" ] }
     assert_match "Client Gprod", produits_table(@response.body)
   end
 
@@ -82,7 +82,7 @@ class GlobalProduitsTest < ActionDispatch::IntegrationTest
   test "the non-Turbo (plain HTML) fallback redirects back to Vue globale, not to the admin's own portefeuille" do
     sign_in @admin
 
-    # No Accept header for turbo-stream here — simulates a submission Turbo never intercepted (JS didn't
+    # No Accept header for turbo-stream here - simulates a submission Turbo never intercepted (JS didn't
     # load/run in time, etc.), which falls through to the format.html branch.
     patch deal_path(@deal), params: { deal: { risque_churn: 60 }, row_context: "global_produit" }
     assert_redirected_to pilotage_path

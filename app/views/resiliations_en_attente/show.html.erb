@@ -1,0 +1,102 @@
+<% content_for :title, "Suivi des résiliations - Pilotage NRR" %>
+<% day = ->(d) { d ? l(d, format: "%d/%m/%Y") : "-" } %>
+
+<h1 class="section-title">Suivi des résiliations</h1>
+
+<div class="bi-sync-bar">
+  <span>
+    <% if @last_synced_at %>
+      Données BO récupérées le <strong><%= l(@last_synced_at.in_time_zone("Europe/Paris"), format: "%d/%m/%Y à %Hh%M") %></strong>
+      · mise à jour automatique chaque jour à 11h et 17h, ou à la demande.
+    <% else %>
+      <strong>Aucune donnée BO récupérée pour l'instant.</strong>
+    <% end %>
+  </span>
+  <%= button_to "Actualiser depuis le BO", sync_resiliations_en_attente_path, class: "button", form: { style: "display:inline;" },
+        data: { turbo_submits_with: "Actualisation…" } %>
+</div>
+
+<div class="metrics-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));margin-bottom:20px;">
+  <div class="metric-card metric-card--compact">
+    <div class="metric-card-title">Produits suivis</div>
+    <div class="metric-col-value"><%= @all_total[:count] %></div>
+  </div>
+  <div class="metric-card metric-card--compact">
+    <div class="metric-card-title">Avec une résiliation 2026</div>
+    <div class="metric-col-value"><%= @all_total[:with_termination] %></div>
+  </div>
+  <div class="metric-card metric-card--compact">
+    <div class="metric-card-title">Sans résiliation 2026</div>
+    <div class="metric-col-value"><%= @all_total[:without_termination] %></div>
+  </div>
+</div>
+
+<div class="section-card" id="resiliations">
+  <div class="table-toolbar">
+    <h2>Produits à résilier et nouveaux contrats</h2>
+    <div class="table-toolbar-controls">
+      <%= form_with url: resiliations_en_attente_path, method: :get, data: { turbo_action: "replace" } do %>
+        <%= preserved_query_fields("q", "roles", "roles_open", "ams", "ams_open", "risques", "risques_open", "statuts", "statuts_open", "rs_page") %>
+        <%= live_search_field :q, @q, placeholder: "Rechercher un client, une résiliation…" %>
+        <%= render "shared/checklist_filter", param_name: "roles", options: @role_options, selected: @roles, legend: "Équipe" %>
+        <%= render "shared/checklist_filter", param_name: "ams", options: @am_options, selected: @ams, legend: "AM" %>
+        <%= render "shared/checklist_filter", param_name: "risques", options: @risque_options, selected: @risques, legend: "Risque" %>
+        <%= render "shared/checklist_filter", param_name: "statuts", options: @statut_options, selected: @statuts, legend: "Statut" %>
+      <% end %>
+    </div>
+  </div>
+  <p class="section-sub" style="margin-top:-8px;">
+    <strong><%= @total[:count] %></strong> produit<%= "s" if @total[:count] > 1 %>, dont <strong><%= @total[:with_termination] %></strong> avec une résiliation 2026.
+    Produits cochés « A résilier » ou au statut « Nouveau contrat ». Pour chacun, la résiliation BO la plus récente créée en 2026
+    sur la même entreprise (retrouvée par son nom ; pour un groupe, sur tous ses user pros), le même risque et le même collège.
+  </p>
+  <div class="table-scroll">
+    <table class="deals-table">
+      <thead>
+        <tr>
+          <%= sortable_th(@pager, :client, "Client") %>
+          <%= sortable_th(@pager, :am, "AM") %>
+          <%= sortable_th(@pager, :risque, "Risque") %>
+          <%= sortable_th(@pager, :college, "Collège") %>
+          <th>Suivi</th>
+          <%= sortable_th(@pager, :statut, "Statut de résiliation") %>
+          <th>Résiliation BO</th>
+          <%= sortable_th(@pager, :cree_le, "Créée le") %>
+          <%= sortable_th(@pager, :date_effet, "Date d'effet") %>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @pager.records.empty? %>
+          <tr><td colspan="9" class="empty-state">Aucun produit à résilier ni nouveau contrat pour ce filtre.</td></tr>
+        <% else %>
+          <% @pager.records.each do |r| %>
+            <% d = r[:deal]; t = r[:termination] %>
+            <tr>
+              <td><strong><%= d.company.name %></strong></td>
+              <td><%= d.company.user.name %></td>
+              <td><%= d.produit %><br><small style="color:var(--text-muted);"><%= d.assureur %></small></td>
+              <td><%= d.college %></td>
+              <td>
+                <% if d.a_resilier %><span class="badge ko">A résilier</span><% end %>
+                <% if d.statut_renouvellement == "Nouveau contrat" %><span class="badge reader">Nouveau contrat</span><% end %>
+              </td>
+              <% if t %>
+                <td><span class="badge kam"><%= t.status_label %></span></td>
+                <td><%= t.name.presence || "-" %><br><small style="color:var(--text-muted);"><%= t.type_label %> · <%= t.product_label %></small></td>
+                <td><%= day.call(t.created_on) %></td>
+                <td><%= day.call(t.termination_date) %></td>
+              <% else %>
+                <td><span class="badge ko">Aucune résiliation 2026 en cours</span></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+              <% end %>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <%= pagination_controls(@pager) %>
+  <%= page_size_select(@pager) %>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_28_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -48,6 +48,55 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
     t.index ["year"], name: "index_archive_entries_on_year"
   end
 
+  create_table "bi_accounts", force: :cascade do |t|
+    t.string "am_email"
+    t.string "am_name"
+    t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_billed", precision: 12, scale: 2, default: "0.0", null: false
+    t.jsonb "arr_calculation"
+    t.decimal "arr_estimated", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_prevoyance", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "arr_sante", precision: 12, scale: 2, default: "0.0", null: false
+    t.string "arr_source"
+    t.bigint "bi_id", null: false
+    t.integer "contracts_count", default: 0, null: false
+    t.integer "contracts_estimated", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.integer "employees_count"
+    t.boolean "has_prevoyance", default: false, null: false
+    t.boolean "has_sante", default: false, null: false
+    t.boolean "has_standard_sante", default: false, null: false
+    t.boolean "has_sur_mesure_sante", default: false, null: false
+    t.string "kind", null: false
+    t.string "name"
+    t.string "siren"
+    t.datetime "synced_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_pros_count", default: 0, null: false
+    t.index ["am_email"], name: "index_bi_accounts_on_am_email"
+    t.index ["kind", "bi_id"], name: "index_bi_accounts_on_kind_and_bi_id", unique: true
+  end
+
+  create_table "bi_pending_terminations", force: :cascade do |t|
+    t.bigint "account_bi_id", null: false
+    t.string "account_kind", null: false
+    t.bigint "bi_id", null: false
+    t.integer "college_type"
+    t.decimal "contract_arr", precision: 12, scale: 2
+    t.date "created_on"
+    t.string "name"
+    t.integer "operation_status"
+    t.integer "product_type"
+    t.string "social_name"
+    t.datetime "synced_at", null: false
+    t.bigint "terminable_id"
+    t.string "terminable_type"
+    t.date "termination_date"
+    t.bigint "user_pro_id"
+    t.index ["account_kind", "account_bi_id"], name: "idx_on_account_kind_account_bi_id_02d11a3fb4"
+    t.index ["bi_id"], name: "index_bi_pending_terminations_on_bi_id", unique: true
+  end
+
   create_table "companies", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
@@ -61,6 +110,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
   end
 
   create_table "deals", force: :cascade do |t|
+    t.boolean "a_resilier", default: false, null: false
     t.decimal "arr", precision: 12, scale: 2, default: "0.0", null: false
     t.datetime "arr_estimated_at"
     t.string "arr_estimation_formula_version"
@@ -108,6 +158,45 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
     t.index ["company_id"], name: "index_other_impacts_on_company_id"
   end
 
+  create_table "projection_departures", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_projection_departures_on_user_id", unique: true
+  end
+
+  create_table "projection_moves", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "bi_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.string "kind", null: false
+    t.string "original_am_email"
+    t.bigint "recruit_id"
+    t.bigint "team_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["created_by_id"], name: "index_projection_moves_on_created_by_id"
+    t.index ["kind", "bi_id"], name: "index_projection_moves_on_kind_and_bi_id", unique: true
+    t.index ["recruit_id"], name: "index_projection_moves_on_recruit_id"
+    t.index ["team_id"], name: "index_projection_moves_on_team_id"
+    t.index ["user_id"], name: "index_projection_moves_on_user_id"
+  end
+
+  create_table "projection_recruits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "role", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "projection_teams", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((name)::text)", name: "index_projection_teams_on_lower_name", unique: true
+  end
+
   create_table "risk_notes", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.text "content", null: false
@@ -152,6 +241,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_21_100000) do
   add_foreign_key "deals", "companies"
   add_foreign_key "deals", "users"
   add_foreign_key "other_impacts", "companies"
+  add_foreign_key "projection_departures", "users", on_delete: :cascade
+  add_foreign_key "projection_moves", "projection_recruits", column: "recruit_id", on_delete: :cascade
+  add_foreign_key "projection_moves", "projection_teams", column: "team_id", on_delete: :cascade
+  add_foreign_key "projection_moves", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "projection_moves", "users", on_delete: :cascade
   add_foreign_key "risk_notes", "companies"
   add_foreign_key "risk_notes", "users"
   add_foreign_key "trash_batches", "users", column: "deleted_by_id"

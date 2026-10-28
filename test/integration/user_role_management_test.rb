@@ -32,4 +32,18 @@ class UserRoleManagementTest < ActionDispatch::IntegrationTest
     @admin.reload
     assert @admin.admin?, "the last admin must stay admin even via the role selector"
   end
+
+  test "Head of CSM can be picked in the Équipe selector and keeps admin rights, so the last admin may take it" do
+    sign_in @admin
+    get gestion_droits_path
+    assert_match "Head of CSM", @response.body
+
+    post users_path, params: { user: { name: "New Head", email: "new-head@example.com", role: "Head of CSM" } }
+    head = User.find_by!(email: "new-head@example.com")
+    assert_equal [ true, :head_csm, 4 ], [ head.admin?, head.role, head.account_limit ]
+
+    head.destroy!
+    patch user_path(@admin), params: { user: { name: @admin.name, email: @admin.email, role: "Head of CSM" } }
+    assert_equal :head_csm, @admin.reload.role, "becoming Head of CSM keeps the last admin an admin"
+  end
 end

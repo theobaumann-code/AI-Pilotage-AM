@@ -1,4 +1,4 @@
-# Pilotage NRR — SideCare
+# Pilotage NRR - SideCare
 
 Application Rails 8.1 / Ruby 3.3.12 / PostgreSQL.
 
@@ -87,3 +87,64 @@ BONUS_TRACKER_INTERNAL_TOKEN=<secret partagé>
 Après la migration et la configuration, recalculer les lignes existantes avec
 `bin/rails upsell_arr:refresh`. Une ligne non rattachée ou non valorisable est
 affichée comme indisponible ; aucune moyenne fixe de secours n'est appliquée.
+
+## Attribution portefeuille depuis la BI
+
+La rubrique « Attribution portefeuille » prépare la campagne suivante à partir
+de la BI (onglet par défaut). L'onglet « données brutes » conserve la campagne
+en cours telle que saisie dans l'outil, jusqu'à sa clôture dans l'Historique.
+
+- Un compte est un company set, ou un user pro rattaché à aucun set. Son AM est
+  le responsable AM du company set s'il existe, sinon celui du user pro. Il est
+  rapproché d'un utilisateur de l'outil par son e-mail ; un AM inconnu de
+  l'outil apparaît en « Hors outil ».
+- L'ARR est la commission SideCare (primes HT × taux de commission total) des
+  contrats internes santé et prévoyance actifs, sur la facturation du T1 2026
+  annualisée. Un contrat non facturé au T1 est annualisé sur ses trois derniers
+  mois facturés depuis.
+- « Comptes sans AM » liste les comptes sans AM de plus de 2 000 € d'ARR ; sous
+  5 000 €, seulement ceux qui ont au moins un produit santé standard
+  (`offer_kind` différent de 3, « sur mesure »).
+
+La requête est dans `app/services/bi_portfolio_query.sql`. `BiPortfolioSyncJob`
+la rejoue chaque jour à 11h et 17h (heure de Paris, `config/recurring.yml`,
+exécuté par le process `worker`) et remplace la table `bi_accounts`. Un admin
+peut aussi lancer « Synchroniser maintenant » depuis la page.
+
+Variables Scalingo :
+
+```text
+BI_BIGQUERY_CREDENTIALS_JSON=<clé JSON du compte de service>
+BI_BIGQUERY_PROJECT_ID=dogwood-method-256009   # défaut
+BI_BIGQUERY_DATASET=BI_EU                      # défaut
+BI_BIGQUERY_LOCATION=EU                        # défaut
+```
+
+Le compte de service n'a besoin que des rôles « BigQuery Data Viewer » sur le
+dataset `BI_EU` et « BigQuery Job User » sur le projet.
+
+Le compte dédié à cette application est
+`pilotage-am-bi@dogwood-method-256009.iam.gserviceaccount.com`. Sa clé est
+conservée dans `BI_BIGQUERY_CREDENTIALS_JSON` sur Scalingo, jamais dans Git.
+La configuration Google Sheets utilise ses propres variables et reste indépendante.
+
+### Déploiement et vérification
+
+L'application Scalingo `ai-pilotage-am` se déploie par son dépôt Git direct ;
+aucun lien GitHub automatique n'est configuré. Après validation et fusion :
+
+```sh
+git pull --ff-only origin main
+git push scalingo main
+scalingo --app ai-pilotage-am scale worker:1
+scalingo --app ai-pilotage-am ps
+```
+
+Le hook `postdeploy` du `Procfile` applique les migrations avec
+`bin/rails db:prepare` avant que Scalingo ne bascule le trafic vers la nouvelle
+version. Un échec de migration fait échouer le déploiement. Vérifier
+que `web` et `worker` sont tous deux démarrés, puis ouvrir « Attribution
+portefeuille » et lancer « Synchroniser maintenant ». Le message de succès
+doit indiquer le nombre de comptes importés et la page afficher la date de
+dernière synchronisation. Le worker exécute ensuite les tâches de 11 h et
+17 h, heure de Paris.

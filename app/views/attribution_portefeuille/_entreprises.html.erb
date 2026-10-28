@@ -1,0 +1,85 @@
+<% noun = bi ? "compte" : "entreprise" %>
+<div class="section-card">
+  <%= turbo_frame_tag "ent-table-frame" do %>
+    <div class="table-toolbar">
+      <h2><%= bi ? "Comptes suivis par un AM" : "Entreprises" %></h2>
+      <div class="table-toolbar-controls">
+        <%= form_with url: request.path, method: :get do %>
+          <%= preserved_query_fields("ent_q", "ent_ams", "ent_ams_open", "ent_risques", "ent_risques_open", "ent_upsell", "ent_page") %>
+          <%= live_search_field :ent_q, @ent_q, placeholder: bi ? "Rechercher un compte…" : "Rechercher une entreprise…" %>
+          <%= render "shared/checklist_filter", param_name: "ent_ams", options: @ent_available_ams, selected: @ent_ams, legend: "AM" %>
+          <%= render "shared/checklist_filter", param_name: "ent_risques", options: AttributionPortefeuilleController::RISQUES, selected: @ent_risques, legend: "Risque" %>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+            <%= check_box_tag :ent_upsell, "1", @ent_upsell, onchange: "this.form.requestSubmit()" %>
+            Opportunité d'upsell
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <p class="section-sub" style="margin-top:-8px;">
+      <strong><%= @ent_total[:count] %></strong> <%= noun %><%= "s" if @ent_total[:count] > 1 %> · enjeu ARR <strong><%= eur.call(@ent_total[:arr]) %></strong> ·
+      <strong><%= @ent_total[:upsell] %></strong> avec une opportunité d'upsell (<%= eur.call(@ent_total[:upsell_amount]) %>).
+      <% if bi %>
+        Enjeu ARR = contrats santé et prévoyance signés et envoyés à l'assureur, au statut ops revu, en onboarding, onboardé ou suspendu :
+        ARR calculé contrat par contrat par le moteur de SideCare Analytics - « Facturé » : dernière période facturée complète et représentative,
+        annualisée selon sa fréquence ; « Estimé » sinon : affiliés attendus × prime par affilié × taux de commission, avec la méthode et la fiabilité
+        du prix (détail au survol) ; « Mixte » : une partie facturée, une partie estimée. ARR santé net de TSA. Opportunité d'upsell = le risque que le compte n'a pas encore (prévoyance pour un compte santé seul, et inversement),
+        estimé avec la formule par salarié des upsells sur l'effectif du BO.
+      <% else %>
+        Enjeu ARR = produits encore actifs. Opportunité d'upsell = au moins un upsell « Non démarré » ou « En cours ».
+      <% end %>
+    </p>
+    <div class="table-scroll">
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <%= sortable_th(@ent_pager, :nom, bi ? "Compte" : "Entreprise", col_class: "col-nom") %>
+            <%= sortable_th(@ent_pager, :am, "AM") %>
+            <%= sortable_th(@ent_pager, :arr, "Enjeu ARR (€)", col_class: "col-arr") %>
+            <%= sortable_th(@ent_pager, :risque, "Risque couvert") %>
+            <%= sortable_th(@ent_pager, :upsell, "Opportunité d'upsell") %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @ent_pager.records.empty? %>
+            <tr><td colspan="5" class="empty-state">Aucun<%= "e" unless bi %> <%= noun %> pour ce filtre.</td></tr>
+          <% else %>
+            <% @ent_pager.records.each do |r| %>
+              <tr>
+                <td>
+                  <strong><%= r[:name] %></strong>
+                  <% if r[:churned] %><span class="badge ko" style="margin-left:6px;">Churné</span><% end %>
+                  <% if bi %>
+                    <br><small style="color:var(--text-muted);"><%= r[:account].kind_label %><%= " · #{pluralize(r[:account].user_pros_count, "entreprise")}" if r[:account].set? %></small>
+                  <% end %>
+                </td>
+                <td><%= r[:am_name] %></td>
+                <% if bi %>
+                  <%= render "attribution_portefeuille/arr_cell", account: r[:account], eur: eur %>
+                <% else %>
+                  <td class="numeric"><%= eur.call(r[:arr]) %></td>
+                <% end %>
+                <td>
+                  <% if r[:risque] %>
+                    <span class="badge <%= { "Double risque" => "ok", "Santé" => "warn", "Prévoyance" => "warn" }[r[:risque]] %>"><%= r[:risque] %></span>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td>
+                  <% if r[:upsell] %>
+                    <span class="badge ok">✓ <%= bi ? r[:upsell_produit] : "Oui" %></span> <small style="color:var(--text-muted);"><%= eur.call(r[:upsell_amount]) %></small>
+                  <% else %>
+                    <span style="color:var(--text-muted);">Non</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <%= pagination_controls(@ent_pager) %>
+    <%= page_size_select(@ent_pager) %>
+  <% end %>
+</div>

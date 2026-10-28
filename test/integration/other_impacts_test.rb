@@ -1,7 +1,7 @@
 require "test_helper"
 
 # "Autres impacts": manual one-off ARR impacts per client on Mon portefeuille, admin/KAM only. Validé lines
-# feed the KPIs (ARR final, NRR); En cours lines only feed the section's own Projeté total.
+# feed the actual and projected KPIs (ARR final, NRR); En cours lines only the projected ones.
 class OtherImpactsTest < ActionDispatch::IntegrationTest
   setup do
     @admin = User.create!(email: "admin-impact@example.com", name: "Admin Impact", admin: true, active: true)
@@ -20,7 +20,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     PortfolioSummary.new(@am.companies.includes(:produit_deals, :upsell_deals, :current_other_impacts), user: @am)
   end
 
-  test "Validé lines move only the actual KPIs, En cours lines only the projected ones" do
+  test "Validé lines move the actual and projected KPIs, En cours lines only the projected ones" do
     base = summary
     OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
     OtherImpact.create!(company: @alpha, amount: "1000", statut: "Validé")
@@ -29,25 +29,25 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     s = summary
     assert_in_delta(-2000, s.other_impacts_validated, 0.001)
     assert_in_delta 7000, s.other_impacts_pending, 0.001
+    assert_in_delta 5000, s.other_impacts_projected, 0.001
 
     # actual side: Validé only (-2000), the En cours 7000 stays out
     assert_in_delta base.arr_final_actual - 2000, s.arr_final_actual, 0.001
     assert_in_delta base.nrr_actual - 2000.0 / base.arr_initial * 100, s.nrr_actual, 0.001
-    # projected side: En cours only (+7000), the Validé -2000 stays out
-    assert_in_delta base.arr_final + 7000, s.arr_final, 0.001
-    assert_in_delta base.nrr + 7000.0 / base.arr_initial * 100, s.nrr, 0.001
+    # projected side: every line (-2000 validated + 7000 en cours)
+    assert_in_delta base.arr_final + 5000, s.arr_final, 0.001
+    assert_in_delta base.nrr + 5000.0 / base.arr_initial * 100, s.nrr, 0.001
     assert_in_delta base.arr_initial, s.arr_initial, 0.001, "the starting ARR is untouched"
   end
 
-  test "a line only ever counts on one side: switching its status moves it from projected to actual" do
+  test "validating a line adds it to the actual side and keeps it on the projected one" do
     base = summary
     impact = OtherImpact.create!(company: @alpha, amount: "4000", statut: "En cours")
     assert_in_delta base.nrr_actual, summary.nrr_actual, 0.001
     assert_in_delta base.arr_final + 4000, summary.arr_final, 0.001
 
     impact.update!(statut: "Validé")
-    assert_in_delta base.nrr, summary.nrr, 0.001
-    assert_in_delta base.arr_final, summary.arr_final, 0.001
+    assert_in_delta base.arr_final + 4000, summary.arr_final, 0.001, "still in the projection once validated"
     assert_in_delta base.arr_final_actual + 4000, summary.arr_final_actual, 0.001
   end
 
@@ -72,7 +72,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to portfolio_path(user_id: @am.id, anchor: "other-impacts")
     impact = OtherImpact.last
-    assert_equal [@alpha, "Les deux", "Avenant", "Validé"], [impact.company, impact.produit, impact.comment, impact.statut]
+    assert_equal [ @alpha, "Les deux", "Avenant", "Validé" ], [ impact.company, impact.produit, impact.comment, impact.statut ]
     assert_in_delta(-3000, impact.amount.to_f, 0.001)
     assert_equal AppSetting.instance.annee_en_cours, impact.annee
   end
@@ -92,7 +92,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     end
     impact = OtherImpact.last
 
-    [@am, @reader].each do |user|
+    [ @am, @reader ].each do |user|
       sign_out :user
       sign_in user
       assert_no_difference "OtherImpact.count" do
@@ -120,13 +120,13 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match dom_id_for(@churned), @response.body, "and the one it moved to"
 
     impact.reload
-    assert_equal [@churned, "Les deux", "Avenant", "Validé"], [impact.company, impact.produit, impact.comment, impact.statut]
+    assert_equal [ @churned, "Les deux", "Avenant", "Validé" ], [ impact.company, impact.produit, impact.comment, impact.statut ]
     assert_in_delta(-3000.5, impact.amount.to_f, 0.001)
 
-    # a Validé line stays freely editable — back to En cours, a different amount
+    # a Validé line stays freely editable - back to En cours, a different amount
     patch other_impact_path(impact, redirect_user_id: @am.id), params: { other_impact: { statut: "En cours", amount: "42" } },
       headers: { "Accept" => "text/vnd.turbo-stream.html" }
-    assert_equal ["En cours", 42], [impact.reload.statut, impact.amount.to_i]
+    assert_equal [ "En cours", 42 ], [ impact.reload.statut, impact.amount.to_i ]
   end
 
   def dom_id_for(record)
@@ -198,7 +198,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_no_match 'name="other_impact[amount]"', @response.body
   end
 
-  test "the KPI card sits in the summary grid after Taux de renouvellement, Actuel (Validé) then Projeté (En cours)" do
+  test "the KPI card sits in the summary grid after Taux de renouvellement, Actuel (Validé) then Projeté (every line)" do
     OtherImpact.create!(company: @alpha, amount: "-3000", statut: "Validé")
     OtherImpact.create!(company: @alpha, amount: "8000", statut: "En cours")
     sign_in @admin
@@ -207,7 +207,7 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match(/summary-cards metrics-grid with-other-impacts/, cards)
     assert cards.index("Taux de renouvellement") < cards.index("other-impacts-totals"), "after the Taux card"
     card = cards[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
-    assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?8,000 €/, card)
+    assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?5,000 €/, card)
     assert_match(/metric-card--compact/, cards[/<div class="metric-card[^"]*" id="other-impacts-totals"/])
   end
 
@@ -226,12 +226,12 @@ class OtherImpactsTest < ActionDispatch::IntegrationTest
     assert_match(/summary-cards metrics-grid with-other-impacts/, cards)
     assert cards.index("Taux de renouvellement") < cards.index("other-impacts-totals")
     card = cards[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
-    assert_match(/Actuel[\s\S]*?-2,000 €[\s\S]*?Projeté[\s\S]*?8,500 €/, card, "validated -3000 + 1000 across both AMs, pending 8000 + 500")
+    assert_match(/Actuel[\s\S]*?-2,000 €[\s\S]*?Projeté[\s\S]*?6,500 €/, card, "validated -3000 + 1000 across both AMs, plus pending 8000 + 500")
 
     # the Équipe/AM filters of the page narrow it too
-    get pilotage_path, params: { summary_ams: [@am.name] }
+    get pilotage_path, params: { summary_ams: [ @am.name ] }
     card = @response.body[/id="other-impacts-totals".*?<\/div>\s*<\/div>\s*<\/div>/m]
-    assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?500 €/, card)
+    assert_match(/Actuel[\s\S]*?-3,000 €[\s\S]*?Projeté[\s\S]*?-2,500 €/, card)
   end
 
   test "the impacts are not folded into Upsell or Churn" do

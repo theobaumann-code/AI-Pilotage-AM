@@ -60,7 +60,7 @@ class CsvImport
     !@conflict && (to_create.any? || to_update.any?)
   end
 
-  # Raised (and caught) inside apply! only — carries a row-level message back out of the transaction
+  # Raised (and caught) inside apply! only - carries a row-level message back out of the transaction
   # instead of letting a bare ActiveRecord::RecordInvalid bubble all the way up to a blank 422 page with
   # no indication of which row, or why, the whole import got rolled back.
   ApplyError = Class.new(StandardError)
@@ -101,7 +101,7 @@ class CsvImport
   end
 
   # A CSV row that assigns a different AM to a company already targeted earlier in the same file makes the
-  # whole import ambiguous — rejected outright rather than silently picking one AM over the other. Keyed
+  # whole import ambiguous - rejected outright rather than silently picking one AM over the other. Keyed
   # case-insensitively so "Caron Services" and "CARON SERVICES" are recognized as the same company here
   # too, matching Company.find_or_create_by_name! at apply time.
   def check_company_am_conflict
@@ -144,14 +144,14 @@ class CsvImport
   end
 
   # Trailing "s" stripped so a plural typed by hand ("Cadres", "Non Cadres") still matches the
-  # singular catalog value ("Cadre", "Non cadre") — applied on both sides of every comparison, so it
+  # singular catalog value ("Cadre", "Non cadre") - applied on both sides of every comparison, so it
   # never lets through a value that wouldn't otherwise match.
   def normalize_loose(s)
     s.to_s.unicode_normalize(:nfd).gsub(/[̀-ͯ]/, "").downcase.gsub(/\s/, "").sub(/s\z/, "")
   end
 
   # Accepts plain numbers, French decimal commas, and thousands separators in either French (space,
-  # non-breaking space, or dot) or Anglo-Saxon (comma) style — Excel exports commonly use a non-breaking
+  # non-breaking space, or dot) or Anglo-Saxon (comma) style - Excel exports commonly use a non-breaking
   # space (U+00A0/U+202F) for the latter, which a plain \s regex silently fails to strip. A trailing "%"
   # (e.g. on % de chance) is stripped too, since that column is just a plain number underneath.
   def normalize_number(v)
@@ -186,7 +186,7 @@ class CsvImport
   def resolve_row_am(am_raw, idx, row_label)
     raw = am_raw.to_s.strip
     if raw.empty?
-      @errors << "Ligne #{idx + 2} (#{row_label}) : AM manquant — ligne ignorée."
+      @errors << "Ligne #{idx + 2} (#{row_label}) : AM manquant - ligne ignorée."
       return nil
     end
     matched = @active_am_names ||= User.assignable.pluck(:name)
@@ -221,7 +221,7 @@ class CsvImport
 
       key_val = obj[:identifiant].to_s.strip
       if key_val.empty?
-        @errors << "Ligne #{idx + 2} : clé de correspondance (identifiant) manquante — ligne ignorée."
+        @errors << "Ligne #{idx + 2} : clé de correspondance (identifiant) manquante - ligne ignorée."
         next
       end
       row_label = obj[:nom].to_s.strip.presence || key_val
@@ -239,7 +239,7 @@ class CsvImport
         end
       end
 
-      match_key = [key_val.downcase, produit_val].freeze
+      match_key = [ key_val.downcase, produit_val ].freeze
       existing = ProduitDeal.where("lower(identifiant) = ?", key_val.downcase)
       existing = existing.where(produit: produit_val) if produit_val
       existing = existing.first
@@ -259,7 +259,7 @@ class CsvImport
         if assureur_val
           attrs[:assureur] = assureur_val
         else
-          @warnings << "Ligne #{idx + 2} (#{row_label}) : assureur \"#{raw_assureur}\" non reconnu (attendu : #{ProduitDeal::ASSUREURS.join(" / ")}) — valeur ignorée pour cette ligne."
+          @warnings << "Ligne #{idx + 2} (#{row_label}) : assureur \"#{raw_assureur}\" non reconnu (attendu : #{ProduitDeal::ASSUREURS.join(" / ")}) - valeur ignorée pour cette ligne."
         end
       end
 
@@ -269,7 +269,7 @@ class CsvImport
         if college_val
           attrs[:college] = college_val
         else
-          @warnings << "Ligne #{idx + 2} (#{row_label}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) — valeur ignorée pour cette ligne."
+          @warnings << "Ligne #{idx + 2} (#{row_label}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) - valeur ignorée pour cette ligne."
         end
       end
 
@@ -279,7 +279,7 @@ class CsvImport
         if statut_val
           attrs[:statut_renouvellement] = statut_val
         else
-          @warnings << "Ligne #{idx + 2} (#{row_label}) : statut de renouvellement \"#{raw_statut}\" non reconnu (attendu : #{ProduitDeal::STATUTS_RENOUVELLEMENT.join(" / ")}) — valeur ignorée pour cette ligne."
+          @warnings << "Ligne #{idx + 2} (#{row_label}) : statut de renouvellement \"#{raw_statut}\" non reconnu (attendu : #{ProduitDeal::STATUTS_RENOUVELLEMENT.join(" / ")}) - valeur ignorée pour cette ligne."
         end
       elsif (churn_val = normalize_bool(obj[:churn]))
         attrs[:statut_renouvellement] = churn_val == "Oui" ? ProduitDeal::CHURNED : "En cours"
@@ -339,12 +339,12 @@ class CsvImport
 
       nom_val = obj[:nom].to_s.strip
       if nom_val.empty?
-        @errors << "Ligne #{idx + 2} : nom manquant — ligne ignorée."
+        @errors << "Ligne #{idx + 2} : nom manquant - ligne ignorée."
         next
       end
       raw_produit = obj[:produit].to_s.strip
       if raw_produit.empty?
-        @errors << "Ligne #{idx + 2} (#{nom_val}) : produit manquant — ligne ignorée."
+        @errors << "Ligne #{idx + 2} (#{nom_val}) : produit manquant - ligne ignorée."
         next
       end
       produit_val = upsell_produits.find { |p| normalize_loose(p) == normalize_loose(raw_produit) }
@@ -356,7 +356,7 @@ class CsvImport
       row_am = resolve_row_am(obj[:am], idx, nom_val)
       next unless row_am
 
-      match_key = [nom_val.downcase, produit_val].freeze
+      match_key = [ nom_val.downcase, produit_val ].freeze
       existing = UpsellDeal.joins(:company)
         .where("lower(companies.name) = ?", nom_val.downcase)
         .where(produit: produit_val).first
@@ -368,7 +368,7 @@ class CsvImport
         if college_val
           attrs[:college] = college_val
         else
-          @warnings << "Ligne #{idx + 2} (#{nom_val}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) — valeur ignorée pour cette ligne."
+          @warnings << "Ligne #{idx + 2} (#{nom_val}) : collège \"#{raw_college}\" non reconnu (attendu : #{ProduitDeal::COLLEGES.join(" / ")}) - valeur ignorée pour cette ligne."
         end
       end
       salaries_val = normalize_number(obj[:nombre_salaries])
@@ -381,7 +381,7 @@ class CsvImport
         if statut_val
           attrs[:statut_signature] = statut_val
         else
-          @warnings << "Ligne #{idx + 2} (#{nom_val}) : statut \"#{raw_statut}\" non reconnu (attendu : #{UpsellDeal::STATUTS_SIGNATURE.join(" / ")}) — valeur ignorée pour cette ligne."
+          @warnings << "Ligne #{idx + 2} (#{nom_val}) : statut \"#{raw_statut}\" non reconnu (attendu : #{UpsellDeal::STATUTS_SIGNATURE.join(" / ")}) - valeur ignorée pour cette ligne."
         end
       end
       attrs[:probabilite_signature] = 100 if attrs[:statut_signature] == UpsellDeal::SIGNE

@@ -1,0 +1,45 @@
+<% content_for :title, "Projection portefeuille - Pilotage NRR" %>
+<% eur = ->(v) { number_to_currency(v, unit: "€", format: "%n %u", precision: 0) } %>
+<% delta = ->(n) { n.zero? ? "" : (n > 0 ? "+#{n}" : n.to_s) } %>
+
+<h1 class="section-title">Attribution portefeuille</h1>
+
+<%= render "attribution_portefeuille/view_switch", annee: @annee, current: "projection" %>
+
+<p class="section-sub">
+  Brouillon de la campagne <%= @annee + 1 %> : il part de l'attribution du BO (données BI) et vous y posez vos hypothèses -
+  AM sortants, recrues fictives, comptes réattribués, retirés ou plus accompagnés. Rien n'est envoyé au BO et aucune autre page n'en dépend.
+  Les hypothèses suivent la synchronisation BI quotidienne (ARR, contrats) sans être perdues.
+</p>
+
+<% if @last_synced_at.nil? %>
+  <p class="notice" style="border-radius:var(--radius-sm);">Aucune donnée BI synchronisée : lancez une synchronisation depuis l'onglet « Attribution · données BI ».</p>
+<% else %>
+  <div class="summary-cards">
+    <div class="card"><div class="label">Comptes attribués (BO → projeté)</div><div class="value"><%= @totals[:real_comptes] %> → <%= @totals[:comptes] %></div></div>
+    <div class="card"><div class="label">ARR en portefeuille projeté</div><div class="value"><%= eur.call(@totals[:arr]) %></div></div>
+    <div class="card"><div class="label">À réattribuer</div><div class="value" style="color:<%= @reserve[:count] > 0 ? "var(--burgundy)" : "var(--green)" %>"><%= @reserve[:count] %></div><small><%= eur.call(@reserve[:arr]) %></small></div>
+    <div class="card"><div class="label">Plus accompagnés</div><div class="value"><%= @dropped[:count] %></div><small><%= eur.call(@dropped[:arr]) %></small></div>
+    <div class="card"><div class="label">Résiliés (hors étude)</div><div class="value"><%= @terminated[:count] %></div><small><%= eur.call(@terminated[:arr]) %></small></div>
+    <div class="card"><div class="label">Capacité restante projetée</div><div class="value" style="color:<%= @totals[:remaining] < 0 ? "var(--red)" : "var(--green)" %>"><%= @totals[:remaining] %></div></div>
+    <div class="card"><div class="label">Dans le rouge</div><div class="value" style="color:<%= @over.any? ? "var(--red)" : "var(--green)" %>"><%= @over.size %></div></div>
+  </div>
+
+  <div class="bi-sync-bar">
+    <span><strong><%= @moved_count %></strong> compte<%= "s" if @moved_count > 1 %> différent<%= "s" if @moved_count > 1 %> du BO dans la projection.
+      <% if @projection.orphan_moves.any? %>
+        <%= pluralize(@projection.orphan_moves.size, "mouvement") %> porte<%= "nt" if @projection.orphan_moves.size > 1 %> sur des comptes qui n'ont plus de contrat actif dans la BI (ignorés).
+      <% end %>
+    </span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap;">
+      <%= link_to "Exporter le plan de mouvements", export_projection_portefeuille_path, class: "button", data: { turbo: false } %>
+      <%= button_to "Réinitialiser la projection", projection_portefeuille_path, method: :delete, class: "button ghost-danger",
+            form: { style: "display:inline;", data: { turbo_confirm: "Effacer tous les AM sortants, recrues et mouvements de la projection ?" } } %>
+    </span>
+  </div>
+
+  <%= render "equipe" %>
+  <%= render "repartition", eur: eur, delta: delta %>
+  <%= render "comptes", eur: eur %>
+  <%= render "sans_am", eur: eur %>
+<% end %>

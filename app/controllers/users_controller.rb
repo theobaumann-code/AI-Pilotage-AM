@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   before_action :require_admin!
 
   # No hard delete: a User with active companies can't be destroyed (see User#companies,
-  # dependent: :restrict_with_error) — deactivating is the safe equivalent of the original's "delete AM".
+  # dependent: :restrict_with_error) - deactivating is the safe equivalent of the original's "delete AM".
   def create
     user = User.new(user_params)
     if user.save
@@ -14,7 +14,7 @@ class UsersController < ApplicationController
 
   # Three distinct forms post here under the same route: the admin-toggle button (a bare `admin` param),
   # the KAM-toggle button (a bare `kam` param), and the "modifier les identifiants" form (a nested `user`
-  # param with name/email) — dispatch on which one actually showed up rather than giving them separate
+  # param with name/email) - dispatch on which one actually showed up rather than giving them separate
   # actions, since all three are "update this AM".
   def update
     user = User.find(params[:id])
@@ -44,7 +44,7 @@ class UsersController < ApplicationController
 
   private
 
-  # True once `user` is the ONLY thing standing between the app and having zero active admins — checked
+  # True once `user` is the ONLY thing standing between the app and having zero active admins - checked
   # before any action (admin-toggle, role select in the edit panel, deactivation) that could remove admin
   # from them, so the app can never end up with nobody able to reach admin-only actions.
   def last_active_admin?(user)
@@ -62,7 +62,7 @@ class UsersController < ApplicationController
     redirect_to pilotage_path, notice: "#{user.name} est maintenant #{user.role_label}."
   end
 
-  # KAM has the same rights as admin (see ApplicationController#require_admin!) — no "last KAM" safeguard
+  # KAM has the same rights as admin (see ApplicationController#require_admin!) - no "last KAM" safeguard
   # is needed the way there is for admin, since a real admin (or another KAM) can always grant it back.
   def update_kam_flag(user)
     user.update!(kam: ActiveModel::Type::Boolean.new.cast(params[:kam]))
@@ -70,11 +70,11 @@ class UsersController < ApplicationController
   end
 
   # Admins manage the Google email used to match an existing AM account, and now also the team (rôle)
-  # right from the same panel — subject to the same last-admin safeguard as the dedicated toggle button.
+  # right from the same panel - subject to the same last-admin safeguard as the dedicated toggle button.
   def update_credentials(user)
     attrs = params.require(:user).permit(:name, :email, :role)
 
-    if attrs[:role].present? && !["Admin", User::ROLE_LABELS[:tl_am]].include?(attrs[:role]) && last_active_admin?(user)
+    if attrs[:role].present? && !User::ADMIN_ROLE_LABELS.include?(attrs[:role]) && last_active_admin?(user)
       return redirect_to pilotage_path, alert: "Impossible : il doit rester au moins un administrateur actif."
     end
 

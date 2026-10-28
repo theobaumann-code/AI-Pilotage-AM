@@ -8,7 +8,7 @@ class ImportsController < ApplicationController
   end
 
   # Downloadable starting point for each import type, headers matching CsvImport's own column mapping
-  # exactly — so a file built from this template is guaranteed to parse correctly.
+  # exactly - so a file built from this template is guaranteed to parse correctly.
   def template
     if params[:type] == "upsell"
       send_data upsell_template_csv, filename: "modele-import-upsells.csv", type: "text/csv; charset=utf-8"
@@ -17,7 +17,7 @@ class ImportsController < ApplicationController
     end
   end
 
-  # Preview never writes to the database — CsvImport#analyze is pure. The resolved CSV text (whether it
+  # Preview never writes to the database - CsvImport#analyze is pure. The resolved CSV text (whether it
   # came from an upload or a paste) is echoed back in a hidden field so "Confirmer" can re-run the exact
   # same analysis right before applying it, instead of trusting stale state from this request.
   def preview
@@ -25,7 +25,7 @@ class ImportsController < ApplicationController
     @csv_text = import_text
     @return_to = params[:return_to]
     @result = CsvImport.new(text: @csv_text, deal_type: @deal_type).analyze
-    render :new, formats: [:html]
+    render :new, formats: [ :html ]
   end
 
   def create
@@ -40,7 +40,7 @@ class ImportsController < ApplicationController
     else
       @result = result
       flash.now[:alert] = "Import impossible : vérifiez les erreurs ci-dessous."
-      render :new, status: :unprocessable_entity, formats: [:html]
+      render :new, status: :unprocessable_entity, formats: [ :html ]
     end
   end
 
@@ -56,17 +56,17 @@ class ImportsController < ApplicationController
 
   def produit_template_csv
     CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "Produit", "Identifiant", "ARR", "Taux de renouvellement négocié", "Statut de renouvellement",
-              "Collège", "Assureur", "AM"]
-      csv << ["Entreprise Exemple", ProduitDeal::PRODUITS.first, "ID-0001", "10000", "5", "En cours",
-              ProduitDeal::COLLEGES.first, ProduitDeal::ASSUREURS.first, "Nom de l'AM"]
+      csv << [ "Nom", "Produit", "Identifiant", "ARR", "Taux de renouvellement négocié", "Statut de renouvellement",
+              "Collège", "Assureur", "AM" ]
+      csv << [ "Entreprise Exemple", ProduitDeal::PRODUITS.first, "ID-0001", "10000", "5", "En cours",
+              ProduitDeal::COLLEGES.first, ProduitDeal::ASSUREURS.first, "Nom de l'AM" ]
     end
   end
 
   def upsell_template_csv
     CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "Produit", "Collège", "Nb salariés", "% de chance", "Statut", "AM"]
-      csv << ["Entreprise Exemple", UpsellDeal::PRODUITS.first, ProduitDeal::COLLEGES.first, "20", "50", "En cours", "Nom de l'AM"]
+      csv << [ "Nom", "Produit", "Collège", "Nb salariés", "% de chance", "Statut", "AM" ]
+      csv << [ "Entreprise Exemple", UpsellDeal::PRODUITS.first, ProduitDeal::COLLEGES.first, "20", "50", "En cours", "Nom de l'AM" ]
     end
   end
 end

@@ -27,41 +27,41 @@ class AssureurFilterTest < ActionDispatch::IntegrationTest
     assert_match "Client Chez AXA", frame(@response.body, "ren-table-frame")
     assert_match "Client Chez Gan", frame(@response.body, "ren-table-frame")
 
-    get portfolio_path, params: { ren_assureurs: ["Gan"] }
+    get portfolio_path, params: { ren_assureurs: [ "Gan" ] }
     assert_no_match "Client Chez AXA", frame(@response.body, "ren-table-frame")
     assert_match "Client Chez Gan", frame(@response.body, "ren-table-frame")
 
-    get export_produits_portfolio_path, params: { ren_assureurs: ["Gan"] }
+    get export_produits_portfolio_path, params: { ren_assureurs: [ "Gan" ] }
     assert_no_match "Client Chez AXA", @response.body
     assert_match "Client Chez Gan", @response.body
   end
 
   test "Vue globale's renewal table and its CSV export filter by assureur" do
-    get pilotage_path, params: { produit_assureurs: ["AXA"] }
+    get pilotage_path, params: { produit_assureurs: [ "AXA" ] }
     assert_match "Client Chez AXA", frame(@response.body, "gprod-table-frame")
     assert_no_match "Client Chez Gan", frame(@response.body, "gprod-table-frame")
 
-    get export_produits_pilotage_path, params: { produit_assureurs: ["AXA"] }
+    get export_produits_pilotage_path, params: { produit_assureurs: [ "AXA" ] }
     assert_match "Client Chez AXA", @response.body
     assert_no_match "Client Chez Gan", @response.body
   end
 
   test "Vue globale's at-risk table and its CSV export filter by assureur" do
-    get pilotage_path, params: { risque_assureurs: ["Gan"] }
+    get pilotage_path, params: { risque_assureurs: [ "Gan" ] }
     assert_no_match "Client Chez AXA", frame(@response.body, "rque-table-frame")
     assert_match "Client Chez Gan", frame(@response.body, "rque-table-frame")
 
-    get export_risque_pilotage_path, params: { risque_assureurs: ["Gan"] }
+    get export_risque_pilotage_path, params: { risque_assureurs: [ "Gan" ] }
     assert_no_match "Client Chez AXA", @response.body
     assert_match "Client Chez Gan", @response.body
   end
 
   test "Vue globale's churned-produits table and its CSV export filter by assureur" do
-    get pilotage_path, params: { churn_assureurs: ["AXA"] }
+    get pilotage_path, params: { churn_assureurs: [ "AXA" ] }
     assert_match "Client Chez AXA", frame(@response.body, "gchurn-table-frame")
     assert_no_match "Client Chez Gan", frame(@response.body, "gchurn-table-frame")
 
-    get export_churn_pilotage_path, params: { churn_assureurs: ["AXA"] }
+    get export_churn_pilotage_path, params: { churn_assureurs: [ "AXA" ] }
     assert_match "Client Chez AXA", @response.body
     assert_no_match "Client Chez Gan", @response.body
   end

@@ -9,28 +9,19 @@ class PilotageController < ApplicationController
     @non_accompagne_churn_entries = NonAccompagneChurnEntry.all
     @active_ams = User.assignable.order(:name)
     @selectable_companies = Company.order(:name)
-    @available_roles = ["Admin", "KAM", "AM"]
+    @available_roles = [ "Admin", "KAM", "AM" ]
     # The "Non accompagné" option lives only in the summary cards' own Équipe filter (not the produit/
-    # upsell/risque ones, which are about individual deals) — checking it folds the non-accompagné figures
+    # upsell/risque ones, which are about individual deals) - checking it folds the non-accompagné figures
     # into the summary cards' totals; see PortfolioSummary#non_accompagne.
-    @available_summary_roles = @available_roles + ["Non accompagné"]
+    @available_summary_roles = @available_roles + [ "Non accompagné" ]
     @summary_ams = Array(params[:summary_ams]).reject(&:blank?)
     @summary_roles = Array(params[:summary_roles]).reject(&:blank?)
     @available_summary_ams = @active_ams.map(&:name)
 
-    filtered_ams = @active_ams
-    filtered_ams = filtered_ams.select { |am| @summary_roles.include?(am.team_label) } if @summary_roles.present?
-    filtered_ams = filtered_ams.select { |am| @summary_ams.include?(am.name) } if @summary_ams.present?
-    team_filter_active = @summary_ams.present? || @summary_roles.present?
-
     # No filter at all → the non-accompagné book counts toward the total by default (that's the point of
     # this toggle). The moment any Équipe/AM filter narrows the view, it drops out unless "Non accompagné"
-    # is explicitly checked back in — same as narrowing to one AM naturally excludes every other AM's book.
-    include_non_accompagne = @summary_roles.empty? || @summary_roles.include?("Non accompagné")
-
-    summary_companies = Company.includes(:produit_deals, :upsell_deals, :current_other_impacts)
-    summary_companies = summary_companies.where(user_id: filtered_ams.map(&:id)) if team_filter_active
-    @global_summary = PortfolioSummary.new(summary_companies, non_accompagne: (include_non_accompagne ? @app_setting : nil))
+    # is explicitly checked back in - same as narrowing to one AM naturally excludes every other AM's book.
+    @global_summary = PortfolioSummary.vue_globale(ams: @summary_ams, roles: @summary_roles)
 
     @risque_q = params[:risque_q].to_s.strip
     @risque_ams = Array(params[:risque_ams]).reject(&:blank?)
@@ -42,7 +33,7 @@ class PilotageController < ApplicationController
     @risque_manque_offres = params[:risque_manque_offres].present?
     @available_risque_ams = @active_ams.map(&:name)
     @referent_candidates = User.active.managers.order(:name).to_a
-    @available_referents = [NO_REFERENT] + @referent_candidates.map(&:name)
+    @available_referents = [ NO_REFERENT ] + @referent_candidates.map(&:name)
     @at_risk_companies = filtered_at_risk_companies
     @rque_pager = TablePager.new(@at_risk_companies, params: params, prefix: "rque",
       sort_procs: {
@@ -78,6 +69,7 @@ class PilotageController < ApplicationController
         taux: ->(d) { TablePager.key(d.taux.to_f) },
         statut_renouvellement: ->(d) { TablePager.key(d.statut_renouvellement) },
         risque_churn: ->(d) { TablePager.key(d.risque_churn) },
+        a_resilier: ->(d) { TablePager.key(d.a_resilier ? 1 : 0) },
         final_arr: ->(d) { TablePager.key(d.final_arr) }
       }, default_sort: :nom)
 
@@ -130,11 +122,11 @@ class PilotageController < ApplicationController
     @upsell_statuts = Array(params[:upsell_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "AM", "Produit", "Nb salariés", "Montant ARR upsellé (€)", "% de chance",
-              "Projection upsell (€)", "Statut de signature"]
+      csv << [ "Nom", "AM", "Produit", "Nb salariés", "Montant ARR upsellé (€)", "% de chance",
+              "Projection upsell (€)", "Statut de signature" ]
       filtered_global_upsells.each do |d|
-        csv << [d.company.name, d.effective_user.name, d.produit, d.nombre_salaries, d.upsell_amount,
-                d.probabilite_signature, d.projection, d.statut_signature]
+        csv << [ d.company.name, d.effective_user.name, d.produit, d.nombre_salaries, d.upsell_amount,
+                d.probabilite_signature, d.projection, d.statut_signature ]
       end
     end
 
@@ -154,14 +146,14 @@ class PilotageController < ApplicationController
     @produit_statuts = Array(params[:produit_statuts]).reject(&:blank?)
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      header = ["Nom", "AM", "Produit", "Collège", "Assureur"]
+      header = [ "Nom", "AM", "Produit", "Collège", "Assureur" ]
       header << "ID externe" if current_user.admin?
-      header.concat(["ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "ARR final (€)"])
+      header.concat([ "ARR (€)", "Taux négocié (%)", "Statut de renouvellement", "% risque churn", "A résilier", "ARR final (€)" ])
       csv << header
       filtered_global_produits.each do |d|
-        row = [d.company.name, d.company.user.name, d.produit, d.college, d.assureur]
+        row = [ d.company.name, d.company.user.name, d.produit, d.college, d.assureur ]
         row << d.identifiant if current_user.admin?
-        row.concat([d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.final_arr])
+        row.concat([ d.arr, d.taux, d.statut_renouvellement, d.risque_churn, d.a_resilier ? "Oui" : "Non", d.final_arr ])
         csv << row
       end
     end
@@ -175,14 +167,14 @@ class PilotageController < ApplicationController
     load_churn_filters
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      header = ["Nom", "AM", "Produit", "Collège", "Assureur"]
+      header = [ "Nom", "AM", "Produit", "Collège", "Assureur" ]
       header << "ID externe" if current_user.admin?
-      header.concat(["ARR churné (€)", "Raison du churn", "Commentaire"])
+      header.concat([ "ARR churné (€)", "Raison du churn", "Commentaire" ])
       csv << header
       filtered_global_churned.each do |d|
-        row = [d.company.name, d.company.user.name, d.produit, d.college, d.assureur]
+        row = [ d.company.name, d.company.user.name, d.produit, d.college, d.assureur ]
         row << d.identifiant if current_user.admin?
-        row.concat([d.arr, d.churn_reason, d.churn_comment])
+        row.concat([ d.arr, d.churn_reason, d.churn_comment ])
         csv << row
       end
     end
@@ -203,12 +195,12 @@ class PilotageController < ApplicationController
     @risque_manque_offres = params[:risque_manque_offres].present?
 
     csv = CSV.generate(col_sep: ";") do |csv|
-      csv << ["Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres",
-              "Date du dernier commentaire", "Référent"]
+      csv << [ "Nom", "AM", "Nb produits à risque", "ARR à risque (€)", "% risque max", "Manque d'offres",
+              "Date du dernier commentaire", "Référent" ]
       filtered_at_risk_companies.each do |r|
-        csv << [r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque],
+        csv << [ r[:company].name, r[:am].name, r[:count], r[:arr_at_risk].round(2), r[:max_risque],
                 r[:company].risque_manque_offres? ? "Oui" : "Non", r[:last_note_at]&.strftime("%d/%m/%Y"),
-                r[:company].referent&.name]
+                r[:company].referent&.name ]
       end
     end
 
@@ -219,10 +211,10 @@ class PilotageController < ApplicationController
   private
 
   # A company is "at risk" once at least one of its still-active (non-churned) produits carries a nonzero
-  # risque_churn — grouped from the same filtered produit-deal scope filtered_global_produits uses, so the
+  # risque_churn - grouped from the same filtered produit-deal scope filtered_global_produits uses, so the
   # AM/Équipe/Produit/Statut filters behave identically to every other Vue globale table.
   def filtered_at_risk_companies
-    deals = ProduitDeal.includes(company: [:user, :referent, :risk_notes]).to_a
+    deals = ProduitDeal.includes(company: [ :user, :referent, :risk_notes ]).to_a
     deals = deals.reject(&:churned?)
     deals = deals.select { |d| d.risque_churn.to_i > 0 }
     deals = deals.select { |d| d.company.name.downcase.include?(@risque_q.downcase) } if @risque_q.present?
@@ -255,7 +247,7 @@ class PilotageController < ApplicationController
     @churn_raisons = Array(params[:churn_raisons]).reject(&:blank?)
   end
 
-  # Only "Churné" (a lost contract the AM had a hand in) — not "Churné (subi)", which is liquidation/
+  # Only "Churné" (a lost contract the AM had a hand in) - not "Churné (subi)", which is liquidation/
   # acquisition and carries no reason worth qualifying.
   def filtered_global_churned
     deals = ProduitDeal.includes(company: :user).where(statut_renouvellement: ProduitDeal::CHURNED).to_a

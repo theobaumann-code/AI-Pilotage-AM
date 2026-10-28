@@ -35,6 +35,8 @@ Rails.application.routes.draw do
     post :toggle_departure
     post :recruits, action: :create_recruit
     delete "recruits/:recruit_id", action: :destroy_recruit, as: :recruit
+    post :teams, action: :create_team
+    delete "teams/:team_id", action: :destroy_team, as: :team
   end
   resource :autres_statistiques, only: [ :show ], controller: "autres_statistiques"
   resources :companies, only: [ :create, :update, :destroy ] do

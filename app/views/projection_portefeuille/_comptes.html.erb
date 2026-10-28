@@ -5,7 +5,7 @@
     <div class="table-toolbar-controls">
       <%= form_with url: projection_portefeuille_path(anchor: "comptes"), method: :get, data: { turbo_action: "replace" } do %>
         <%= preserved_query_fields("pc_q", "pc_arr_min", "pc_arr_max", "pc_concerned", "pc_concerned_open", "pc_movements", "pc_movements_open",
-              "pc_owners", "pc_owners_open", "pc_bo", "pc_bo_open", "pc_modified", "pc_page") %>
+              "pc_owners", "pc_owners_open", "pc_bo", "pc_bo_open", "pc_modified", "pc_sm", "pc_page") %>
         <%= live_search_field :pc_q, @pc_q, placeholder: "Rechercher un compte…" %>
         <%= render "shared/checklist_filter", param_name: "pc_concerned", options: @pc_concerned_options, selected: @pc_concerned, legend: "AM concerné" %>
         <%= render "shared/checklist_filter", param_name: "pc_movements", options: @pc_movement_options, selected: @pc_movements, legend: "Mouvement" %>
@@ -15,6 +15,10 @@
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
           <%= check_box_tag :pc_modified, "1", @pc_modified, onchange: "this.form.requestSubmit()" %>
           Modifiés uniquement
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <%= check_box_tag :pc_sm, "1", @pc_sm, onchange: "this.form.requestSubmit()" %>
+          Sur mesure mutuelle
         </label>
       <% end %>
     </div>
@@ -39,12 +43,13 @@
             <%= sortable_th(@pc_pager, :am, "AM projeté") %>
             <%= sortable_th(@pc_pager, :arr, "ARR (€)", col_class: "col-arr") %>
             <th>Risque couvert</th>
+            <th>Sur mesure mutuelle</th>
             <th>Mouvement</th>
           </tr>
         </thead>
         <tbody>
           <% if @pc_pager.records.empty? %>
-            <tr><td colspan="7" class="empty-state">Aucun compte pour ce filtre.</td></tr>
+            <tr><td colspan="8" class="empty-state">Aucun compte pour ce filtre.</td></tr>
           <% else %>
             <% @pc_pager.records.each do |e| %>
               <tr class="<%= "row-moved" if e.moved? %>">
@@ -57,6 +62,7 @@
                 <td><strong><%= @projection.label(e.key) %></strong></td>
                 <%= render "attribution_portefeuille/arr_cell", account: e.account, eur: eur %>
                 <td><%= e.account.risque || "—" %></td>
+                <td><%= e.account.has_sur_mesure_sante ? content_tag(:span, "Oui", class: "badge kam") : "Non" %></td>
                 <td>
                   <% if e.moved? %>
                     <%= movement_label(e) %>

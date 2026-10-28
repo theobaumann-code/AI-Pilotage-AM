@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_28_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -65,6 +65,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
     t.boolean "has_prevoyance", default: false, null: false
     t.boolean "has_sante", default: false, null: false
     t.boolean "has_standard_sante", default: false, null: false
+    t.boolean "has_sur_mesure_sante", default: false, null: false
     t.string "kind", null: false
     t.string "name"
     t.string "siren"
@@ -150,11 +151,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
     t.string "kind", null: false
     t.string "original_am_email"
     t.bigint "recruit_id"
+    t.bigint "team_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["created_by_id"], name: "index_projection_moves_on_created_by_id"
     t.index ["kind", "bi_id"], name: "index_projection_moves_on_kind_and_bi_id", unique: true
     t.index ["recruit_id"], name: "index_projection_moves_on_recruit_id"
+    t.index ["team_id"], name: "index_projection_moves_on_team_id"
     t.index ["user_id"], name: "index_projection_moves_on_user_id"
   end
 
@@ -163,6 +166,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
     t.string "name", null: false
     t.string "role", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "projection_teams", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((name)::text)", name: "index_projection_teams_on_lower_name", unique: true
   end
 
   create_table "risk_notes", force: :cascade do |t|
@@ -211,6 +221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_110000) do
   add_foreign_key "other_impacts", "companies"
   add_foreign_key "projection_departures", "users", on_delete: :cascade
   add_foreign_key "projection_moves", "projection_recruits", column: "recruit_id", on_delete: :cascade
+  add_foreign_key "projection_moves", "projection_teams", column: "team_id", on_delete: :cascade
   add_foreign_key "projection_moves", "users", column: "created_by_id", on_delete: :nullify
   add_foreign_key "projection_moves", "users", on_delete: :cascade
   add_foreign_key "risk_notes", "companies"

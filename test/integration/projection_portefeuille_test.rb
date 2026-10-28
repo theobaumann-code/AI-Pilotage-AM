@@ -226,6 +226,38 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal 0, Projection::Move.count
   end
 
+  test "small accounts with a sur-mesure health contract can be given to a team rather than an AM" do
+    @a2.update!(has_sante: true, has_sur_mesure_sante: true)   # 4 000 € with Alice
+    @free.update!(has_sur_mesure_sante: true)                  # 8 000 €, no AM
+
+    post teams_projection_portefeuille_path, params: { name: "CSM Juniors" }
+    team = Projection::Team.find_by!(name: "CSM Juniors")
+    post teams_projection_portefeuille_path, params: { name: "csm juniors" }
+    assert_equal 1, Projection::Team.count, "a team name is unique"
+
+    get projection_portefeuille_path(pc_sm: "1", pc_arr_max: "5000")
+    assert_equal [ "Compte Proj 2" ], @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }
+    assert_match "Sur mesure mutuelle", @response.body
+    assert_includes @controller.instance_variable_get(:@targets).map(&:name), "CSM Juniors"
+
+    # Every account of the filter to the team, from the tracked table and from "Comptes sans AM".
+    bulk("assign", all_filtered: "1", target: "team:#{team.id}", pc_sm: "1", pc_arr_max: "5000")
+    post bulk_projection_portefeuille_path, params: { bulk_action: "assign", table: "sans_am", all_filtered: "1", ps_sm: "1", target: "team:#{team.id}" }
+    assert_equal [ "CSM Juniors", "CSM Juniors", "Alice" ], [ owner_of(@a2), owner_of(@free), owner_of(@a1) ]
+
+    r = rows
+    assert_equal [ 2, 12_000.0, nil, nil, false ], r["CSM Juniors"].values_at(:comptes, :arr, :limit, :remaining, :over)
+    assert_equal "Équipe", r["CSM Juniors"][:holder].role
+    capacity = @controller.instance_variable_get(:@totals)
+    assert_equal capacity[:capacity] - (r["Alice"][:comptes] + r["Bob"][:comptes]), capacity[:remaining], "a team doesn't use up the AMs' capacity"
+
+    get projection_portefeuille_path(pc_movements: [ "Confié à une équipe" ])
+    assert_equal [ "Compte Proj 2", "Compte Proj 4" ], @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }.sort
+
+    delete team_projection_portefeuille_path(team_id: team.id)
+    assert_equal [ "Alice", "Sans AM" ], [ owner_of(@a2), owner_of(@free) ], "removing the team gives the accounts back"
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

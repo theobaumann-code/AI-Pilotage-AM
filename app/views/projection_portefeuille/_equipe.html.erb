@@ -1,5 +1,6 @@
 <% people = @projection.holders.select(&:user) %>
 <% recruits = @projection.holders.select(&:recruit?) %>
+<% teams = @projection.holders.select(&:team?) %>
 <div class="section-card" id="equipe">
   <div class="table-toolbar">
     <h2>Équipe projetée</h2>
@@ -41,6 +42,25 @@
         <%= text_field_tag :name, nil, placeholder: "Nom (ex. Recrue AM 1)", required: true %>
         <%= select_tag :role, options_for_select(Projection::Recruit::ROLES.keys, "AM") %>
         <%= submit_tag "Ajouter une recrue", class: "button primary" %>
+      <% end %>
+    </div>
+    <div>
+      <h3>Équipes</h3>
+      <p class="muted-count">Pour confier des comptes à une équipe plutôt qu'à un AM (ex. CSM Juniors). Sans plafond de comptes ; peut aussi recevoir des comptes sans AM.</p>
+      <% if teams.any? %>
+        <ul class="projection-team-list">
+          <% teams.each do |h| %>
+            <li>
+              <span><strong><%= h.name %></strong> <span class="badge kam">Équipe</span></span>
+              <%= button_to "Retirer", team_projection_portefeuille_path(team_id: h.team.id), method: :delete, class: "button ghost-danger",
+                    form: { style: "display:inline;", data: { turbo_confirm: "Retirer l'équipe #{h.name} ? Ses comptes reviennent à leur AM du BO." } } %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+      <%= form_with url: teams_projection_portefeuille_path, method: :post, class: "projection-recruit-form" do %>
+        <%= text_field_tag :name, nil, placeholder: "Nom (ex. CSM Juniors)", required: true, id: nil %>
+        <%= submit_tag "Ajouter une équipe", class: "button primary" %>
       <% end %>
     </div>
   </div>

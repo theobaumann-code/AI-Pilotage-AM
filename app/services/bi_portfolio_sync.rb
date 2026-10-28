@@ -5,7 +5,7 @@
 class BiPortfolioSync
   QUERY_PATH = Rails.root.join("app/services/bi_portfolio_query.sql")
   COLUMNS = %w[kind name siren user_pros_count am_email am_name arr arr_sante arr_prevoyance has_sante has_prevoyance
-               has_standard_sante contracts_count contracts_without_q1 employees_count arr_billed arr_estimated
+               has_standard_sante has_sur_mesure_sante contracts_count contracts_without_q1 employees_count arr_billed arr_estimated
                contracts_estimated].freeze
 
   def self.sync!

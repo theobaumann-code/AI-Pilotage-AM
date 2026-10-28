@@ -1,4 +1,4 @@
-# A planned change on one BI account (kind + bi_id, like bi_accounts): "assign" it to a user or a recruit,
+# A planned change on one BI account (kind + bi_id, like bi_accounts): "assign" it to a user, a recruit or a team,
 # put it back in the "reserve" to reassign, "drop" it (no longer followed by an AM) or "terminate" it (the client
 # leaves: out of the study). original_am_email is the BO's AM when the change was made, to tell later whether the
 # BO followed it or went another way.
@@ -7,6 +7,7 @@ class Projection::Move < ApplicationRecord
 
   belongs_to :user, optional: true
   belongs_to :recruit, class_name: "Projection::Recruit", optional: true
+  belongs_to :team, class_name: "Projection::Team", optional: true
   belongs_to :created_by, class_name: "User", optional: true
 
   validates :action, inclusion: { in: ACTIONS }
@@ -20,9 +21,10 @@ class Projection::Move < ApplicationRecord
   private
 
   def assign_has_one_target
+    targets = [ user_id, recruit_id, team_id ].count(&:present?)
     if action == "assign"
-      errors.add(:base, "Un compte attribué doit avoir un destinataire") unless user_id.present? ^ recruit_id.present?
-    elsif user_id.present? || recruit_id.present?
+      errors.add(:base, "Un compte attribué doit avoir un destinataire") unless targets == 1
+    elsif targets.positive?
       errors.add(:base, "Seule une attribution a un destinataire")
     end
   end

@@ -3,15 +3,19 @@
     <h2>Comptes sans AM</h2>
     <div class="table-toolbar-controls">
       <%= form_with url: projection_portefeuille_path(anchor: "sans_am"), method: :get, data: { turbo_action: "replace" } do %>
-        <%= preserved_query_fields("ps_q", "ps_page") %>
+        <%= preserved_query_fields("ps_q", "ps_sm", "ps_page") %>
         <%= live_search_field :ps_q, @ps_q, placeholder: "Rechercher un compte…" %>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <%= check_box_tag :ps_sm, "1", @ps_sm, onchange: "this.form.requestSubmit()" %>
+          Sur mesure mutuelle
+        </label>
       <% end %>
     </div>
   </div>
   <p class="section-sub" style="margin-top:-8px;">
     <strong><%= @ps_total[:count] %></strong> compte<%= "s" if @ps_total[:count] > 1 %> sans AM dans le BO, pas encore attribué<%= "s" if @ps_total[:count] > 1 %> dans la projection ·
     ARR <strong><%= eur.call(@ps_total[:arr]) %></strong>. Mêmes critères que l'onglet BI (plus de 2 000 € d'ARR ; sous 5 000 €, avec un produit santé standard).
-    Seuls les AM de l'outil peuvent les recevoir, pas les recrues fictives.
+    Les AM de l'outil et les équipes peuvent les recevoir, pas les recrues fictives.
   </p>
 
   <%= form_with url: bulk_projection_portefeuille_path, method: :post do %>
@@ -27,11 +31,12 @@
             <%= sortable_th(@ps_pager, :arr, "ARR (€)", col_class: "col-arr") %>
             <th>Risque couvert</th>
             <th>Santé standard</th>
+            <th>Sur mesure mutuelle</th>
           </tr>
         </thead>
         <tbody>
           <% if @ps_pager.records.empty? %>
-            <tr><td colspan="6" class="empty-state">Aucun compte sans AM pour ce filtre.</td></tr>
+            <tr><td colspan="7" class="empty-state">Aucun compte sans AM pour ce filtre.</td></tr>
           <% else %>
             <% @ps_pager.records.each do |e| %>
               <% a = e.account %>
@@ -45,6 +50,7 @@
                 <%= render "attribution_portefeuille/arr_cell", account: a, eur: eur %>
                 <td><%= a.risque || "—" %></td>
                 <td><%= a.has_standard_sante ? "Oui" : "Non" %></td>
+                <td><%= a.has_sur_mesure_sante ? content_tag(:span, "Oui", class: "badge kam") : "Non" %></td>
               </tr>
             <% end %>
           <% end %>

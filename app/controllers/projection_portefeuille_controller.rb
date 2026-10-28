@@ -7,14 +7,15 @@ class ProjectionPortefeuilleController < ApplicationController
   before_action :require_strict_admin!
 
   # Query params kept across a bulk action, so the page comes back with the same filters / sort / page.
-  KEPT_PARAMS = %w[pc_q pc_arr_min pc_arr_max pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_modified pc_sort pc_dir pc_page
-                   pc_size ps_q ps_sort ps_dir ps_page ps_size].freeze
+  KEPT_PARAMS = %w[pc_q pc_arr_min pc_arr_max pc_concerned_open pc_movements_open pc_owners_open pc_bo_open pc_modified pc_sm pc_sort pc_dir pc_page
+                   pc_size ps_q ps_sm ps_sort ps_dir ps_page ps_size].freeze
   KEPT_ARRAY_PARAMS = %i[pc_concerned pc_movements pc_owners pc_bo].freeze
 
   # The movements an account can show in "Comptes en projection", in the order of the Mouvement filter.
   NO_MOVEMENT = "Aucun mouvement".freeze
   TERMINATED_MOVEMENT = "Résilié".freeze
-  MOVEMENTS = [ "Réattribué", "Attribué (était sans AM)", "Retiré à l'AM", "AM sortant", "Plus accompagné",
+  TEAM_MOVEMENT = "Confié à une équipe".freeze
+  MOVEMENTS = [ "Réattribué", "Attribué (était sans AM)", TEAM_MOVEMENT, "Retiré à l'AM", "AM sortant", "Plus accompagné",
                 TERMINATED_MOVEMENT, NO_MOVEMENT ].freeze
 
   def show
@@ -71,11 +72,27 @@ class ProjectionPortefeuilleController < ApplicationController
     redirect_to back_path("equipe"), notice: "#{recruit.name} retiré(e) : ses comptes reviennent à leur AM du BO."
   end
 
-  # Starts the projection over from the BO: every departure, recruit and move is dropped.
+  def create_team
+    team = Projection::Team.new(name: params[:name])
+    if team.save
+      redirect_to back_path("equipe"), notice: "Équipe #{team.name} ajoutée à la projection."
+    else
+      redirect_to back_path("equipe"), alert: team.errors.full_messages.to_sentence
+    end
+  end
+
+  def destroy_team
+    team = Projection::Team.find(params[:team_id])
+    team.destroy!
+    redirect_to back_path("equipe"), notice: "Équipe #{team.name} retirée : ses comptes reviennent à leur AM du BO."
+  end
+
+  # Starts the projection over from the BO: every departure, recruit, team and move is dropped.
   def destroy
     Projection::Move.delete_all
     Projection::Departure.delete_all
     Projection::Recruit.delete_all
+    Projection::Team.delete_all
     redirect_to projection_portefeuille_path, notice: "Projection réinitialisée : elle reprend l'attribution du BO."
   end
 
@@ -101,6 +118,7 @@ class ProjectionPortefeuilleController < ApplicationController
       entry.move ? "Retiré à l'AM" : "AM sortant"
     when PortfolioProjection::DROP then "Plus accompagné"
     when PortfolioProjection::TERMINATED then TERMINATED_MOVEMENT
+    when /\Ateam:/ then TEAM_MOVEMENT
     else entry.bo_key == PortfolioProjection::NONE ? "Attribué (était sans AM)" : "Réattribué"
     end
   end
@@ -130,9 +148,10 @@ class ProjectionPortefeuilleController < ApplicationController
     @over = @rows.select { |r| r[:over] }
     @totals = {
       real_comptes: @rows.sum { |r| r[:real_comptes] }, real_arr: @rows.sum { |r| r[:real_arr] },
-      comptes: @rows.sum { |r| r[:comptes] }, arr: total_arr, capacity: @rows.sum { |r| r[:limit] }
+      comptes: @rows.sum { |r| r[:comptes] }, arr: total_arr, capacity: @rows.sum { |r| r[:limit].to_i }
     }
-    @totals[:remaining] = @totals[:capacity] - @totals[:comptes]
+    # Teams have no ceiling: their accounts don't use up the AMs' capacity.
+    @totals[:remaining] = @totals[:capacity] - @rows.reject { |r| r[:limit].nil? }.sum { |r| r[:comptes] }
     @reserve = @projection.place_total(PortfolioProjection::RESERVE)
     @dropped = @projection.place_total(PortfolioProjection::DROP)
     @terminated = @projection.place_total(PortfolioProjection::TERMINATED)
@@ -158,6 +177,7 @@ class ProjectionPortefeuilleController < ApplicationController
     @pc_owners = Array(params[:pc_owners]).reject(&:blank?)
     @pc_bo = Array(params[:pc_bo]).reject(&:blank?)
     @pc_modified = params[:pc_modified].present?
+    @pc_sm = params[:pc_sm].present?
   end
 
   def filtered_comptes(projection)
@@ -176,6 +196,7 @@ class ProjectionPortefeuilleController < ApplicationController
     rows = rows.select { |e| @pc_owners.include?(projection.label(e.key)) } if @pc_owners.present?
     rows = rows.select { |e| @pc_bo.include?(projection.label(e.bo_key)) } if @pc_bo.present?
     rows = rows.select(&:moved?) if @pc_modified
+    rows = rows.select { |e| e.account.has_sur_mesure_sante } if @pc_sm
     rows
   end
 
@@ -201,8 +222,10 @@ class ProjectionPortefeuilleController < ApplicationController
 
   def filtered_sans_am(projection)
     @ps_q = params[:ps_q].to_s.strip
+    @ps_sm = params[:ps_sm].present?
     rows = projection.sans_am_entries
     rows = rows.select { |e| e.account.name.to_s.downcase.include?(@ps_q.downcase) } if @ps_q.present?
+    rows = rows.select { |e| e.account.has_sur_mesure_sante } if @ps_sm
     rows
   end
 

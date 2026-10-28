@@ -3,7 +3,7 @@
 # "Comptes sans AM", or carries a move is an Entry, with its BO holder and its projected holder; every person who
 # holds - or could hold - a portfolio is a Holder, with their real and projected load.
 #
-# Holder keys: "user:<id>", "recruit:<id>", "hors:<email>" (a BO AM unknown to the app). Projected-only places:
+# Holder keys: "user:<id>", "recruit:<id>", "team:<id>", "hors:<email>" (a BO AM unknown to the app). Projected-only places:
 # RESERVE (to reassign: taken off someone, or left by an AM who is leaving), DROP (no longer followed), and NONE
 # (no AM in the BO and none given in the projection - the "Comptes sans AM" list).
 class PortfolioProjection
@@ -15,12 +15,16 @@ class PortfolioProjection
   TERMINATED = "terminate".freeze
   PLACE_LABELS = { RESERVE => "À réattribuer", DROP => "Non accompagné", NONE => "Sans AM", TERMINATED => "Résilié" }.freeze
 
-  Holder = Struct.new(:key, :name, :role, :limit, :user, :recruit, :departing, keyword_init: true) do
+  Holder = Struct.new(:key, :name, :role, :limit, :user, :recruit, :team, :departing, keyword_init: true) do
     def recruit?
       recruit.present?
     end
 
-    # A leaving AM keeps no capacity in the projection.
+    def team?
+      team.present?
+    end
+
+    # A leaving AM keeps no capacity in the projection; a team has no ceiling (nil).
     def projected_limit
       departing ? 0 : limit
     end
@@ -45,6 +49,7 @@ class PortfolioProjection
     @users = User.assignable.order(:name).to_a
     @users_by_email = @users.index_by { |u| u.email.downcase }
     @recruits = Projection::Recruit.order(:name).to_a
+    @teams = Projection::Team.order(:name).to_a
     moves = Projection::Move.includes(:user).index_by(&:key)
 
     sans_am_ids = BiAccount.sans_am.pluck(:id).to_set
@@ -82,9 +87,10 @@ class PortfolioProjection
     @entries.select { |e| e.key == NONE }
   end
 
-  # Who can be given accounts: real people still there, and - for accounts that already have an AM - recruits.
+  # Who can be given accounts: real people still there, the teams, and - for accounts that already have an AM -
+  # recruits.
   def assignable_holders(recruits: true)
-    @holders.select { |h| !h.departing && h.key.start_with?("user:", recruits ? "recruit:" : "user:") }
+    @holders.select { |h| !h.departing && h.key.start_with?("user:", "team:", recruits ? "recruit:" : "user:") }
   end
 
   # Per holder: real (BO) and projected accounts / ARR, against their ceiling.
@@ -97,7 +103,7 @@ class PortfolioProjection
       comptes = projected_accounts.size
       { holder: h, real_comptes: real_accounts.size, real_arr: arr_of(real_accounts),
         comptes: comptes, arr: arr_of(projected_accounts), limit: h.projected_limit,
-        remaining: h.projected_limit - comptes, over: comptes > h.projected_limit }
+        remaining: h.projected_limit && h.projected_limit - comptes, over: !h.projected_limit.nil? && comptes > h.projected_limit }
     end
   end
 
@@ -161,7 +167,7 @@ class PortfolioProjection
     bo_key = bo_key_for(account)
     key = if move
       case move.action
-      when "assign" then move.user_id ? "user:#{move.user_id}" : "recruit:#{move.recruit_id}"
+      when "assign" then holder_key_of(move)
       when "reserve" then RESERVE
       when TERMINATED then TERMINATED
       else DROP
@@ -186,8 +192,8 @@ class PortfolioProjection
     end
   end
 
-  # AMs, KAMs and team leads (even empty), anyone with a real or projected account, the recruits, and the BO AMs
-  # unknown to the app.
+  # AMs, KAMs and team leads (even empty), anyone with a real or projected account, the recruits, the teams, and
+  # the BO AMs unknown to the app.
   def build_holders
     used = @entries.flat_map { |e| [ e.bo_key, e.key ] }.to_set
     people = @users.filter_map do |u|
@@ -203,7 +209,17 @@ class PortfolioProjection
       name = @entries.find { |e| e.bo_key == key }&.account&.am_name || key.delete_prefix("hors:")
       Holder.new(key: key, name: name, role: "Hors outil", limit: User::DEFAULT_ACCOUNT_LIMIT, departing: false)
     end
-    people + recruits + hors
+    teams = @teams.map do |t|
+      Holder.new(key: "team:#{t.id}", name: t.name, role: "Équipe", limit: nil, team: t, departing: false)
+    end
+    people + recruits + teams + hors
+  end
+
+  def holder_key_of(move)
+    if move.user_id then "user:#{move.user_id}"
+    elsif move.team_id then "team:#{move.team_id}"
+    else "recruit:#{move.recruit_id}"
+    end
   end
 
   # Stores (or clears) the move that puts `entry` where the action says. A move matching the BO is no move: it is
@@ -234,9 +250,10 @@ class PortfolioProjection
 
     move = existing || Projection::Move.new(kind: account.kind, bi_id: account.bi_id)
     move.assign_attributes(
-      action: wanted.start_with?("user:", "recruit:") ? "assign" : wanted,
+      action: wanted.start_with?("user:", "recruit:", "team:") ? "assign" : wanted,
       user_id: wanted.start_with?("user:") ? wanted.delete_prefix("user:").to_i : nil,
       recruit_id: wanted.start_with?("recruit:") ? wanted.delete_prefix("recruit:").to_i : nil,
+      team_id: wanted.start_with?("team:") ? wanted.delete_prefix("team:").to_i : nil,
       original_am_email: account.am_email, created_by: by
     )
     move.save!

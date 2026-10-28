@@ -11,8 +11,9 @@
   <div class="bulk-actions">
     <%= select_tag :target, grouped_options_for_select(
           { "AM de l'outil" => targets.select(&:user).map { |h| [ "#{h.name} (#{h.role})", h.key ] },
-            "Recrues fictives" => targets.select(&:recruit?).map { |h| [ "#{h.name} (recrue #{h.role})", h.key ] } }.reject { |_, v| v.empty? }),
-          include_blank: "Choisir un AM…", id: nil %>
+            "Recrues fictives" => targets.select(&:recruit?).map { |h| [ "#{h.name} (recrue #{h.role})", h.key ] },
+            "Équipes" => targets.select(&:team?).map { |h| [ "#{h.name} (équipe)", h.key ] } }.reject { |_, v| v.empty? }),
+          include_blank: "Choisir un AM ou une équipe…", id: nil %>
     <%= button_tag "Attribuer", name: "bulk_action", value: "assign", class: "button primary" %>
     <% if extra %>
       <%= button_tag "Retirer (à réattribuer)", name: "bulk_action", value: "reserve", class: "button" %>

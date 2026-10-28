@@ -62,20 +62,26 @@ class ResiliationsEnAttenteTest < ActionDispatch::IntegrationTest
 
   test "the BO refresh goes back to the page, filters kept, and reports BigQuery being unreachable" do
     sign_in @admin
-    back = resiliations_en_attente_path(produits: [ "Mutuelle" ])
+    back = resiliations_en_attente_path(risques: [ "Mutuelle" ])
     post sync_resiliations_en_attente_path, headers: { "HTTP_REFERER" => "http://www.example.com#{back}" }
     assert_redirected_to "http://www.example.com#{back}"
     assert_match "Actualisation impossible", flash[:alert]
   end
 
-  test "filters by status, produit and search" do
+  test "filters by team, risk, status and search" do
     sign_in @admin
     get resiliations_en_attente_path, params: { statuts: [ "Aucune résiliation 2026 en cours" ] }
     assert_equal [ @without.id ], listed.keys
-    get resiliations_en_attente_path, params: { produits: [ "Prévoyance" ] }
+    get resiliations_en_attente_path, params: { risques: [ "Prévoyance" ] }
     assert_equal [ @flagged.id ], listed.keys
     get resiliations_en_attente_path, params: { q: "groupe" }
     assert_equal [ @without.id ], listed.keys
+
+    kam_produit = deal(Company.create!(name: "Client KAM", user: @kam), "Mutuelle", "Cadre", a_resilier: true)
+    get resiliations_en_attente_path, params: { roles: [ "KAM" ] }
+    assert_equal [ kam_produit.id ], listed.keys
+    get resiliations_en_attente_path, params: { roles: [ "AM" ] }
+    assert_equal [ @flagged.id, @nouveau.id, @without.id ].sort, listed.keys.sort
   end
 
   test "admins only, and the sidebar links to it" do

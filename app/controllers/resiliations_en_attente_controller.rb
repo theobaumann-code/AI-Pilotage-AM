@@ -15,11 +15,13 @@ class ResiliationsEnAttenteController < ApplicationController
     @all_total = totals(all)
 
     @q = params[:q].to_s.strip
+    @roles = Array(params[:roles]).reject(&:blank?)
     @ams = Array(params[:ams]).reject(&:blank?)
-    @produits = Array(params[:produits]).reject(&:blank?)
+    @risques = Array(params[:risques]).reject(&:blank?)
     @statuts = Array(params[:statuts]).reject(&:blank?)
+    @role_options = [ "Admin", "KAM", "AM" ]
     @am_options = all.map { |r| r[:deal].company.user.name }.uniq.sort
-    @produit_options = all.map { |r| r[:deal].produit }.uniq.sort
+    @risque_options = all.map { |r| r[:deal].produit }.uniq.sort
     @statut_options = all.map { |r| statut(r) }.uniq.sort
 
     rows = all
@@ -27,8 +29,10 @@ class ResiliationsEnAttenteController < ApplicationController
       needle = @q.downcase
       rows = rows.select { |r| [ r[:deal].company.name, r[:termination]&.name ].any? { |s| s.to_s.downcase.include?(needle) } }
     end
+    # Équipe as in Vue globale: the AM's team (the team leads sit with the AMs).
+    rows = rows.select { |r| @roles.include?(r[:deal].company.user.team_label) } if @roles.present?
     rows = rows.select { |r| @ams.include?(r[:deal].company.user.name) } if @ams.present?
-    rows = rows.select { |r| @produits.include?(r[:deal].produit) } if @produits.present?
+    rows = rows.select { |r| @risques.include?(r[:deal].produit) } if @risques.present?
     rows = rows.select { |r| @statuts.include?(statut(r)) } if @statuts.present?
     @total = totals(rows)
 
@@ -36,7 +40,7 @@ class ResiliationsEnAttenteController < ApplicationController
       sort_procs: {
         client: ->(r) { TablePager.key(r[:deal].company.name) },
         am: ->(r) { TablePager.key(r[:deal].company.user.name) },
-        produit: ->(r) { TablePager.key(r[:deal].produit) },
+        risque: ->(r) { TablePager.key(r[:deal].produit) },
         college: ->(r) { TablePager.key(r[:deal].college) },
         arr: ->(r) { TablePager.key(r[:deal].arr.to_f) },
         statut: ->(r) { TablePager.key(statut(r)) },

@@ -37,10 +37,11 @@
     <h2>Produits à résilier et nouveaux contrats</h2>
     <div class="table-toolbar-controls">
       <%= form_with url: resiliations_en_attente_path, method: :get, data: { turbo_action: "replace" } do %>
-        <%= preserved_query_fields("q", "ams", "ams_open", "produits", "produits_open", "statuts", "statuts_open", "rs_page") %>
+        <%= preserved_query_fields("q", "roles", "roles_open", "ams", "ams_open", "risques", "risques_open", "statuts", "statuts_open", "rs_page") %>
         <%= live_search_field :q, @q, placeholder: "Rechercher un client, une résiliation…" %>
+        <%= render "shared/checklist_filter", param_name: "roles", options: @role_options, selected: @roles, legend: "Équipe" %>
         <%= render "shared/checklist_filter", param_name: "ams", options: @am_options, selected: @ams, legend: "AM" %>
-        <%= render "shared/checklist_filter", param_name: "produits", options: @produit_options, selected: @produits, legend: "Produit" %>
+        <%= render "shared/checklist_filter", param_name: "risques", options: @risque_options, selected: @risques, legend: "Risque" %>
         <%= render "shared/checklist_filter", param_name: "statuts", options: @statut_options, selected: @statuts, legend: "Statut" %>
       <% end %>
     </div>
@@ -57,7 +58,7 @@
         <tr>
           <%= sortable_th(@pager, :client, "Client") %>
           <%= sortable_th(@pager, :am, "AM") %>
-          <%= sortable_th(@pager, :produit, "Produit") %>
+          <%= sortable_th(@pager, :risque, "Risque") %>
           <%= sortable_th(@pager, :college, "Collège") %>
           <th>Suivi</th>
           <%= sortable_th(@pager, :arr, "ARR (€)") %>
@@ -85,11 +86,14 @@
               <td class="numeric"><%= eur.call(d.arr) %></td>
               <% if t %>
                 <td><%= t.name.presence || "-" %><br><small style="color:var(--text-muted);"><%= t.type_label %> · <%= t.product_label %></small></td>
-                <td><strong><%= t.status_label %></strong></td>
+                <td><span class="badge kam"><%= t.status_label %></span></td>
                 <td><%= day.call(t.created_on) %></td>
                 <td><%= day.call(t.termination_date) %></td>
               <% else %>
-                <td colspan="4"><span class="badge ko">Aucune résiliation 2026 en cours</span> pour ce risque et ce collège</td>
+                <td>-</td>
+                <td><span class="badge ko">Aucune résiliation 2026 en cours</span></td>
+                <td>-</td>
+                <td>-</td>
               <% end %>
             </tr>
           <% end %>

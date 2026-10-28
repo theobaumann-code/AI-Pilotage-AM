@@ -29,6 +29,10 @@ Rails.application.routes.draw do
   resource :attribution_portefeuille, only: [ :show ], controller: "attribution_portefeuille" do
     post :sync_bi
   end
+  # Temporary rubric, to be removed with BiPendingTermination.
+  resource :resiliations_en_attente, only: [ :show ], path: "resiliations-en-attente", controller: "resiliations_en_attente" do
+    post :sync
+  end
   resource :projection_portefeuille, only: [ :show, :destroy ], controller: "projection_portefeuille" do
     post :bulk
     get :export

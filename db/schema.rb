@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_28_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_28_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -74,6 +74,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_100000) do
     t.integer "user_pros_count", default: 0, null: false
     t.index ["am_email"], name: "index_bi_accounts_on_am_email"
     t.index ["kind", "bi_id"], name: "index_bi_accounts_on_kind_and_bi_id", unique: true
+  end
+
+  create_table "bi_pending_terminations", force: :cascade do |t|
+    t.bigint "account_bi_id", null: false
+    t.string "account_kind", null: false
+    t.bigint "bi_id", null: false
+    t.decimal "contract_arr", precision: 12, scale: 2
+    t.date "created_on"
+    t.string "name"
+    t.integer "product_type"
+    t.string "social_name"
+    t.datetime "synced_at", null: false
+    t.bigint "terminable_id"
+    t.string "terminable_type"
+    t.date "termination_date"
+    t.bigint "user_pro_id"
+    t.index ["account_kind", "account_bi_id"], name: "idx_on_account_kind_account_bi_id_02d11a3fb4"
+    t.index ["bi_id"], name: "index_bi_pending_terminations_on_bi_id", unique: true
   end
 
   create_table "companies", force: :cascade do |t|

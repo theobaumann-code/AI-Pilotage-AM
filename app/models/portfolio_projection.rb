@@ -10,7 +10,10 @@ class PortfolioProjection
   RESERVE = "reserve".freeze
   DROP = "drop".freeze
   NONE = "none".freeze
-  PLACE_LABELS = { RESERVE => "À réattribuer", DROP => "Non accompagné", NONE => "Sans AM" }.freeze
+  # Terminated in the projection: the client is expected to leave, so the account is taken out of the study -
+  # no portfolio, reserve or "Comptes sans AM" counts it any more (unlike DROP, a client kept without an AM).
+  TERMINATED = "terminate".freeze
+  PLACE_LABELS = { RESERVE => "À réattribuer", DROP => "Non accompagné", NONE => "Sans AM", TERMINATED => "Résilié" }.freeze
 
   Holder = Struct.new(:key, :name, :role, :limit, :user, :recruit, :departing, keyword_init: true) do
     def recruit?
@@ -69,7 +72,7 @@ class PortfolioProjection
     PLACE_LABELS[key] || holder(key)&.name || key.to_s.delete_prefix("hors:")
   end
 
-  # Accounts in someone's portfolio, the reserve or dropped - everything but the still-unassigned ones.
+  # Accounts in someone's portfolio, the reserve, dropped or terminated - everything but the still-unassigned ones.
   def tracked_entries
     @entries.reject { |e| e.key == NONE }
   end
@@ -104,7 +107,7 @@ class PortfolioProjection
   end
 
   # Applies one bulk action to the accounts behind `keys` ("kind:bi_id"). action: "assign" (to `target`, a
-  # holder key), "reserve", "drop" or "revert" (back to what the BO says). Returns { done:, skipped: } counts.
+  # holder key), "reserve", "drop", "terminate" or "revert" (back to what the BO says). Returns { done:, skipped: } counts.
   def self.apply!(keys, action:, target: nil, by: nil)
     new.apply!(keys, action: action, target: target, by: by)
   end
@@ -118,7 +121,7 @@ class PortfolioProjection
     if action == "assign"
       recipient = holder(target)
       raise Error, "Destinataire introuvable." unless recipient && assignable_holders.include?(recipient)
-    elsif %w[reserve drop revert].exclude?(action)
+    elsif [ "reserve", "drop", TERMINATED, "revert" ].exclude?(action)
       raise Error, "Action inconnue."
     end
 
@@ -160,6 +163,7 @@ class PortfolioProjection
       case move.action
       when "assign" then move.user_id ? "user:#{move.user_id}" : "recruit:#{move.recruit_id}"
       when "reserve" then RESERVE
+      when TERMINATED then TERMINATED
       else DROP
       end
     else
@@ -218,6 +222,7 @@ class PortfolioProjection
 
       RESERVE
     when "drop" then DROP
+    when TERMINATED then TERMINATED
     else bo_default
     end
 

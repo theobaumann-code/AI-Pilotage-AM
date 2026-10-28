@@ -1,5 +1,6 @@
 <%# Bulk actions for the table whose <form> encloses this bar. table: "comptes" or "sans_am"; targets: holders that
-    can receive accounts; total: number of accounts the current filter returns; extra: show reserve/drop/revert. %>
+    can receive accounts; total: number of accounts the current filter returns; extra: show reserve/drop/revert.
+    "Résilier" (the client leaves: out of the study) is offered on both tables. %>
 <div class="bulk-bar">
   <%= hidden_field_tag :table, table, id: nil %>
   <%= preserved_query_fields %>
@@ -16,6 +17,10 @@
     <% if extra %>
       <%= button_tag "Retirer (à réattribuer)", name: "bulk_action", value: "reserve", class: "button" %>
       <%= button_tag "Ne plus accompagner", name: "bulk_action", value: "drop", class: "button ghost-danger" %>
+    <% end %>
+    <%= button_tag "Résilier", name: "bulk_action", value: PortfolioProjection::TERMINATED, class: "button ghost-danger",
+          data: { turbo_confirm: "Résilier ces comptes dans la projection ? Ils sortent de l'étude (annulable avec « Revenir au BO »)." } %>
+    <% if extra %>
       <%= button_tag "Revenir au BO", name: "bulk_action", value: "revert", class: "button" %>
     <% end %>
   </div>

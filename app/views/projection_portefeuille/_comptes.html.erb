@@ -23,6 +23,7 @@
     <strong><%= @pc_total[:count] %></strong> compte<%= "s" if @pc_total[:count] > 1 %> · ARR <strong><%= eur.call(@pc_total[:arr]) %></strong>.
     Filtrez (par exemple « AM projeté » = un AM, ou « À réattribuer »), cochez des lignes ou tout le filtre, puis choisissez l'action.
     « AM concerné » retient les comptes qu'un AM a dans le BO ou reçoit dans la projection (gagnés comme perdus).
+    Un compte « Résilié » sort de l'étude : il n'apparaît plus ici que filtré sur « Mouvement = Résilié », pour l'annuler avec « Revenir au BO ».
   </p>
 
   <%= form_with url: bulk_projection_portefeuille_path, method: :post do %>

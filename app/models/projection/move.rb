@@ -1,8 +1,9 @@
 # A planned change on one BI account (kind + bi_id, like bi_accounts): "assign" it to a user or a recruit,
-# put it back in the "reserve" to reassign, or "drop" it (no longer followed by an AM). original_am_email is the
-# BO's AM when the change was made, to tell later whether the BO followed it or went another way.
+# put it back in the "reserve" to reassign, "drop" it (no longer followed by an AM) or "terminate" it (the client
+# leaves: out of the study). original_am_email is the BO's AM when the change was made, to tell later whether the
+# BO followed it or went another way.
 class Projection::Move < ApplicationRecord
-  ACTIONS = %w[assign reserve drop].freeze
+  ACTIONS = %w[assign reserve drop terminate].freeze
 
   belongs_to :user, optional: true
   belongs_to :recruit, class_name: "Projection::Recruit", optional: true

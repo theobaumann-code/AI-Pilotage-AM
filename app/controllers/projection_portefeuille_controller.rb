@@ -13,7 +13,9 @@ class ProjectionPortefeuilleController < ApplicationController
 
   # The movements an account can show in "Comptes en projection", in the order of the Mouvement filter.
   NO_MOVEMENT = "Aucun mouvement".freeze
-  MOVEMENTS = [ "Réattribué", "Attribué (était sans AM)", "Retiré à l'AM", "AM sortant", "Plus accompagné", NO_MOVEMENT ].freeze
+  TERMINATED_MOVEMENT = "Résilié".freeze
+  MOVEMENTS = [ "Réattribué", "Attribué (était sans AM)", "Retiré à l'AM", "AM sortant", "Plus accompagné",
+                TERMINATED_MOVEMENT, NO_MOVEMENT ].freeze
 
   def show
     @annee = AppSetting.instance.annee_en_cours
@@ -98,6 +100,7 @@ class ProjectionPortefeuilleController < ApplicationController
     when PortfolioProjection::RESERVE
       entry.move ? "Retiré à l'AM" : "AM sortant"
     when PortfolioProjection::DROP then "Plus accompagné"
+    when PortfolioProjection::TERMINATED then TERMINATED_MOVEMENT
     else entry.bo_key == PortfolioProjection::NONE ? "Attribué (était sans AM)" : "Réattribué"
     end
   end
@@ -132,6 +135,7 @@ class ProjectionPortefeuilleController < ApplicationController
     @totals[:remaining] = @totals[:capacity] - @totals[:comptes]
     @reserve = @projection.place_total(PortfolioProjection::RESERVE)
     @dropped = @projection.place_total(PortfolioProjection::DROP)
+    @terminated = @projection.place_total(PortfolioProjection::TERMINATED)
     @moved_count = @projection.tracked_entries.count(&:moved?)
 
     @pager = TablePager.new(@rows, params: params.merge(proj_size: 100), prefix: "proj",
@@ -159,6 +163,10 @@ class ProjectionPortefeuilleController < ApplicationController
   def filtered_comptes(projection)
     read_comptes_filters
     rows = projection.tracked_entries
+    # Terminated accounts are out of the study: listed only when asked for (Mouvement = Résilié), to undo them.
+    unless @pc_movements.include?(TERMINATED_MOVEMENT)
+      rows = rows.reject { |e| e.key == PortfolioProjection::TERMINATED }
+    end
     rows = rows.select { |e| e.account.name.to_s.downcase.include?(@pc_q.downcase) } if @pc_q.present?
     # An AM is concerned by an account they hold in the BO or are given in the projection - gained or lost.
     rows = rows.select { |e| (@pc_concerned & [ projection.label(e.bo_key), projection.label(e.key) ]).any? } if @pc_concerned.present?
@@ -173,7 +181,7 @@ class ProjectionPortefeuilleController < ApplicationController
 
   def load_comptes
     all = @projection.tracked_entries
-    @pc_owner_options = all.map { |e| @projection.label(e.key) }.uniq.sort
+    @pc_owner_options = all.reject { |e| e.key == PortfolioProjection::TERMINATED }.map { |e| @projection.label(e.key) }.uniq.sort
     @pc_bo_options = all.map { |e| @projection.label(e.bo_key) }.uniq.sort
     # People only (holders on either side), without the reserve / dropped / unassigned places.
     @pc_concerned_options = all.flat_map { |e| [ e.bo_key, e.key ] }.uniq

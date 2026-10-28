@@ -201,6 +201,31 @@ class ProjectionPortefeuilleTest < ActionDispatch::IntegrationTest
     assert_equal [ "À réattribuer", "Alice", "Bob" ], [ owner_of(@a2), owner_of(@a1), owner_of(@b1) ]
   end
 
+  test "a terminated account leaves the study, and can be brought back" do
+    bulk("terminate", keys: [ key(@a1) ])
+    assert_match "1 compte mis à jour", flash[:notice]
+    r = rows
+    assert_equal [ 2, 1, 4_000.0 ], [ r["Alice"][:real_comptes], r["Alice"][:comptes], r["Alice"][:arr] ], "out of Alice's projected portfolio"
+    assert_equal [ 1, 10_000.0 ], @controller.instance_variable_get(:@terminated).values_at(:count, :arr)
+    assert_equal 0, @controller.instance_variable_get(:@reserve)[:count], "not in the reserve either"
+    listed = @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }
+    assert_not_includes listed, "Compte Proj 1", "hidden from the accounts table by default"
+    assert_not_includes @controller.instance_variable_get(:@pc_owner_options), "Résilié"
+
+    # An unassigned account can be terminated from "Comptes sans AM" too, and leaves that list.
+    post bulk_projection_portefeuille_path, params: { bulk_action: "terminate", table: "sans_am", keys: [ key(@free) ] }
+    get projection_portefeuille_path
+    assert_empty @controller.instance_variable_get(:@ps_pager).records
+
+    get projection_portefeuille_path(pc_movements: [ "Résilié" ])
+    assert_equal [ "Compte Proj 1", "Compte Proj 4" ], @controller.instance_variable_get(:@pc_pager).records.map { |e| e.account.name }.sort
+    assert_match "Résilié", @response.body
+
+    bulk("revert", all_filtered: "1", pc_movements: [ "Résilié" ])
+    assert_equal [ "Alice", "Sans AM" ], [ owner_of(@a1), owner_of(@free) ]
+    assert_equal 0, Projection::Move.count
+  end
+
   test "an unknown action or recipient is refused" do
     bulk("assign", keys: [ key(@a1) ], target: "user:0")
     assert_equal "Destinataire introuvable.", flash[:alert]

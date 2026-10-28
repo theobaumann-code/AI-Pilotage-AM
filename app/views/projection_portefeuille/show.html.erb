@@ -20,6 +20,7 @@
     <div class="card"><div class="label">ARR en portefeuille projeté</div><div class="value"><%= eur.call(@totals[:arr]) %></div></div>
     <div class="card"><div class="label">À réattribuer</div><div class="value" style="color:<%= @reserve[:count] > 0 ? "var(--burgundy)" : "var(--green)" %>"><%= @reserve[:count] %></div><small><%= eur.call(@reserve[:arr]) %></small></div>
     <div class="card"><div class="label">Plus accompagnés</div><div class="value"><%= @dropped[:count] %></div><small><%= eur.call(@dropped[:arr]) %></small></div>
+    <div class="card"><div class="label">Résiliés (hors étude)</div><div class="value"><%= @terminated[:count] %></div><small><%= eur.call(@terminated[:arr]) %></small></div>
     <div class="card"><div class="label">Capacité restante projetée</div><div class="value" style="color:<%= @totals[:remaining] < 0 ? "var(--red)" : "var(--green)" %>"><%= @totals[:remaining] %></div></div>
     <div class="card"><div class="label">Dans le rouge</div><div class="value" style="color:<%= @over.any? ? "var(--red)" : "var(--green)" %>"><%= @over.size %></div></div>
   </div>
